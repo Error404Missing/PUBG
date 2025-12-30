@@ -51,10 +51,11 @@ export async function POST(req: Request) {
       { message: "User created successfully", user: { id: user.id, username: user.username, email: user.email } },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: "Invalid input", errors: error.errors }, { status: 400 });
     }
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    const message = error?.message || "Internal server error";
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

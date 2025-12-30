@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && node -e \"const u=process.env.TURSO_DB_URL||process.env.DATABASE_URL||''; const cp=require('child_process'); const fs=require('fs'); const isLib=u.startsWith('libsql:'); const isPg=u.startsWith('postgres://')||u.startsWith('postgresql://'); if(isLib){ cp.spawnSync('npx',{stdio:'inherit',shell:true,args:['prisma','migrate','deploy']}); } else if(isPg){ const hasMig=fs.existsSync('prisma/migrations') && fs.readdirSync('prisma/migrations').length>0; const args= hasMig ? ['prisma','migrate','deploy'] : ['prisma','db','push']; cp.spawnSync('npx',{stdio:'inherit',shell:true,args}); }\" && node ./node_modules/next/dist/bin/next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -19,11 +20,11 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
-    "next": "15.1.1",
+    "next": "14.2.5",
     "next-auth": "^5.0.0-beta.30",
     "prisma": "^5.22.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-hook-form": "^7.69.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.2.1"
@@ -31,10 +32,10 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.1",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
