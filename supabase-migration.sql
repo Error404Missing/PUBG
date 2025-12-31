@@ -141,3 +141,4 @@ CREATE TABLE IF NOT EXISTS "SystemConfig" (
     "value" TEXT NOT NULL
 );
 
+

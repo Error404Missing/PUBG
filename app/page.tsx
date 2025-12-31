@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   let scrims: any[] = [];
-  let config: Record<string, string> = {};
+  const config: Record<string, string> = {};
   let registeredTeams = 0;
   let finishedScrims = 0;
   try {

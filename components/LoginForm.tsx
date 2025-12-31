@@ -1,29 +1,42 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { authenticate } from '@/app/actions/auth';
+import { useState } from 'react';
 import Link from 'next/link';
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
- 
-  return (
-    <button 
-      type="submit" 
-      disabled={pending}
-      className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
-    >
-      {pending ? 'შესვლა...' : 'შესვლა'}
-    </button>
-  );
-}
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginForm() {
-  const [errorMessage, dispatch] = useActionState(authenticate, undefined);
- 
+  const router = useRouter();
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrorMessage('');
+    setIsLoading(true);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const email = String(formData.get('email') || '');
+    const password = String(formData.get('password') || '');
+
+    try {
+      const res = await supabase.auth.signInWithPassword({ email, password });
+      if (res.error) {
+        setErrorMessage(res.error.message || 'Login failed');
+      } else {
+        // Redirect to home or previous page
+        router.push('/');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
-    <form action={dispatch} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-300">
           Email
@@ -65,7 +78,13 @@ export default function LoginForm() {
       </div>
 
       <div>
-        <SubmitButton />
+        <button 
+          type="submit"
+          disabled={isLoading}
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
+        >
+          {isLoading ? 'შესვლა...' : 'შესვლა'}
+        </button>
       </div>
       
       {errorMessage && (

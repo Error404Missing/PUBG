@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 
 const formSchema = z.object({
   username: z.string().min(3, { message: "მომხმარებლის სახელი უნდა იყოს მინიმუმ 3 სიმბოლო" }),
@@ -47,7 +48,20 @@ export default function RegisterForm() {
         throw new Error(data.message || 'რეგისტრაცია ვერ მოხერხდა');
       }
 
-      router.push('/login');
+      // After creating server-side user, try signing in via Supabase for smoother flow
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+        if (error) {
+          router.push('/login');
+        } else {
+          router.push('/');
+        }
+      } catch (e) {
+        router.push('/login');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
