@@ -50,7 +50,7 @@ export default function HomePage() {
 
           <motion.div variants={item} className="space-y-2 group">
             <h2 className="text-4xl font-black text-white/50 uppercase tracking-[0.5em] leading-none mb-[-0.5em] transition-all duration-1000 group-hover:tracking-[0.6em] group-hover:text-white/60">PREKEBI</h2>
-            <h1 className="text-8xl md:text-9xl font-black text-white uppercase tracking-tighter leading-none">
+            <h1 className="text-8xl md:text-9xl font-black text-white uppercase tracking-tighter leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
               TACTICAL
             </h1>
           </motion.div>
