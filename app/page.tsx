@@ -15,6 +15,8 @@ import {
 import Link from "next/link";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 
+import UserNav from "@/components/UserNav";
+
 const container = {
   hidden: { opacity: 0 },
   show: {
@@ -40,8 +42,14 @@ export default function HomePage() {
       className="space-y-24 pb-20"
     >
       {/* Hero Section */}
-      <section className="relative pt-12">
+      <section className="relative pt-6">
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+
+        {/* Top Bar inside Hero */}
+        <div className="flex justify-between items-center mb-12 relative z-20 px-4">
+          <div /> {/* Spacer */}
+          <UserNav />
+        </div>
 
         <div className="relative text-center space-y-8">
           <motion.div variants={item} className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
@@ -49,13 +57,15 @@ export default function HomePage() {
             <span className="text-[10px] font-bold text-cyber-muted uppercase tracking-[0.2em]">Platform Version 2.0 // Active</span>
           </motion.div>
 
-          <motion.h1
-            variants={item}
-            className="text-7xl md:text-9xl font-black text-white tracking-tighter uppercase leading-[0.8] mb-4"
-          >
-            Tactical <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary animate-gradient">Superiority</span>
-          </motion.h1>
+          <motion.div variants={item} className="space-y-2">
+            <h1 className="text-4xl md:text-5xl font-black text-white/40 tracking-[0.5em] uppercase leading-none mb-4 font-mono">
+              PREKEBI
+            </h1>
+            <h2 className="text-7xl md:text-9xl font-black text-white tracking-tighter uppercase leading-[0.8]">
+              Tactical <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary animate-gradient">Superiority</span>
+            </h2>
+          </motion.div>
 
           <motion.p variants={item} className="text-cyber-muted text-xl max-w-2xl mx-auto font-medium leading-relaxed">
             Elite PUBG Scrims პლატფორმა. შეუერთდი საუკეთესოებს, დახვეწე შენი ტაქტიკა და მოიპოვე აღიარება.

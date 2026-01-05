@@ -1,6 +1,7 @@
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import Link from "next/link";
 import { LogOut, User as UserIcon, Shield } from "lucide-react";
+import { handleSignOut } from "@/app/actions/auth-actions";
 
 export default async function UserNav() {
   let session: Awaited<ReturnType<typeof auth>> | null = null;
@@ -21,42 +22,37 @@ export default async function UserNav() {
 
   return (
     <div className="flex items-center space-x-4">
-        {/* User Info */}
+      {/* User Info */}
       <div className="flex items-center space-x-2">
         {session.user.image ? (
-            <img src={session.user.image} alt="Profile" className="w-8 h-8 rounded-full" />
+          <img src={session.user.image} alt="Profile" className="w-8 h-8 rounded-full" />
         ) : (
-            <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center">
-                <span className="text-sm font-bold">{session.user.username?.[0]?.toUpperCase()}</span>
-            </div>
+          <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center">
+            <span className="text-sm font-bold">{session.user.username?.[0]?.toUpperCase()}</span>
+          </div>
         )}
         <span className="text-sm font-medium">{session.user.username}</span>
       </div>
-      
+
       {/* Admin Link */}
       {(session.user.role === 'ADMIN' || session.user.role === 'FOUNDER') && (
         <Link href="/admin" className="text-xs bg-red-900 text-red-200 px-2 py-1 rounded flex items-center gap-1 hover:bg-red-800">
-            <Shield className="w-3 h-3" />
-            Admin
+          <Shield className="w-3 h-3" />
+          Admin
         </Link>
       )}
-        
-        {/* Profile Link */}
-       <Link href="/profile" className="text-gray-400 hover:text-white" title="Profile">
-          <UserIcon className="w-5 h-5" />
-       </Link>
 
-       {/* Sign Out */}
-       <form
-          action={async () => {
-            "use server"
-            await signOut()
-          }}
-        >
-          <button className="text-gray-400 hover:text-white pt-1" title="Sign Out">
-            <LogOut className="w-5 h-5" />
-          </button>
-        </form>
+      {/* Profile Link */}
+      <Link href="/profile" className="text-gray-400 hover:text-white" title="Profile">
+        <UserIcon className="w-5 h-5" />
+      </Link>
+
+      {/* Sign Out */}
+      <form action={handleSignOut}>
+        <button className="text-gray-400 hover:text-white pt-1" title="Sign Out">
+          <LogOut className="w-5 h-5" />
+        </button>
+      </form>
     </div>
   );
 }

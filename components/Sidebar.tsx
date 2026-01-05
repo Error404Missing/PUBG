@@ -26,7 +26,7 @@ export default function Sidebar() {
     { name: "განრიგი", href: "/schedule", icon: Calendar },
     { name: "შედეგები", href: "/results", icon: Trophy },
     { name: "გუნდები", href: "/teams", icon: Users },
-    { name: "ROOM INFO", href: "/room-info", icon: Settings },
+    { name: "ROOM INFO", href: "/room-info", icon: Gamepad2 },
     { name: "ქეისის გახსნა", href: "/case", icon: Gift },
     { name: "BANLIST", href: "/banlist", icon: Ban },
     { name: "VIP", href: "/vip", icon: Crown },
@@ -86,7 +86,14 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer / System Status */}
-      <div className="p-6 border-top border-white/5 bg-white/[0.02]">
+      <div className="p-6 border-t border-white/5 space-y-4">
+        <Link href="/admin">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors group cursor-pointer">
+            <Settings className="w-4 h-4 text-primary group-hover:rotate-90 transition-transform duration-500" />
+            <span className="text-[10px] font-bold text-white uppercase tracking-widest">Admin Panel</span>
+          </div>
+        </Link>
+
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-black/40 border border-white/5">
           <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_10px_#10b981]" />
           <span className="text-[10px] font-mono text-cyber-muted uppercase tracking-tighter">

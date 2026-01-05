@@ -1,8 +1,9 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, HelpCircle, AlertTriangle } from "lucide-react";
+import { FileText, HelpCircle, AlertTriangle, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import PageHeader from "@/components/PageHeader";
 
 export default async function HelpPage() {
   const items = await prisma.systemConfig.findMany();
@@ -31,7 +32,7 @@ export default async function HelpPage() {
   if (cfg.help_rules) {
     rules = [
       {
-        title: "განახლებული წესები",
+        title: "სისტემური წესები",
         content: cfg.help_rules
       }
     ];
@@ -62,66 +63,72 @@ export default async function HelpPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl.font-bold text-white">დახმარება და წესები</h1>
-        <p className="text-gray-400">გაეცანით პლატფორმის წესებს და ხშირად დასმულ კითხვებს</p>
-      </div>
+    <div className="space-y-8 pb-20">
+      <PageHeader
+        title="დახმარება & წესები"
+        description="გაეცანით პლატფორმის წესებს და ხშირად დასმულ კითხვებს"
+      />
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 text-xl font-semibold text-yellow-500">
-            <AlertTriangle />
-            <h2>წესები</h2>
+      <div className="grid gap-12 lg:grid-cols-2">
+        <div className="space-y-8">
+          <div className="flex items-center gap-4 px-2">
+            <div className="p-2 bg-amber-500/10 rounded-lg">
+              <ShieldCheck className="w-5 h-5 text-amber-500" />
+            </div>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">ოპერაციული წესები</h2>
           </div>
-          
+
           <div className="space-y-4">
             {rules.map((rule, index) => (
-              <Card key={index} className="bg-zinc-900/50 border-zinc-800">
-                <CardHeader>
-                  <CardTitle className="text-lg text-gray-200">{rule.title}</CardTitle>
+              <Card key={index} className="bg-[#06070a] border-white/5 rounded-2xl overflow-hidden hover:border-amber-500/30 transition-all duration-300">
+                <CardHeader className="bg-white/[0.02] border-b border-white/5 py-4">
+                  <CardTitle className="text-sm font-black text-amber-400 uppercase tracking-widest">{rule.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-gray-400">{rule.content}</p>
+                <CardContent className="pt-4">
+                  <p className="text-cyber-muted text-sm font-medium leading-relaxed">{rule.content}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 text-xl font-semibold text-blue-500">
-            <HelpCircle />
-            <h2>ხშირად დასმული კითხვები</h2>
+        <div className="space-y-8">
+          <div className="flex items-center gap-4 px-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <HelpCircle className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">ხშირად დასმული კითხვები</h2>
           </div>
 
-          <Accordion type="single" collapsible className="w-full">
-            {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-zinc-800">
-                <AccordionTrigger className="text-gray-200 hover:text-white">
-                  {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-400">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <div className="bg-[#06070a] border border-white/5 rounded-2xl p-6 shadow-2xl">
+            <Accordion type="single" collapsible className="w-full space-y-2">
+              {faqs.map((faq, index) => (
+                <AccordionItem key={index} value={`item-${index}`} className="border-white/5 px-4 rounded-xl hover:bg-white/[0.02] transition-colors border-b-0">
+                  <AccordionTrigger className="text-sm font-bold text-white uppercase tracking-tight hover:no-underline">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-cyber-muted text-sm leading-relaxed pb-4">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
 
-          <Card className="bg-blue-950/20 border-blue-900/30 mt-8">
+          <Card className="bg-primary/5 border-primary/20 rounded-2xl overflow-hidden mt-8 ring-1 ring-primary/10">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <FileText className="text-blue-400" />
-                <CardTitle className="text-blue-400">ვერ იპოვეთ პასუხი?</CardTitle>
+                <FileText className="text-primary w-5 h-5" />
+                <CardTitle className="text-primary text-lg font-black uppercase tracking-tight">ვერ იპოვეთ პასუხი?</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-400 mb-4">
-                თუ თქვენს კითხვაზე პასუხი ვერ იპოვეთ, გთხოვთ დაგვიკავშირდეთ კონტაქტის გვერდიდან.
+              <p className="text-cyber-muted text-sm font-medium mb-6">
+                თუ თქვენს კითხვაზე პასუხი ვერ იპოვეთ, გთხოვთ დაგვიკავშირდეთ კონტაქტის გვერდიდან. ჩვენი გუნდი მალევე გიპასუხებთ.
               </p>
-              <Link 
-                href="/contact" 
-                className="inline-block px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-600/50 rounded hover:bg-blue-600/30 transition-colors"
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-3 bg-primary text-black font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]"
               >
                 კონტაქტის გვერდი
               </Link>
