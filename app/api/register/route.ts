@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { createSupabaseAdmin } from "@/lib/supabase";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -28,22 +27,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create the user in Supabase Auth (server-side).
-    try {
-      const supa = createSupabaseAdmin();
-      const { error: supaError } = await supa.auth.admin.createUser({
-        email,
-        password,
-        user_metadata: { username },
-        email_confirm: true,
-      });
-
-      if (supaError) {
-        return NextResponse.json({ message: 'Failed to create Supabase user', details: supaError.message }, { status: 500 });
-      }
-    } catch (err: any) {
-      return NextResponse.json({ message: 'Failed to create Supabase user', details: err?.message }, { status: 500 });
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
