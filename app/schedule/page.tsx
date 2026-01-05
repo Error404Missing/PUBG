@@ -1,54 +1,60 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import ScrimList from "@/components/ScrimList";
-import { redirect } from "next/navigation";
+import PageHeader from "@/components/PageHeader";
+import { Calendar, Clock, Map, Target, Users, ArrowRight } from "lucide-react";
 
-export default async function SchedulePage() {
-  const session = await auth();
-  
-  const scrims = await prisma.scrim.findMany({
-    where: {
-        status: { in: ['OPEN', 'CLOSED'] } // Show active scrims
-    },
-    orderBy: { startTime: 'asc' },
-    include: {
-        slots: {
-            include: {
-                team: true
-            },
-            orderBy: { slotNumber: 'asc' }
-        }
-    }
-  });
-
-  let userTeam: { id: string } | null = null;
-  let requests: string[] = [];
-  let allowedScrimIds: string[] = [];
-  if (session?.user) {
-    userTeam = await prisma.team.findUnique({
-        where: { leaderId: session.user.id }
-    });
-    if (userTeam) {
-      const items = await prisma.systemConfig.findMany({
-        where: { key: { startsWith: `request:scrim:` } }
-      });
-      requests = items.filter(i => i.key.endsWith(`:team:${userTeam.id}`))
-        .map(i => i.key.split(':')[2]);
-      const keys = scrims.map(s => `slot_assigned_at:${s.id}:team:${(userTeam as any).id}`);
-      const cfg = keys.length > 0 
-        ? await prisma.systemConfig.findMany({ where: { key: { in: keys } } })
-        : [];
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      allowedScrimIds = cfg
-        .filter(item => new Date(item.value).getTime() > cutoff)
-        .map(item => item.key.split(':')[1]);
-    }
-  }
+export default function SchedulePage() {
+  const sessions = [
+    { time: "18:00", name: "Alpha Scrims", map: "Erangel", mode: "Squad TPP", slots: "12/20" },
+    { time: "20:00", name: "Bravo Scrims", map: "Miramar", mode: "Squad TPP", slots: "18/20" },
+    { time: "22:00", name: "Charlie Scrims", map: "Sanhok", mode: "Squad FPP", slots: "5/20" },
+    { time: "00:00", name: "Midnight Scrims", map: "Erangel", mode: "Squad TPP", slots: "0/20" },
+  ];
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-white">განრიგი</h1>
-      <ScrimList scrims={scrims} userTeam={userTeam} userId={session?.user?.id} requests={requests} allowedScrimIds={allowedScrimIds} />
+    <div className="space-y-8 pb-20">
+      <PageHeader
+        title="SCHEDULE"
+        subtitle="ყოველდღიური სკრიმების განრიგი და თავისუფალი სლოტების მონიტორინგი."
+      />
+
+      <div className="space-y-4">
+        {sessions.map((session, i) => (
+          <div key={i} className="group relative bg-[#06070a] border border-white/5 rounded-[2rem] p-6 hover:border-primary/30 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center gap-8">
+            <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-2xl border border-white/5 min-w-[120px] group-hover:bg-primary/10 transition-colors">
+              <Clock className="w-5 h-5 text-primary mb-2" />
+              <span className="text-2xl font-black text-white">{session.time}</span>
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">GMT+4</span>
+            </div>
+
+            <div className="flex-1 space-y-4 text-center md:text-left">
+              <div>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">{session.name}</h3>
+                <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{session.mode}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-6">
+                <div className="flex items-center gap-2 text-white/60">
+                  <Map className="w-4 h-4 text-white/20" />
+                  <span className="text-xs font-bold uppercase tracking-wide">{session.map}</span>
+                </div>
+                <div className="flex items-center gap-2 text-white/60">
+                  <Users className="w-4 h-4 text-white/20" />
+                  <span className="text-xs font-bold uppercase tracking-wide">{session.slots} SLOTS</span>
+                </div>
+                <div className="flex items-center gap-2 text-emerald-500">
+                  <Target className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">REGISTRATION OPEN</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full md:w-auto">
+              <button className="w-full md:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-xl border border-white/10 transition-all uppercase tracking-widest flex items-center justify-center gap-3 group-hover:bg-primary group-hover:text-black group-hover:border-primary">
+                Book Slot <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

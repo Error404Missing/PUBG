@@ -1,133 +1,84 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, HelpCircle, AlertTriangle } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+"use client";
 
-export default async function HelpPage() {
-  const items = await prisma.systemConfig.findMany();
-  const cfg: Record<string, string> = {};
-  items.forEach(i => cfg[i.key] = i.value);
+import PageHeader from "@/components/PageHeader";
+import { HelpCircle, Book, MessageSquare, Shield, Zap, Search } from "lucide-react";
 
-  let rules = [
-    {
-      title: "1. ზოგადი წესები",
-      content: "აკრძალულია ნებისმიერი სახის შეურაცხყოფა, რასისტული ან დისკრიმინაციული გამონათქვამები. ყველა მონაწილე ვალდებულია პატივი სცეს სხვა მოთამაშეებს და ადმინისტრაციას."
-    },
-    {
-      title: "2. რეგისტრაცია",
-      content: "გუნდს უნდა ჰყავდეს მინიმუმ 4 მოთამაშე. ერთი მოთამაშე არ შეიძლება იყოს რეგისტრირებული რამდენიმე გუნდში ერთდროულად. ლიდერი პასუხისმგებელია გუნდის ინფორმაციის სისწორეზე."
-    },
-    {
-      title: "3. სკრიმები და ტურნირები",
-      content: "გუნდი ვალდებულია გამოცხადდეს მითითებულ დროს. დაგვიანების შემთხვევაში გუნდი შეიძლება მოიხსნას სკრიმიდან. Room Info-ს გაზიარება გარე პირებზე მკაცრად აკრძალულია."
-    },
-    {
-      title: "4. ჩეთები და პროგრამები",
-      content: "ნებისმიერი სახის დამხმარე პროგრამის (Cheats, Scripts) გამოყენება გამოიწვევს გუნდის მუდმივ დაბლოკვას. ეჭვის შემთხვევაში ადმინისტრაცია იტოვებს უფლებას მოითხოვოს მოთამაშის შემოწმება."
-    }
+export default function HelpPage() {
+  const faqs = [
+    { q: "როგორ დავარეგისტრირო გუნდი?", a: "გადადით რეგისტრაციის გვერდზე, შეავსეთ გუნდის სახელი, ტეგი და ატვირთეთ ლოგო. ადმინისტრაცია განიხილავს თქვენს მოთხოვნას 24 საათის განმავლობაში." },
+    { q: "რა არის სლოტების წესი?", a: "სლოტები ნაწილდება რეგისტრაციის რიგითობის მიხედვით. VIP გუნდებს აქვთ პრიორიტეტი." },
+    { q: "სად ვნახავ რუმის პაროლს?", a: "მატჩამდე 15 წუთით ადრე 'ROOM INFO' გვერდზე გამოჩნდება ID და პაროლი მხოლოდ ავტორიზებული გუნდებისთვის." },
+    { q: "როგორ გავასაჩივრო ბანი?", a: "დაუკავშირდით ადმინისტრაციას 'CONTACT' გვერდის მეშვეობით ან მოგვწერეთ დისკორდზე." },
   ];
-
-  if (cfg.help_rules) {
-    rules = [
-      {
-        title: "განახლებული წესები",
-        content: cfg.help_rules
-      }
-    ];
-  }
-
-  let faqs = [
-    {
-      question: "როგორ დავარეგისტრირო გუნდი?",
-      answer: "გუნდის დასარეგისტრირებლად უნდა გაიაროთ ავტორიზაცია, გადახვიდეთ 'გუნდის შექმნა' გვერდზე და შეავსოთ საჭირო ინფორმაცია."
-    },
-    {
-      question: "როგორ მივიღო VIP სტატუსი?",
-      answer: "VIP სტატუსის შესახებ ინფორმაცია შეგიძლიათ იხილოთ 'VIP' გვერდზე. დეტალებისთვის დაგვიკავშირდით."
-    },
-    {
-      question: "რა ხდება თუ სკრიმზე ვერ გამოვცხადდით?",
-      answer: "თუ სკრიმზე ვერ ახერხებთ გამოცხადებას, ვალდებული ხართ გააუქმოთ რეგისტრაცია დაწყებამდე მინიმუმ 30 წუთით ადრე."
-    }
-  ];
-
-  if (cfg.help_faq) {
-    faqs = [
-      {
-        question: "FAQ",
-        answer: cfg.help_faq
-      }
-    ];
-  }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl.font-bold text-white">დახმარება და წესები</h1>
-        <p className="text-gray-400">გაეცანით პლატფორმის წესებს და ხშირად დასმულ კითხვებს</p>
+    <div className="space-y-12 pb-20">
+      <PageHeader
+        title="HELP CENTER"
+        subtitle="ინსტრუქციები, ხშირად დასმული კითხვები და პლატფორმის გამოყენების წესები."
+      />
+
+      <div className="grid md:grid-cols-3 gap-8">
+        {[
+          { title: "Documentation", desc: "დეტალური სახელმძღვანელო გუნდის მართვისა და სკრიმების შესახებ.", icon: Book, color: "text-primary" },
+          { title: "Community Support", desc: "შემოუერთდით ჩვენს დისკორდ სერვერს და მიიღეთ დახმარება სწრაფად.", icon: MessageSquare, color: "text-secondary" },
+          { title: "Fair Play Rules", desc: "გაეცანით წესებს, რომელთა დაცვაც სავალდებულოა ყველა მოთამაშისთვის.", icon: Shield, color: "text-emerald-500" },
+        ].map((card, i) => (
+          <div key={i} className="group p-8 bg-[#06070a] border border-white/5 rounded-[2rem] hover:border-primary/30 transition-all duration-500 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-700">
+              <card.icon className="w-16 h-16" />
+            </div>
+            <div className="relative z-10 space-y-4">
+              <div className={`w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 ${card.color}`}>
+                <card.icon className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">{card.title}</h3>
+              <p className="text-sm font-medium text-white/40 leading-relaxed">{card.desc}</p>
+              <button className="flex items-center gap-2 text-[10px] font-black text-white/20 uppercase tracking-[0.2em] group-hover:text-primary transition-colors pt-2">
+                Open Guide →
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 text-xl font-semibold text-yellow-500">
-            <AlertTriangle />
-            <h2>წესები</h2>
-          </div>
-          
-          <div className="space-y-4">
-            {rules.map((rule, index) => (
-              <Card key={index} className="bg-zinc-900/50 border-zinc-800">
-                <CardHeader>
-                  <CardTitle className="text-lg text-gray-200">{rule.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-400">{rule.content}</p>
-                </CardContent>
-              </Card>
-            ))}
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-black text-white uppercase tracking-tight">ხშირად დასმული კითხვები</h3>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-white/30" />
+            <input type="text" placeholder="Search FAQ..." className="bg-white/5 border border-white/10 rounded-lg py-2 pl-8 pr-4 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-primary/50 transition-all" />
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 text-xl font-semibold text-blue-500">
-            <HelpCircle />
-            <h2>ხშირად დასმული კითხვები</h2>
-          </div>
-
-          <Accordion type="single" collapsible className="w-full">
-            {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-zinc-800">
-                <AccordionTrigger className="text-gray-200 hover:text-white">
-                  {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-400">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-
-          <Card className="bg-blue-950/20 border-blue-900/30 mt-8">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <FileText className="text-blue-400" />
-                <CardTitle className="text-blue-400">ვერ იპოვეთ პასუხი?</CardTitle>
+        <div className="grid gap-4">
+          {faqs.map((faq, i) => (
+            <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/[0.08] transition-all cursor-pointer group">
+              <div className="flex gap-4">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="w-4 h-4 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-black text-white uppercase tracking-tight group-hover:text-primary transition-colors">{faq.q}</h4>
+                  <p className="text-sm font-medium text-white/50 leading-relaxed">{faq.a}</p>
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-400 mb-4">
-                თუ თქვენს კითხვაზე პასუხი ვერ იპოვეთ, გთხოვთ დაგვიკავშირდეთ კონტაქტის გვერდიდან.
-              </p>
-              <Link 
-                href="/contact" 
-                className="inline-block px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-600/50 rounded hover:bg-blue-600/30 transition-colors"
-              >
-                კონტაქტის გვერდი
-              </Link>
-            </CardContent>
-          </Card>
+            </div>
+          ))}
         </div>
+      </div>
+
+      <div className="p-10 bg-primary/5 border border-primary/10 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-10 opacity-10">
+          <Zap className="w-32 h-32 text-primary" />
+        </div>
+        <div className="relative z-10 space-y-2">
+          <h3 className="text-2xl font-black text-white uppercase tracking-tight">გაქვს სხვა კითხვები?</h3>
+          <p className="text-sm font-medium text-primary/70">ჩვენი ტექნიკური გუნდი მზად არის დაგეხმაროთ ნებისმიერ დროს.</p>
+        </div>
+        <button className="relative z-10 px-10 py-4 bg-primary text-black font-black uppercase tracking-widest rounded-xl hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all">
+          Contact Support
+        </button>
       </div>
     </div>
   );

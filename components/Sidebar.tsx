@@ -1,117 +1,129 @@
-'use client';
+"use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
-import { 
-  Home, 
-  Calendar, 
-  Trophy, 
-  Ban, 
-  Users, 
-  Crown, 
-  HelpCircle, 
-  Phone,
-  Gamepad2
+import Link from "next/link";
+import {
+  Home,
+  Calendar,
+  Trophy,
+  Users,
+  Info,
+  Package,
+  ShieldAlert,
+  Crown,
+  HelpCircle,
+  MessageSquare,
+  LayoutDashboard,
+  LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
-// Static stats for client component (passed as props or fetched via API in real app)
-// For now, we will simplify the sidebar to be a pure navigation component
-// Stats should be in the dashboard or a separate header component
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const mainNav: NavItem[] = [
+  { name: "მთავარი", href: "/", icon: Home },
+  { name: "განრიგი", href: "/schedule", icon: Calendar },
+  { name: "შედეგები", href: "/results", icon: Trophy },
+  { name: "გუნდები", href: "/teams", icon: Users },
+  { name: "Room Info", href: "/room-info", icon: Info },
+  { name: "ქეისის გახსნა", href: "/case-open", icon: Package },
+  { name: "Banlist", href: "/banlist", icon: ShieldAlert },
+  { name: "VIP", href: "/vip", icon: Crown },
+];
+
+const supportNav: NavItem[] = [
+  { name: "დახმარება", href: "/help", icon: HelpCircle },
+  { name: "კონტაქტი", href: "/contact", icon: MessageSquare },
+];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
-  const links = [
-    { name: "მთავარი", href: "/", icon: Home },
-    { name: "განრიგი", href: "/schedule", icon: Calendar },
-    { name: "შედეგები", href: "/results", icon: Trophy },
-    { name: "გუნდები", href: "/teams", icon: Users },
-    { name: "Room Info", href: "/room-info", icon: Users },
-    { name: "დაბლოკილი", href: "/banlist", icon: Ban },
-    { name: "VIP", href: "/vip", icon: Crown },
-    { name: "დახმარება", href: "/help", icon: HelpCircle },
-    { name: "კონტაქტი", href: "/contact", icon: Phone },
-  ];
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'FOUNDER';
 
   return (
-    <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0f1014]/95 backdrop-blur-xl border-r border-white/5 flex flex-col z-50">
-      {/* Logo Area */}
-      <div className="p-8 flex items-center gap-3">
-        <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20">
-            <Gamepad2 className="text-black w-6 h-6" />
-        </div>
-        <div>
-            <h1 className="text-xl font-black text-white tracking-wider">PUBG</h1>
-            <p className="text-xs text-amber-500 font-bold tracking-[0.2em]">SCRIMS</p>
-        </div>
+    <aside className="fixed left-0 top-0 h-screen w-[280px] bg-cyber-card border-r border-white/5 flex flex-col z-[100] hidden lg:flex shadow-[20px_0_40px_rgba(0,0,0,0.4)]">
+      {/* Brand */}
+      <div className="p-8 pb-12">
+        <Link href="/" className="flex items-center gap-4 group">
+          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center border-2 border-primary/20 shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-transform group-hover:scale-110">
+            <Trophy className="text-black w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-white tracking-widest leading-none">PREKEBI</h1>
+            <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-1">Tactical Portal</p>
+          </div>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-        {links.map((link) => {
-          const isActive = pathname === link.href;
-          return (
+      <nav className="flex-1 px-4 overflow-y-auto space-y-10 scrollbar-hide">
+        {/* Main Menu */}
+        <div className="space-y-2">
+          <p className="px-4 text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">Tactical Menu</p>
+          {mainNav.map((item) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className="relative block group"
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "group flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden",
+                pathname === item.href
+                  ? "bg-primary/10 text-primary border border-primary/10 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+                  : "text-white/40 hover:text-white hover:bg-white/[0.02] border border-transparent"
+              )}
             >
-              <div className={cn(
-                "relative flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300",
-                isActive 
-                  ? "text-white" 
-                  : "text-gray-500 hover:text-white"
-              )}>
-                {/* Active Background */}
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 bg-white/5 rounded-xl border border-white/10"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-
-                {/* Icon */}
-                <link.icon className={cn(
-                  "w-5 h-5 relative z-10 transition-colors duration-300",
-                  isActive ? "text-amber-500" : "group-hover:text-amber-500"
-                )} />
-
-                {/* Text */}
-                <span className="relative z-10 font-medium tracking-wide text-sm">
-                  {link.name}
-                </span>
-
-                {/* Active Indicator Line */}
-                {isActive && (
-                    <motion.div 
-                        layoutId="active-indicator"
-                        className="absolute right-3 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-                    />
-                )}
-              </div>
+              <item.icon className={cn("w-5 h-5 transition-transform group-hover:scale-110", pathname === item.href ? "text-primary" : "text-white/20 group-hover:text-white/60")} />
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]">{item.name}</span>
+              {pathname === item.href && (
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-l-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+              )}
             </Link>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* Support */}
+        <div className="space-y-2">
+          <p className="px-4 text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">Support Hub</p>
+          {supportNav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "group flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300",
+                pathname === item.href
+                  ? "bg-primary/10 text-primary border border-primary/10"
+                  : "text-white/40 hover:text-white hover:bg-white/[0.02] border border-transparent"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5", pathname === item.href ? "text-primary" : "text-white/20 group-hover:text-white/60")} />
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]">{item.name}</span>
+            </Link>
+          ))}
+        </div>
       </nav>
 
-      {/* Footer */}
-      <div className="p-6 border-t border-white/5">
-        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-xl p-4 border border-white/5 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-amber-500/5 group-hover:bg-amber-500/10 transition-colors" />
-            <p className="text-xs text-gray-400 relative z-10">
-                პრობლემის შემთხვევაში მოგვწერეთ
-            </p>
-            <Link href="/contact" className="mt-2 block text-xs font-bold text-amber-500 relative z-10 hover:underline">
-                მხარდაჭერა &rarr;
-            </Link>
-        </div>
-        <p className="text-[10px] text-center text-gray-700 mt-4 uppercase tracking-widest">
-            © 2025 Prekebi
-        </p>
+      {/* Admin Footer */}
+      <div className="p-4 pt-8">
+        {isAdmin && (
+          <Link href="/admin" className="group flex items-center gap-4 px-4 py-4 bg-white/5 border border-white/5 rounded-[1.5rem] hover:border-primary/50 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 group-hover:bg-primary/10 transition-colors">
+              <LayoutDashboard className="w-5 h-5 text-white/20 group-hover:text-primary transition-colors" />
+            </div>
+            <div>
+              <p className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Admin Panel</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest leading-none">Secure Mode</span>
+              </div>
+            </div>
+          </Link>
+        )}
       </div>
     </aside>
   );

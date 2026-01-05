@@ -1,55 +1,72 @@
-import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageHeader from "@/components/PageHeader";
+import { ShieldAlert, UserX, Clock, FileText } from "lucide-react";
 
-export default async function BanlistPage() {
-  const blockedTeams = await prisma.team.findMany({
-    where: {
-      status: "BLOCKED",
-    },
-    orderBy: {
-      updatedAt: "desc",
-    },
-  });
-
+export default function BanlistPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-white">დაბლოკილი გუნდები</h1>
-        <p className="text-gray-400">წესების დარღვევის გამო დაბლოკილი გუნდების სია</p>
+    <div className="space-y-8 pb-20">
+      <PageHeader
+        title="BANLIST"
+        subtitle="ფეირ-პლეის პოლიტიკის დარღვევისთვის ბლოკირებული გუნდებისა და მოთამაშეების სია."
+      />
+
+      <div className="bg-[#06070a]/50 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-md">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/5 bg-white/5">
+                <th className="px-8 py-5 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">დამრღვევი</th>
+                <th className="px-8 py-5 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">მიზეზი</th>
+                <th className="px-8 py-5 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">ვადა</th>
+                <th className="px-8 py-5 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">სტატუსი</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {[
+                { name: "Team Toxic", reason: "Teaming during Scrims", duration: "PERMANENT", status: "BANNED" },
+                { name: "Cheater123", reason: "Use of unauthorized software", duration: "PERMANENT", status: "BANNED" },
+                { name: "Unfair Squad", reason: "Disrespect towards admins", duration: "30 DAYS", status: "SUSPENDED" },
+              ].map((ban, i) => (
+                <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                        <UserX className="w-5 h-5 text-rose-500" />
+                      </div>
+                      <span className="text-sm font-black text-white uppercase tracking-tight">{ban.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-white/20" />
+                      <span className="text-sm font-medium text-white/60">{ban.reason}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-white/20" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{ban.duration}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${ban.status === 'BANNED' ? 'bg-rose-500/20 text-rose-500 border border-rose-500/20' : 'bg-amber-500/20 text-amber-500 border border-amber-500/20'
+                      }`}>
+                      {ban.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {blockedTeams.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-400 bg-zinc-900/50 rounded-lg border border-zinc-800">
-            ამ დროისთვის არცერთი გუნდი არ არის დაბლოკილი
-          </div>
-        ) : (
-          blockedTeams.map((team) => (
-            <Card key={team.id} className="bg-red-950/20 border-red-900/50">
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center text-red-400">
-                  <span>{team.name}</span>
-                  <span className="text-sm font-normal bg-red-900/50 px-2 py-1 rounded">
-                    {team.tag}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-400">
-                    <span className="font-semibold text-gray-300">მიზეზი:</span>
-                    <p className="mt-1 text-red-200/80">
-                      {team.blockReason || "მიზეზი მითითებული არ არის"}
-                    </p>
-                  </div>
-                  <div className="text-xs text-gray-500 pt-2 border-t border-red-900/30">
-                    დაბლოკვის თარიღი: {new Date(team.updatedAt).toLocaleDateString("ka-GE")}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+      <div className="flex items-center gap-4 p-6 bg-rose-500/5 border border-rose-500/10 rounded-[2rem]">
+        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center">
+          <ShieldAlert className="w-6 h-6 text-rose-500" />
+        </div>
+        <p className="text-xs font-medium text-rose-500/80 leading-relaxed">
+          ჩვენ ვიცავთ ფეირ-პლეის პრინციპებს. ნებისმიერი სახის დარღვევა გამოიწვევს დაუყოვნებლივ ბლოკირებას.
+        </p>
       </div>
     </div>
   );
