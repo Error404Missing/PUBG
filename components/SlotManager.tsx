@@ -1,10 +1,7 @@
 'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, UserPlus, Users, Save, X, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/components/providers/ToastProvider";
+import { useEffect } from "react";
 
 interface SlotManagerProps {
     scrim: any;
@@ -16,6 +13,12 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
     const [slots, setSlots] = useState<any[]>(scrim.slots);
     const [loading, setLoading] = useState<number | null>(null); // slot number being updated
     const [isClearing, setIsClearing] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const { showToast } = useToast();
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Create array of 1 to maxTeams
     const allSlots = Array.from({ length: scrim.maxTeams }, (_, i) => i + 1);
@@ -29,22 +32,23 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ slotNumber, teamId }),
             });
-            
+
             if (res.ok) {
                 const newSlot = await res.json();
-                // We need the team info, which isn't in the response fully, so we find it locally
                 const team = teams.find(t => t.id === teamId);
                 const completeSlot = { ...newSlot, team };
-                
+
                 setSlots(prev => {
-                    // Remove any existing slot with this number
                     const filtered = prev.filter(s => s.slotNumber !== slotNumber && s.teamId !== teamId);
                     return [...filtered, completeSlot];
                 });
+                showToast(`სლოტი #${slotNumber} შევსებულია: ${team.name}`, "success");
+            } else {
+                const err = await res.json();
+                showToast(err.message || "შეცდომა", "error");
             }
         } catch (e) {
-            console.error(e);
-            alert("შეცდომა");
+            showToast("კავშირის შეცდომა", "error");
         } finally {
             setLoading(null);
         }
@@ -57,12 +61,13 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
             const res = await fetch(`/api/admin/scrims/${scrim.id}/slots?slot=${slotNumber}`, {
                 method: 'DELETE',
             });
-            
+
             if (res.ok) {
                 setSlots(prev => prev.filter(s => s.slotNumber !== slotNumber));
+                showToast(`გუნდი ამოგდებულია #${slotNumber} სლოტიდან`, "info");
             }
         } catch (e) {
-            console.error(e);
+            showToast("შეცდომა", "error");
         } finally {
             setLoading(null);
         }
@@ -74,8 +79,9 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
         try {
             await fetch(`/api/admin/scrims/${scrim.id}/slots`, { method: 'DELETE' });
             setSlots([]);
+            showToast("ყველა სლოტი გასუფთავებულია", "success");
         } catch (e) {
-            console.error(e);
+            showToast("შეცდომა", "error");
         } finally {
             setIsClearing(false);
         }
@@ -90,18 +96,18 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
                         სლოტების მართვა
                     </h1>
                     <p className="text-gray-400 mt-1">
-                        {new Date(scrim.startTime).toLocaleString('ka-GE')} | {scrim.map}
+                        {mounted ? new Date(scrim.startTime).toLocaleString('ka-GE') : 'Loading...'} | {scrim.map}
                     </p>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                     <div className="px-4 py-2 bg-neutral-800 rounded-lg border border-neutral-700">
                         <span className="text-gray-400 text-sm">შევსებული:</span>
                         <span className="ml-2 text-xl font-bold text-amber-500">{slots.length}</span>
                         <span className="text-gray-500">/{scrim.maxTeams}</span>
                     </div>
-                    
-                    <button 
+
+                    <button
                         onClick={clearAll}
                         disabled={isClearing || slots.length === 0}
                         className="px-4 py-2 bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-900/50 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -109,8 +115,8 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
                         <Trash2 className="w-4 h-4" />
                         გასუფთავება
                     </button>
-                    
-                    <button 
+
+                    <button
                         onClick={() => router.push('/admin/scrims')}
                         className="px-4 py-2 bg-neutral-800 text-gray-300 hover:bg-neutral-700 rounded-lg transition-colors"
                     >
@@ -132,8 +138,8 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
                             transition={{ delay: slotNum * 0.01 }}
                             className={cn(
                                 "relative group rounded-xl border p-4 transition-all duration-300",
-                                slot 
-                                    ? "bg-neutral-900/80 border-amber-500/20 hover:border-amber-500/50 shadow-lg shadow-amber-900/5" 
+                                slot
+                                    ? "bg-neutral-900/80 border-amber-500/20 hover:border-amber-500/50 shadow-lg shadow-amber-900/5"
                                     : "bg-neutral-900/30 border-white/5 border-dashed hover:border-white/20 hover:bg-neutral-900/50"
                             )}
                         >
@@ -156,7 +162,7 @@ export default function SlotManager({ scrim, teams }: SlotManagerProps) {
                                         </h3>
                                         <p className="text-xs text-amber-500 font-mono">{slot.team.tag}</p>
                                     </div>
-                                    
+
                                     <button
                                         onClick={() => removeTeam(slotNum)}
                                         disabled={isUpdating}

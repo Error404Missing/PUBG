@@ -1,118 +1,194 @@
+"use client";
+
+import { motion } from "framer-motion";
+import {
+  Shield,
+  Target,
+  Zap,
+  Trophy,
+  ArrowRight,
+  ChevronRight,
+  Activity,
+  Users,
+  Calendar
+} from "lucide-react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { AnimatedButton } from "@/components/ui/AnimatedButton";
 
-export const dynamic = 'force-dynamic';
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.3
+    }
+  }
+};
 
-export default async function Home() {
-  let scrims: any[] = [];
-  const config: Record<string, string> = {};
-  let registeredTeams = 0;
-  let finishedScrims = 0;
-  try {
-    scrims = await prisma.scrim.findMany({
-      where: { status: "OPEN" },
-      orderBy: { startTime: 'asc' },
-      take: 3
-    });
-    const configItems = await prisma.systemConfig.findMany();
-    configItems.forEach(i => config[i.key] = i.value);
-    registeredTeams = await prisma.team.count({ where: { status: "APPROVED" } });
-    finishedScrims = await prisma.scrim.count({ where: { status: "FINISHED" } });
-  } catch {}
-  const title = config.homepage_title || "PUBG SCRIMS — კონკურენტული ყოველდღიური სკრიმები";
-  const subtitle = config.homepage_subtitle || "შექმენი გუნდი, დაიკავე სლოტი და მოიგე";
-  const marketing = config.homepage_marketing || "ვარჯიში, კონკურენცია და განვითარება ერთ სივრცეში. Stable სერვერები, გამართული ორგანიზაცია და გამჭვირვალე წესები. შეუერთდი ქართულ PUBG კომუნიტეტის ყველაზე აქტიურ სკრიმ პლატფორმას.";
-  const announcement = config.announcement || "";
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
+};
 
+export default function HomePage() {
   return (
-    <div className="space-y-8">
-      {announcement && (
-        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl p-4">
-          <p className="text-sm">{announcement}</p>
-        </div>
-      )}
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-24 pb-20"
+    >
+      {/* Hero Section */}
+      <section className="relative pt-12">
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
 
-      <section className="bg-gradient-to-br from-[#0f1014] to-black border border-white/5 rounded-2xl p-10 shadow-xl">
-        <div className="space-y-4">
-          <h1 className="text-5xl font-black text-white tracking-tight">{title}</h1>
-          <p className="text-xl text-amber-500 font-bold">{subtitle}</p>
-          <p className="text-gray-300 max-w-3xl">{marketing}</p>
-        </div>
-        <div className="mt-8 flex flex-wrap gap-4">
-           <Link href="/teams" className="bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 px-6 rounded-lg transition">
-             გუნდის რეგისტრაცია
-           </Link>
-           <Link href="/schedule" className="bg-neutral-800 hover:bg-neutral-700 text-white font-bold py-3 px-6 rounded-lg transition">
-             განრიგი
-           </Link>
-           <Link href="/help" className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-gray-300 font-bold py-3 px-6 rounded-lg transition">
-             წესები
-           </Link>
-        </div>
+        <div className="relative text-center space-y-8">
+          <motion.div variants={item} className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+            <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#3b82f6]" />
+            <span className="text-[10px] font-bold text-cyber-muted uppercase tracking-[0.2em]">Platform Version 2.0 // Active</span>
+          </motion.div>
 
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-neutral-900/60 border border.white/5 rounded-xl p-6">
-            <p className="text-sm text-gray-400">რეგისტრირებული გუნდები</p>
-            <p className="text-4xl font-black text-amber-500">{registeredTeams}</p>
-          </div>
-          <div className="bg-neutral-900/60 border border-white/5 rounded-xl p-6">
-            <p className="text-sm text-gray-400">დასრულებული სკრიმები</p>
-            <p className="text-4xl font-black text-blue-500">{finishedScrims}</p>
-          </div>
-          <div className="bg-neutral-900/60 border border-white/5 rounded-xl p-6">
-            <p className="text-sm text-gray-400">აქტიური რეგისტრაციები</p>
-            <p className="text-4xl font-black text-green-500">{scrims.length}</p>
-          </div>
+          <motion.h1
+            variants={item}
+            className="text-7xl md:text-9xl font-black text-white tracking-tighter uppercase leading-[0.8] mb-4"
+          >
+            Tactical <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary animate-gradient">Superiority</span>
+          </motion.h1>
+
+          <motion.p variants={item} className="text-cyber-muted text-xl max-w-2xl mx-auto font-medium leading-relaxed">
+            Elite PUBG Scrims პლატფორმა. შეუერთდი საუკეთესოებს, დახვეწე შენი ტაქტიკა და მოიპოვე აღიარება.
+          </motion.p>
+
+          <motion.div variants={item} className="flex flex-wrap justify-center gap-6 pt-8">
+            <Link href="/teams/register">
+              <AnimatedButton className="h-16 px-10 text-lg group">
+                გუნდის რეგისტრაცია
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </AnimatedButton>
+            </Link>
+            <Link href="/schedule">
+              <button className="h-16 px-10 text-lg font-bold text-white border border-white/10 rounded-xl hover:bg-white/5 transition-all">
+                განრიგი
+              </button>
+            </Link>
+          </motion.div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-         {/* Active Scrims */}
-         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                მიმდინარე რეგისტრაციები
-            </h3>
-            {scrims.length > 0 ? (
-                <ul className="space-y-4">
-                    {scrims.map(scrim => (
-                        <li key={scrim.id} className="bg-neutral-800 p-4 rounded-lg flex justify-between items-center">
-                            <div>
-                                <p className="font-bold">{scrim.map}</p>
-                                <p className="text-sm text-gray-400">{new Date(scrim.startTime).toLocaleString('ka-GE')}</p>
-                            </div>
-                            <Link href={`/schedule`} className="text-yellow-500 text-sm hover:underline">
-                                ნახვა
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p className="text-gray-500">ამ მომენტისთვის რეგისტრაცია არ მიმდინარეობს.</p>
-            )}
-         </div>
-
-         {/* Latest News / Info */}
-         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-            <h3 className="text-xl font-bold mb-4">სიახლეები</h3>
-            <div className="space-y-4 text-gray-400">
-                <p>• მესამე ტალღა დაიწყება მალე — მოასწარით რეგისტრაცია.</p>
-                <p>• VIP გუნდებისთვის გარანტირებული სლოტები და პრიორიტეტი.</p>
-                <p>• Discord-ზე ხდება ყველა აქტიური ანონსი — შემოგვიერთდით.</p>
+      {/* Stats Grid */}
+      <motion.section variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: "აქტიური გუნდები", value: "120+", icon: Users, color: "text-primary" },
+          { label: "დღიური სკრიმები", value: "24", icon: Activity, color: "text-secondary" },
+          { label: "ჩატარებული მატჩები", value: "5000+", icon: Trophy, color: "text-amber-500" },
+          { label: "მომლოდინე რეგისტრაციები", value: "8", icon: Calendar, color: "text-cyan-500" },
+        ].map((stat, i) => (
+          <div key={i} className="group p-8 rounded-3xl bg-[#06070a] border border-white/5 relative overflow-hidden transition-all duration-300 hover:border-white/20">
+            <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
+              <stat.icon className="w-16 h-16" />
             </div>
-         </div>
-         
-         {/* Why Join */}
-         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-            <h3 className="text-xl font-bold mb-4">რატომ ჩვენ?</h3>
-            <ul className="space-y-3 text-gray-400">
-              <li>• გამართული სლოტების სისტემა და ადვილად მართვადი პანელი</li>
-              <li>• Room Info მენეჯერებისთვის ავტომატურად გამოჩნდება</li>
-              <li>• შედეგების არქივი და გამჭვირვალობა</li>
-            </ul>
-            <Link href="/teams" className="mt-4 inline-block text-amber-500 hover:underline">დარეგისტრირდი ახლავე →</Link>
-         </div>
+            <p className="text-cyber-muted text-xs font-bold uppercase tracking-widest mb-2">{stat.label}</p>
+            <h3 className={`text-4xl font-black text-white ${stat.color}`}>{stat.value}</h3>
+          </div>
+        ))}
+      </motion.section>
+
+      {/* Main Content Areas */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Active Registrations */}
+        <motion.div variants={item} className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+              <span className="w-2 h-6 bg-primary rounded-sm" />
+              მიმდინარე რეგისტრაციები
+            </h2>
+            <Link href="/schedule" className="text-primary text-xs font-bold uppercase tracking-widest hover:underline flex items-center gap-1">
+              ყველას ნახვა <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="space-y-4">
+            {[1, 2].map((_, i) => (
+              <div key={i} className="p-6 rounded-2xl bg-[#06070a] border border-white/5 flex items-center justify-between group hover:border-primary/30 transition-all duration-500">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-xl bg-white/5 flex flex-col items-center justify-center border border-white/5 font-black uppercase text-xs">
+                    <span className="text-primary text-xl">20:00</span>
+                    <span className="text-[8px] text-cyber-muted">Today</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-lg uppercase mb-1">Elite Day Scrims</h3>
+                    <div className="flex gap-4 text-xs text-cyber-muted font-medium">
+                      <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Erangel</span>
+                      <span className="flex items-center gap-1"><Target className="w-3 h-3" /> 16 Slots</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="text-right">
+                    <p className="text-xs text-cyber-muted font-bold uppercase mb-1">რეგისტრირებულია</p>
+                    <p className="text-white font-black">12 / 16</p>
+                  </div>
+                  <button className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all">
+                    <ArrowRight className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Tactical Updates / VIP Info */}
+        <motion.div variants={item} className="space-y-6">
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3 px-2">
+            <span className="w-2 h-6 bg-secondary rounded-sm" />
+            ტაქტიკური სტატუსი
+          </h2>
+
+          <div className="rounded-3xl bg-gradient-to-b from-primary/20 to-transparent p-1 border border-primary/20">
+            <div className="bg-[#06070a] rounded-[22px] p-8 space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Zap className="text-primary animate-pulse" />
+                <h3 className="text-white font-bold uppercase tracking-wider">VIP პრივილეგიები</h3>
+              </div>
+              <ul className="space-y-4">
+                {[
+                  "გარანტირებული სლოტი",
+                  "ავტომატური დადასტურება",
+                  "ექსკლუზიური ტურნირები",
+                  "ქეისის გახსნის შანსი"
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm text-cyber-muted font-medium">
+                    <CheckIcon className="w-4 h-4 text-success" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/vip" className="block">
+                <button className="w-full py-4 bg-white/5 border border-white/10 rounded-xl text-white font-bold uppercase tracking-widest text-xs hover:bg-primary hover:text-black hover:border-primary transition-all duration-300">
+                  გაიგე მეტი
+                </button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
+  );
+}
+
+function CheckIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={3}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
   );
 }

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useToast } from "@/components/providers/ToastProvider";
 
 export default function DeleteResultButton({ resultId }: { resultId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   async function handleDelete() {
     if (!confirm("ნამდვილად გსურთ შედეგის წაშლა?")) return;
@@ -18,20 +19,20 @@ export default function DeleteResultButton({ resultId }: { resultId: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.message || "შედეგის წაშლა ვერ მოხერხდა");
+        showToast(data.message || "შედეგის წაშლა ვერ მოხერხდა", "error");
       } else {
+        showToast("შედეგი წაშლილია", "success");
         router.refresh();
       }
     } catch (e) {
-      console.error(e);
-      alert("შეცდომა");
+      showToast("კავშირის შეცდომა", "error");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <button 
+    <button
       onClick={handleDelete}
       disabled={loading}
       className="text-xs text-red-500 hover:text-red-400 underline disabled:opacity-50"
