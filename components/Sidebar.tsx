@@ -3,20 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  Home,
-  Calendar,
-  Trophy,
-  Ban,
-  Users,
-  Crown,
-  HelpCircle,
+import { 
+  Home, 
+  Calendar, 
+  Trophy, 
+  Ban, 
+  Users, 
+  Crown, 
+  HelpCircle, 
   Phone,
-  Gamepad2,
-  Gift,
-  Settings
+  Gamepad2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Static stats for client component (passed as props or fetched via API in real app)
+// For now, we will simplify the sidebar to be a pure navigation component
+// Stats should be in the dashboard or a separate header component
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -26,80 +28,90 @@ export default function Sidebar() {
     { name: "განრიგი", href: "/schedule", icon: Calendar },
     { name: "შედეგები", href: "/results", icon: Trophy },
     { name: "გუნდები", href: "/teams", icon: Users },
-    { name: "ROOM INFO", href: "/room-info", icon: Gamepad2 },
-    { name: "ქეისის გახსნა", href: "/case", icon: Gift },
-    { name: "BANLIST", href: "/banlist", icon: Ban },
+    { name: "Room Info", href: "/room-info", icon: Users },
+    { name: "დაბლოკილი", href: "/banlist", icon: Ban },
     { name: "VIP", href: "/vip", icon: Crown },
     { name: "დახმარება", href: "/help", icon: HelpCircle },
     { name: "კონტაქტი", href: "/contact", icon: Phone },
   ];
 
   return (
-    <aside className="hidden lg:flex w-[280px] h-screen fixed left-0 top-0 bg-[#06070a]/80 backdrop-blur-2xl border-r border-white/5 flex-col z-50">
+    <aside className="w-64 h-screen fixed left-0 top-0 bg-[#0f1014]/95 backdrop-blur-xl border-r border-white/5 flex flex-col z-50">
       {/* Logo Area */}
-      <div className="p-8 flex items-center gap-4">
-        <div className="relative group">
-          <div className="absolute -inset-2 bg-gradient-to-r from-primary to-secondary rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-500" />
-          <div className="relative w-12 h-12 bg-black border border-white/10 rounded-xl flex items-center justify-center shadow-2xl">
-            <Gamepad2 className="text-primary w-7 h-7" />
-          </div>
+      <div className="p-8 flex items-center gap-3">
+        <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20">
+            <Gamepad2 className="text-black w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-white tracking-widest leading-none">PREKEBI</h1>
-          <p className="text-[10px] text-secondary font-bold tracking-[0.3em] mt-1 uppercase">Tactical Portal</p>
+            <h1 className="text-xl font-black text-white tracking-wider">PUBG</h1>
+            <p className="text-xs text-amber-500 font-bold tracking-[0.2em]">SCRIMS</p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-6 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
         {links.map((link) => {
           const isActive = pathname === link.href;
           return (
-            <Link key={link.href} href={link.href} className="block group relative">
+            <Link
+              key={link.href}
+              href={link.href}
+              className="relative block group"
+            >
               <div className={cn(
-                "flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-300 relative overflow-hidden",
-                isActive
-                  ? "bg-primary/10 text-white shadow-[inset_0_0_20px_rgba(59,130,246,0.1)]"
-                  : "text-cyber-muted hover:text-white hover:bg-white/5"
+                "relative flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300",
+                isActive 
+                  ? "text-white" 
+                  : "text-gray-500 hover:text-white"
               )}>
-                {/* Active Indicator Slide */}
+                {/* Active Background */}
                 {isActive && (
                   <motion.div
-                    layoutId="active-pill"
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary"
+                    layoutId="sidebar-active"
+                    className="absolute inset-0 bg-white/5 rounded-xl border border-white/10"
+                    initial={false}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
 
+                {/* Icon */}
                 <link.icon className={cn(
-                  "w-5 h-5 transition-transform duration-300 group-hover:scale-110",
-                  isActive ? "text-primary filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "text-cyber-muted"
+                  "w-5 h-5 relative z-10 transition-colors duration-300",
+                  isActive ? "text-amber-500" : "group-hover:text-amber-500"
                 )} />
-                <span className="font-bold tracking-wide text-sm uppercase">{link.name}</span>
 
-                {/* Hover Glow */}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
+                {/* Text */}
+                <span className="relative z-10 font-medium tracking-wide text-sm">
+                  {link.name}
+                </span>
+
+                {/* Active Indicator Line */}
+                {isActive && (
+                    <motion.div 
+                        layoutId="active-indicator"
+                        className="absolute right-3 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
+                    />
+                )}
               </div>
             </Link>
           );
         })}
       </nav>
 
-      {/* Footer / System Status */}
-      <div className="p-6 border-t border-white/5 space-y-4">
-        <Link href="/admin">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors group cursor-pointer">
-            <Settings className="w-4 h-4 text-primary group-hover:rotate-90 transition-transform duration-500" />
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest">Admin Panel</span>
-          </div>
-        </Link>
-
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-black/40 border border-white/5">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_10px_#10b981]" />
-          <span className="text-[10px] font-mono text-cyber-muted uppercase tracking-tighter">
-            Secure Node: iad-1b // Active
-          </span>
+      {/* Footer */}
+      <div className="p-6 border-t border-white/5">
+        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-xl p-4 border border-white/5 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-amber-500/5 group-hover:bg-amber-500/10 transition-colors" />
+            <p className="text-xs text-gray-400 relative z-10">
+                პრობლემის შემთხვევაში მოგვწერეთ
+            </p>
+            <Link href="/contact" className="mt-2 block text-xs font-bold text-amber-500 relative z-10 hover:underline">
+                მხარდაჭერა &rarr;
+            </Link>
         </div>
+        <p className="text-[10px] text-center text-gray-700 mt-4 uppercase tracking-widest">
+            © 2025 Prekebi
+        </p>
       </div>
     </aside>
   );

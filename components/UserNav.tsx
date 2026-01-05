@@ -1,7 +1,6 @@
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import Link from "next/link";
-import { LogOut, User as UserIcon, Shield, LogIn, UserPlus } from "lucide-react";
-import { handleSignOut } from "@/app/actions/auth-actions";
+import { LogOut, User as UserIcon, Shield } from "lucide-react";
 
 export default async function UserNav() {
   let session: Awaited<ReturnType<typeof auth>> | null = null;
@@ -14,65 +13,50 @@ export default async function UserNav() {
   if (!session?.user) {
     return (
       <div className="flex space-x-4 items-center">
-        <Link
-          href="/login"
-          className="flex items-center gap-2 text-[10px] font-black text-white/60 hover:text-white uppercase tracking-[0.2em] transition-colors"
-        >
-          <LogIn className="w-3 h-3" />
-          შესვლა
-        </Link>
-        <Link
-          href="/register"
-          className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] transition-all"
-        >
-          <UserPlus className="w-3 h-3" />
-          რეგისტრაცია
-        </Link>
+        <Link href="/login" className="text-sm font-medium hover:text-yellow-500">შესვლა</Link>
+        <Link href="/register" className="text-sm font-medium bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-black">რეგისტრაცია</Link>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center space-x-6">
+    <div className="flex items-center space-x-4">
+        {/* User Info */}
+      <div className="flex items-center space-x-2">
+        {session.user.image ? (
+            <img src={session.user.image} alt="Profile" className="w-8 h-8 rounded-full" />
+        ) : (
+            <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center">
+                <span className="text-sm font-bold">{session.user.username?.[0]?.toUpperCase()}</span>
+            </div>
+        )}
+        <span className="text-sm font-medium">{session.user.username}</span>
+      </div>
+      
       {/* Admin Link */}
       {(session.user.role === 'ADMIN' || session.user.role === 'FOUNDER') && (
-        <Link
-          href="/admin"
-          className="flex items-center gap-2 px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-md text-[10px] font-black uppercase tracking-[0.2em] transition-all"
-        >
-          <Shield className="w-3 h-3" />
-          Admin
+        <Link href="/admin" className="text-xs bg-red-900 text-red-200 px-2 py-1 rounded flex items-center gap-1 hover:bg-red-800">
+            <Shield className="w-3 h-3" />
+            Admin
         </Link>
       )}
+        
+        {/* Profile Link */}
+       <Link href="/profile" className="text-gray-400 hover:text-white" title="Profile">
+          <UserIcon className="w-5 h-5" />
+       </Link>
 
-      {/* User Info */}
-      <div className="flex items-center space-x-3">
-        <div className="text-right hidden sm:block">
-          <p className="text-[10px] font-black text-white uppercase tracking-wider">{session.user.username}</p>
-          <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest">{session.user.role || 'USER'}</p>
-        </div>
-
-        <Link href="/profile" className="relative group">
-          {session.user.image ? (
-            <img src={session.user.image} alt="Profile" className="w-9 h-9 rounded-xl border border-white/10 group-hover:border-primary/50 transition-colors object-cover" />
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-primary/50 transition-colors">
-              <span className="text-xs font-black text-primary/80">{session.user.username?.[0]?.toUpperCase()}</span>
-            </div>
-          )}
-          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-[#020305] rounded-full" />
-        </Link>
-      </div>
-
-      {/* Sign Out */}
-      <form action={handleSignOut}>
-        <button
-          title="Sign Out"
-          className="p-2 text-white/30 hover:text-rose-500 transition-colors"
+       {/* Sign Out */}
+       <form
+          action={async () => {
+            "use server"
+            await signOut()
+          }}
         >
-          <LogOut className="w-5 h-5" />
-        </button>
-      </form>
+          <button className="text-gray-400 hover:text-white pt-1" title="Sign Out">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </form>
     </div>
   );
 }

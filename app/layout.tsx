@@ -3,17 +3,14 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import UserNav from "@/components/UserNav";
-import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
-import { ToastProvider } from "@/components/providers/ToastProvider";
-import { AuthProvider } from "@/components/providers/AuthProvider";
 
 export const dynamic = 'force-dynamic';
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-geist-sans" });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Prekebi Scrims",
-  description: "Elite PUBG Scrims Platform",
+  title: "PUBG Scrims Registration",
+  description: "Register your team for PUBG Scrims",
 };
 
 export default function RootLayout({
@@ -22,27 +19,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ka" className="dark">
-      <body className={`${inter.variable} font-sans flex min-h-screen relative overflow-hidden bg-cyber-bg text-cyber-text antialiased selection:bg-primary/30 selection:text-white`}>
-        <AuthProvider>
-          <ToastProvider>
-            <AnimatedBackground />
-
-            {/* Sidebar z-index must be higher than content */}
-            <div className="relative z-50">
-              <Sidebar />
-            </div>
-
-            {/* Main Content Area */}
-            <main className="flex-1 transition-all duration-500 relative z-10 h-screen overflow-y-auto lg:ml-[280px]">
-              <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-                <div className="animate-slide-up">
-                  {children}
-                </div>
-              </div>
-            </main>
-          </ToastProvider>
-        </AuthProvider>
+    <html lang="ka">
+      <body className={`${inter.className} flex bg-black text-gray-100 min-h-screen`}>
+        {/* Sidebar */}
+        <Sidebar />
+        
+        {/* Main Content */}
+        <main className="flex-1 ml-64 p-8">
+            <header className="flex justify-between items-center mb-8 pb-4 border-b border-neutral-800">
+                <h2 className="text-xl font-bold text-gray-400">Welcome</h2>
+                <UserNav />
+            </header>
+            {children}
+        </main>
       </body>
     </html>
   );
