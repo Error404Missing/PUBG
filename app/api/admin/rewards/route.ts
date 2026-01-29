@@ -1,104 +1,101 @@
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-    const session = await auth();
-    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'FOUNDER') {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+  const user = await getUser();
+  if (user?.role !== 'ADMIN' && user?.role !== 'FOUNDER') {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
 
-    const rewards = await prisma.caseReward.findMany({
-        where: { status: 'PENDING' },
-        orderBy: { createdAt: 'desc' }
-    });
+  const supabase = await createClient();
 
-    return NextResponse.json(rewards);
+  const { data: rewards, error } = await supabase
+    .from('case_rewards')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Failed to fetch rewards" }, { status: 500 });
+  }
+
+  return NextResponse.json(rewards);
 }
 
 export async function PATCH(req: Request) {
-    const session = await auth();
-    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'FOUNDER') {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const user = await getUser();
+  if (user?.role !== 'ADMIN' && user?.role !== 'FOUNDER') {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { id, action } = await req.json();
+
+    const supabase = await createClient();
+
+    const { data: reward } = await supabase
+      .from('case_rewards')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!reward) {
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
 
-    try {
-        const { id, action } = await req.json();
+    if (action === 'APPROVE') {
+      // Update reward status
+      await supabase
+        .from('case_rewards')
+        .update({ rarity: 'APPROVED' })
+        .eq('id', id);
 
-        if (action === 'APPROVE') {
-            const reward = await prisma.caseReward.findUnique({
-                where: { id },
-                include: { userId: true } // Won't work because relation missing, use userId field
-            });
+      // Add coins to user
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('coins')
+        .eq('username', reward.name)
+        .single();
 
-            // Fixed fetching reward
-            const targetReward = await prisma.caseReward.findUnique({ where: { id } });
-            if (!targetReward) return NextResponse.json({ message: "Not found" }, { status: 404 });
+      if (profile) {
+        await supabase
+          .from('profiles')
+          .update({ coins: (profile.coins || 0) + reward.coins })
+          .eq('username', reward.name);
+      }
 
-            const user = await prisma.user.findUnique({
-                where: { id: targetReward.userId },
-                include: { team: true }
-            });
-            if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 });
+      // Log
+      await supabase
+        .from('audit_logs')
+        .insert({
+          action: 'APPROVE_REWARD',
+          user_id: user.id,
+          entity_type: 'case_reward',
+          entity_id: id,
+          details: { reward_name: reward.name, coins: reward.coins }
+        });
 
-            // Calculate VIP days
-            const days = parseInt(targetReward.type.split('_')[1]);
-            let newUntil = user.vipUntil ? new Date(user.vipUntil) : new Date();
-            if (newUntil < new Date()) newUntil = new Date();
-            newUntil.setDate(newUntil.getDate() + days);
+    } else if (action === 'REJECT') {
+      await supabase
+        .from('case_rewards')
+        .update({ rarity: 'REJECTED' })
+        .eq('id', id);
 
-            // Update User
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { vipUntil: newUntil }
-            });
-
-            // Update Team if exists
-            if (user.team) {
-                await prisma.team.update({
-                    where: { id: user.team.id },
-                    data: { isVip: true }
-                });
-            }
-
-            // Mark Reward as Approved
-            await prisma.caseReward.update({
-                where: { id },
-                data: { status: 'APPROVED' }
-            });
-
-            // Log
-            await prisma.auditLog.create({
-                data: {
-                    action: 'APPROVE_REWARD',
-                    userId: session.user.id,
-                    username: session.user.username || 'Admin',
-                    details: `Approved ${targetReward.type} for ${targetReward.username}`
-                }
-            });
-
-        } else if (action === 'REJECT') {
-            const targetReward = await prisma.caseReward.findUnique({ where: { id } });
-            if (!targetReward) return NextResponse.json({ message: "Not found" }, { status: 404 });
-
-            await prisma.caseReward.update({
-                where: { id },
-                data: { status: 'REJECTED' }
-            });
-
-            // Log
-            await prisma.auditLog.create({
-                data: {
-                    action: 'REJECT_REWARD',
-                    userId: session.user.id,
-                    username: session.user.username || 'Admin',
-                    details: `Rejected reward for ${targetReward.username}`
-                }
-            });
-        }
-
-        return NextResponse.json({ message: "Success" });
-    } catch (error: any) {
-        return NextResponse.json({ message: error.message }, { status: 500 });
+      // Log
+      await supabase
+        .from('audit_logs')
+        .insert({
+          action: 'REJECT_REWARD',
+          user_id: user.id,
+          entity_type: 'case_reward',
+          entity_id: id,
+          details: { reward_name: reward.name }
+        });
     }
+
+    return NextResponse.json({ message: "Success" });
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message }, { status: 500 });
+  }
 }

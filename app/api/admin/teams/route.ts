@@ -1,10 +1,10 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function PATCH(req: Request) {
-  const session = await auth();
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'FOUNDER')) {
+  const user = await getUser();
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'FOUNDER')) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
@@ -12,60 +12,91 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { teamId, status, isVip, blockReason, blockDays, blockPermanent } = body;
 
-    const updateData: any = {};
-    if (status) updateData.status = status;
-    if (typeof isVip === 'boolean') updateData.isVip = isVip;
-    if (blockReason) updateData.blockReason = blockReason;
-    
+    const supabase = await createClient();
+
+    const updates: Record<string, any> = {
+      updated_at: new Date().toISOString()
+    };
+    if (status) updates.status = status;
+    if (typeof isVip === 'boolean') updates.is_vip = isVip;
+    if (blockReason) updates.block_reason = blockReason;
+
+    // Get team info
+    const { data: team } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('id', teamId)
+      .single();
+
+    if (!team) {
+      return NextResponse.json({ message: "Team not found" }, { status: 404 });
+    }
+
     // If approving, also make the leader a MANAGER
     if (status === 'APPROVED') {
-        const team = await prisma.team.findUnique({ where: { id: teamId } });
-        if (team) {
-            await prisma.user.update({
-                where: { id: team.leaderId },
-                data: { role: 'MANAGER' }
-            });
-            await prisma.systemConfig.deleteMany({ where: { key: `user:${team.leaderId}:block_until` } });
-            await prisma.systemConfig.deleteMany({ where: { key: `user:${team.leaderId}:create_block_until` } });
-        }
+      await supabase
+        .from('profiles')
+        .update({ role: 'MANAGER' })
+        .eq('id', team.owner_id);
+
+      // Clear blocks
+      await supabase
+        .from('system_config')
+        .delete()
+        .eq('key', `user:${team.owner_id}:block_until`);
+      await supabase
+        .from('system_config')
+        .delete()
+        .eq('key', `user:${team.owner_id}:create_block_until`);
     }
-    
-    // If blocking or rejecting, maybe revert role to GUEST if they were manager? 
-    // Let's keep it simple for now, maybe they manage other teams? (Oh wait, 1 team per user).
+
+    // If blocking or rejecting
     if (status === 'BLOCKED' || status === 'REJECTED') {
-        const team = await prisma.team.findUnique({ where: { id: teamId } });
-         if (team) {
-            // Check if user is not admin/founder before downgrading
-            const user = await prisma.user.findUnique({ where: { id: team.leaderId }});
-            if (user && user.role !== 'ADMIN' && user.role !== 'FOUNDER') {
-                await prisma.user.update({
-                    where: { id: team.leaderId },
-                    data: { role: 'GUEST' }
-                });
-            }
-            if (status === 'BLOCKED') {
-              const now = new Date();
-              let value = 'FOREVER';
-              if (!blockPermanent) {
-                const days = typeof blockDays === 'number' && blockDays > 0 ? blockDays : 1;
-                const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-                value = until.toISOString();
-              }
-              await prisma.systemConfig.upsert({
-                where: { key: `user:${team.leaderId}:block_until` },
-                update: { value },
-                create: { key: `user:${team.leaderId}:block_until`, value }
-              });
-            }
+      // Check if user is not admin/founder before downgrading
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', team.owner_id)
+        .single();
+
+      if (profile && profile.role !== 'ADMIN' && profile.role !== 'FOUNDER') {
+        await supabase
+          .from('profiles')
+          .update({ role: 'GUEST' })
+          .eq('id', team.owner_id);
+      }
+
+      if (status === 'BLOCKED') {
+        const now = new Date();
+        let value = 'FOREVER';
+        if (!blockPermanent) {
+          const days = typeof blockDays === 'number' && blockDays > 0 ? blockDays : 1;
+          const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+          value = until.toISOString();
         }
+        await supabase
+          .from('system_config')
+          .upsert({
+            key: `user:${team.owner_id}:block_until`,
+            value,
+            updated_at: new Date().toISOString()
+          });
+      }
     }
 
-    const team = await prisma.team.update({
-      where: { id: teamId },
-      data: updateData,
-    });
+    const { data: updatedTeam, error } = await supabase
+      .from('teams')
+      .update(updates)
+      .eq('id', teamId)
+      .select()
+      .single();
 
-    return NextResponse.json(team);
+    if (error) {
+      console.error(error);
+      return NextResponse.json({ message: "Failed to update team" }, { status: 500 });
+    }
+
+    return NextResponse.json(updatedTeam);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Internal Error" }, { status: 500 });
@@ -73,22 +104,36 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'FOUNDER')) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
-  
-    try {
-      const body = await req.json();
-      const { teamId } = body;
-  
-      await prisma.team.delete({
-        where: { id: teamId },
-      });
-  
-      return NextResponse.json({ message: "Team deleted" });
-    } catch (error) {
+  const user = await getUser();
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'FOUNDER')) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const { teamId } = body;
+
+    const supabase = await createClient();
+
+    // Remove team_id from all members
+    await supabase
+      .from('profiles')
+      .update({ team_id: null })
+      .eq('team_id', teamId);
+
+    const { error } = await supabase
+      .from('teams')
+      .delete()
+      .eq('id', teamId);
+
+    if (error) {
       console.error(error);
-      return NextResponse.json({ message: "Internal Error" }, { status: 500 });
+      return NextResponse.json({ message: "Failed to delete team" }, { status: 500 });
     }
+
+    return NextResponse.json({ message: "Team deleted" });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Internal Error" }, { status: 500 });
+  }
 }

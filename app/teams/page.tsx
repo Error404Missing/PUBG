@@ -1,6 +1,5 @@
 "use client";
 
-import { prisma } from "@/lib/prisma";
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Users, Shield, Star, Search, Filter } from "lucide-react";

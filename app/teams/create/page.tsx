@@ -1,11 +1,11 @@
 import CreateTeamForm from "@/components/CreateTeamForm";
-import { auth } from "@/auth";
+import { getUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function CreateTeamPage() {
-  const session = await auth();
+  const user = await getUser();
 
-  if (!session?.user) {
+  if (!user) {
     redirect("/login");
   }
 
@@ -16,7 +16,7 @@ export default async function CreateTeamPage() {
           გუნდის რეგისტრაცია
         </h2>
         <p className="mt-2 text-center text-sm text-gray-400">
-            შეავსეთ ინფორმაცია თქვენი გუნდის შესახებ. რეგისტრაციის შემდეგ ადმინისტრაცია განიხილავს განაცხადს.
+          შეავსეთ ინფორმაცია თქვენი გუნდის შესახებ. რეგისტრაციის შემდეგ ადმინისტრაცია განიხილავს განაცხადს.
         </p>
       </div>
 

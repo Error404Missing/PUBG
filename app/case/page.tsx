@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { Gift, Loader2, Sparkles, AlertTriangle, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
-import { useSession } from "next-auth/react";
+import { useUser } from "@/hooks/useUser";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 
 interface RewardItem {
@@ -26,7 +26,7 @@ const ITEMS: RewardItem[] = [
 
 export default function CaseOpenPage() {
     const { showToast } = useToast();
-    const { data: session } = useSession();
+    const { isAuthenticated } = useUser();
 
     const [isSpinning, setIsSpinning] = useState(false);
     const [cooldown, setCooldown] = useState<string | null>(null);

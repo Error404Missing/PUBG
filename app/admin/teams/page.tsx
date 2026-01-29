@@ -1,12 +1,17 @@
-import { prisma } from "@/lib/prisma";
-import { Check, X, Ban, Crown } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { Crown } from "lucide-react";
 import AdminTeamActions from "@/components/AdminTeamActions";
 
 export default async function AdminTeamsPage() {
-  const teams = await prisma.team.findMany({
-    include: { leader: true },
-    orderBy: { createdAt: 'desc' }
-  });
+  const supabase = await createClient();
+
+  const { data: teams } = await supabase
+    .from('teams')
+    .select(`
+      *,
+      owner:profiles!teams_owner_id_fkey(id, username, role)
+    `)
+    .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-6">
@@ -24,7 +29,7 @@ export default async function AdminTeamsPage() {
             </tr>
           </thead>
           <tbody className="bg-neutral-900 divide-y divide-neutral-800">
-            {teams.map((team) => (
+            {(teams || []).map((team) => (
               <tr key={team.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -35,8 +40,8 @@ export default async function AdminTeamsPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-300">{team.leader.username}</div>
-                  <div className="text-xs text-gray-500">{team.leader.email}</div>
+                  <div className="text-sm text-gray-300">{team.owner?.username || 'Unknown'}</div>
+                  <div className="text-xs text-gray-500">{team.owner?.role || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -47,10 +52,17 @@ export default async function AdminTeamsPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {team.isVip ? <Crown className="w-5 h-5 text-yellow-500" /> : '-'}
+                  {team.is_vip ? <Crown className="w-5 h-5 text-yellow-500" /> : '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <AdminTeamActions team={team} />
+                  <AdminTeamActions team={{
+                    id: team.id,
+                    name: team.name,
+                    tag: team.tag,
+                    status: team.status,
+                    isVip: team.is_vip,
+                    leaderId: team.owner_id
+                  }} />
                 </td>
               </tr>
             ))}

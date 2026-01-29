@@ -1,13 +1,13 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useUser } from "@/hooks/useUser";
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { Users, Shield, Trophy, Activity, ArrowRight, Settings, Gift } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboard() {
-    const { data: session } = useSession();
+    const { isAdmin } = useUser();
     const [stats, setStats] = useState({ users: 0, teams: 0, scrims: 0 });
 
     useEffect(() => {
