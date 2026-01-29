@@ -17,7 +17,7 @@ import {
   LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSession } from "next-auth/react";
+import { useUser } from "@/hooks/useUser";
 
 interface NavItem {
   name: string;
@@ -43,9 +43,7 @@ const supportNav: NavItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
-
-  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'FOUNDER';
+  const { isAdmin } = useUser();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-[280px] bg-cyber-card border-r border-white/5 flex flex-col z-[100] hidden lg:flex shadow-[20px_0_40px_rgba(0,0,0,0.4)]">
