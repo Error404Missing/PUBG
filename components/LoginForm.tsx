@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -21,11 +21,12 @@ export default function LoginForm() {
     const password = String(formData.get('password') || '');
 
     try {
+      const supabase = createClient();
       const res = await supabase.auth.signInWithPassword({ email, password });
       if (res.error) {
         setErrorMessage(res.error.message || 'Login failed');
       } else {
-        // Redirect to home or previous page
+        router.refresh();
         router.push('/');
       }
     } catch (err: any) {

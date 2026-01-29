@@ -1,69 +1,80 @@
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function POST() {
-    const session = await auth();
-    if (!session?.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const user = await getUser();
+  if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        include: { team: true }
-    });
+  const supabase = await createClient();
 
-    if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 });
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
 
-    // Check cooldown (2 weeks)
-    if (user.lastCaseOpen) {
-        const twoWeeksAgro = new Date();
-        twoWeeksAgro.setDate(twoWeeksAgro.getDate() - 14);
-        if (user.lastCaseOpen > twoWeeksAgro) {
-            return NextResponse.json({ message: "Cooldown active" }, { status: 403 });
-        }
+  if (!profile) return NextResponse.json({ message: "User not found" }, { status: 404 });
+
+  // Check cooldown (2 weeks)
+  if (profile.last_case_open) {
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    if (new Date(profile.last_case_open) > twoWeeksAgo) {
+      return NextResponse.json({ message: "Cooldown active" }, { status: 403 });
     }
+  }
 
-    // Check if has pending reward
-    const pending = await prisma.caseReward.findFirst({
-        where: { userId: user.id, status: 'PENDING' }
-    });
-    if (pending) return NextResponse.json({ message: "Pending reward exists" }, { status: 403 });
+  // Get available rewards
+  const { data: rewards } = await supabase
+    .from('case_rewards')
+    .select('*')
+    .order('probability', { ascending: false });
 
-    // Random reward
-    const rand = Math.random();
-    let type = 'NOTHING';
-    if (rand < 0.05) type = 'VIP_30';
-    else if (rand < 0.15) type = 'VIP_7';
-    else if (rand < 0.35) type = 'VIP_3';
+  // Random reward selection
+  const rand = Math.random() * 100;
+  let cumulativeProbability = 0;
+  let selectedReward = null;
 
-    // Create Reward Record
-    let rewardId = 'NOTHING_ID';
-    if (type !== 'NOTHING') {
-        const reward = await prisma.caseReward.create({
-            data: {
-                userId: user.id,
-                username: user.username,
-                type: type,
-                status: 'PENDING'
-            }
-        });
-        rewardId = reward.id;
+  for (const reward of rewards || []) {
+    cumulativeProbability += reward.probability;
+    if (rand <= cumulativeProbability) {
+      selectedReward = reward;
+      break;
     }
+  }
 
-    // Update Last Open Time
-    await prisma.user.update({
-        where: { id: user.id },
-        data: { lastCaseOpen: new Date() }
+  // Update last case open time
+  await supabase
+    .from('profiles')
+    .update({ last_case_open: new Date().toISOString() })
+    .eq('id', user.id);
+
+  // If won a reward, add coins
+  if (selectedReward) {
+    await supabase
+      .from('profiles')
+      .update({ coins: (profile.coins || 0) + selectedReward.coins })
+      .eq('id', user.id);
+  }
+
+  // Audit Log
+  await supabase
+    .from('audit_logs')
+    .insert({
+      action: 'CASE_OPEN',
+      user_id: user.id,
+      entity_type: 'case',
+      details: {
+        reward: selectedReward?.name || 'NOTHING',
+        coins: selectedReward?.coins || 0
+      }
     });
 
-    // Audit Log
-    await prisma.auditLog.create({
-        data: {
-            action: 'CASE_OPEN',
-            userId: user.id,
-            username: user.username,
-            details: `Opened case. Reward: ${type}`
-        }
-    });
-
-    return NextResponse.json({ type, rewardId });
+  return NextResponse.json({
+    type: selectedReward?.rarity || 'NOTHING',
+    name: selectedReward?.name || 'არაფერი',
+    coins: selectedReward?.coins || 0,
+    rewardId: selectedReward?.id || null
+  });
 }

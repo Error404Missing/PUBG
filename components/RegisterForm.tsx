@@ -6,7 +6,7 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 const formSchema = z.object({
   username: z.string().min(3, { message: "მომხმარებლის სახელი უნდა იყოს მინიმუმ 3 სიმბოლო" }),
@@ -32,35 +32,34 @@ export default function RegisterForm() {
     setError('');
 
     try {
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: values.username,
-          email: values.email,
-          password: values.password,
-        }),
+      const supabase = createClient();
+      
+      // Sign up with Supabase Auth - this creates the auth user
+      // The database trigger will automatically create the profile
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+            `${window.location.origin}/`,
+          data: {
+            username: values.username,
+          },
+        },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'რეგისტრაცია ვერ მოხერხდა');
+      if (authError) {
+        throw new Error(authError.message);
       }
 
-      // After creating server-side user, try signing in via Supabase for smoother flow
-      try {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
-        });
-        if (error) {
-          router.push('/login');
-        } else {
-          router.push('/');
-        }
-      } catch (e) {
-        router.push('/login');
+      // Check if email confirmation is required
+      if (authData.user && !authData.session) {
+        // Email confirmation required
+        router.push('/register/success');
+      } else {
+        // Auto-confirmed, redirect to home
+        router.refresh();
+        router.push('/');
       }
     } catch (err: any) {
       setError(err.message);

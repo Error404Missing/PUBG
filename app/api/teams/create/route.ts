@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -11,8 +11,8 @@ const teamSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
@@ -20,27 +20,46 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, tag, playerCount, mapsCount } = teamSchema.parse(body);
 
-    const isPrivileged = session.user.role === 'ADMIN' || session.user.role === 'FOUNDER';
+    const supabase = await createClient();
+    const isPrivileged = user.role === 'ADMIN' || user.role === 'FOUNDER';
 
     // Global registration toggle (non-privileged users)
-    const regOpen = await prisma.systemConfig.findUnique({ where: { key: 'registrationOpen' } });
+    const { data: regOpen } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'registrationOpen')
+      .single();
+
     if (!isPrivileged && regOpen && regOpen.value !== 'true') {
       return NextResponse.json({ message: "რეგისტრაცია დახურულია" }, { status: 403 });
     }
 
     const now = new Date();
-    const blockUntil = await prisma.systemConfig.findUnique({ where: { key: `user:${session.user.id}:block_until` } });
-    if (!isPrivileged && blockUntil?.value) {
-      if (blockUntil.value === 'FOREVER') {
+
+    // Check for block
+    const { data: blockConfig } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', `user:${user.id}:block_until`)
+      .single();
+
+    if (!isPrivileged && blockConfig?.value) {
+      if (blockConfig.value === 'FOREVER') {
         return NextResponse.json({ message: "გუნდის შექმნა შეზღუდულია (სამუდამოდ)" }, { status: 403 });
       }
-      const until = new Date(blockUntil.value);
+      const until = new Date(blockConfig.value);
       if (until > now) {
         return NextResponse.json({ message: `შექმნა დროებით შეზღუდულია (${until.toLocaleString('ka-GE')}-მდე)` }, { status: 403 });
       }
     }
 
-    const createCooldown = await prisma.systemConfig.findUnique({ where: { key: `user:${session.user.id}:create_block_until` } });
+    // Check cooldown after delete
+    const { data: createCooldown } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', `user:${user.id}:create_block_until`)
+      .single();
+
     if (!isPrivileged && createCooldown?.value) {
       const until = new Date(createCooldown.value);
       if (until > now) {
@@ -49,29 +68,45 @@ export async function POST(req: Request) {
     }
 
     // Check if user already has a team
-    const existingTeam = await prisma.team.findUnique({
-      where: { leaderId: session.user.id },
-    });
+    const { data: existingTeam } = await supabase
+      .from('teams')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single();
 
     if (existingTeam) {
       return NextResponse.json({ message: "You already have a team" }, { status: 400 });
     }
 
-    const team = await prisma.team.create({
-      data: {
+    // Create team
+    const { data: team, error } = await supabase
+      .from('teams')
+      .insert({
         name,
         tag,
-        playerCount,
-        mapsCount,
-        leaderId: session.user.id,
+        player_count: playerCount,
+        maps_count: mapsCount,
+        owner_id: user.id,
         status: "PENDING",
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error(error);
+      return NextResponse.json({ message: "Failed to create team" }, { status: 500 });
+    }
+
+    // Update user's team_id
+    await supabase
+      .from('profiles')
+      .update({ team_id: team.id })
+      .eq('id', user.id);
 
     return NextResponse.json(team, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-        return NextResponse.json({ message: "Invalid input", errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: "Invalid input", errors: error.errors }, { status: 400 });
     }
     console.error(error);
     return NextResponse.json({ message: "Internal Error" }, { status: 500 });

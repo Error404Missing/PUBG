@@ -1,32 +1,32 @@
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-    const session = await auth();
-    if (!session?.user) return NextResponse.json({});
+  const user = await getUser();
+  if (!user) return NextResponse.json({});
 
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id }
-    });
+  const supabase = await createClient();
 
-    if (!user) return NextResponse.json({});
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('last_case_open')
+    .eq('id', user.id)
+    .single();
 
-    let cooldownStr = null;
-    if (user.lastCaseOpen) {
-        const nextOpen = new Date(user.lastCaseOpen);
-        nextOpen.setDate(nextOpen.getDate() + 14);
-        if (nextOpen > new Date()) {
-            cooldownStr = nextOpen.toLocaleString('ka-GE');
-        }
+  if (!profile) return NextResponse.json({});
+
+  let cooldownStr = null;
+  if (profile.last_case_open) {
+    const nextOpen = new Date(profile.last_case_open);
+    nextOpen.setDate(nextOpen.getDate() + 14);
+    if (nextOpen > new Date()) {
+      cooldownStr = nextOpen.toLocaleString('ka-GE');
     }
+  }
 
-    const pending = await prisma.caseReward.findFirst({
-        where: { userId: user.id, status: 'PENDING' }
-    });
-
-    return NextResponse.json({
-        cooldown: cooldownStr,
-        pending: !!pending
-    });
+  return NextResponse.json({
+    cooldown: cooldownStr,
+    pending: false // Simplified - rewards are instant now
+  });
 }

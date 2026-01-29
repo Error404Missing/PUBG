@@ -1,6 +1,5 @@
 "use client";
 
-import { prisma } from "@/lib/prisma";
 import { useEffect, useState } from "react";
 import { Users, Trophy, Play, Search, Gamepad2, Info, ArrowRight } from "lucide-react";
 import Link from "next/link";

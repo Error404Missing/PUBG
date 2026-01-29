@@ -1,100 +1,157 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { getUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
-    const { id } = params;
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'FOUNDER')) {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUser();
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'FOUNDER')) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = await createClient();
+
+  const body = await req.json();
+  const { slotNumber, teamId } = body;
+
+  if (!slotNumber || !teamId) {
+    return NextResponse.json({ message: "Missing fields" }, { status: 400 });
+  }
+
+  // Check if request exists
+  const { data: requestExists } = await supabase
+    .from('system_config')
+    .select('key')
+    .eq('key', `request:scrim:${id}:team:${teamId}`)
+    .single();
+
+  if (!requestExists) {
+    return NextResponse.json({ message: "ეს გუნდი არ აქვს გამოგზავნილი მოთხოვნა მოცემულ განრიგზე" }, { status: 400 });
+  }
+
+  // Check if slot is already taken
+  const { data: existingSlot } = await supabase
+    .from('slots')
+    .select('*')
+    .eq('scrim_id', id)
+    .eq('slot_number', Number(slotNumber))
+    .single();
+
+  if (existingSlot) {
+    // If team is already in this slot, do nothing
+    if (existingSlot.team_id === teamId) {
+      return NextResponse.json({ message: "Already assigned" });
     }
+    
+    // Remove old team from this slot
+    await supabase
+      .from('slots')
+      .delete()
+      .eq('id', existingSlot.id);
+  }
 
-    const body = await req.json();
-    const { slotNumber, teamId } = body;
+  // Check if team is already in another slot for this scrim
+  const { data: teamInOtherSlot } = await supabase
+    .from('slots')
+    .select('*')
+    .eq('scrim_id', id)
+    .eq('team_id', teamId)
+    .single();
 
-    if (!slotNumber || !teamId) {
-        return NextResponse.json({ message: "Missing fields" }, { status: 400 });
-    }
-    const requestExists = await prisma.systemConfig.findUnique({
-        where: { key: `request:scrim:${id}:team:${teamId}` }
-    });
-    if (!requestExists) {
-        return NextResponse.json({ message: "ეს გუნდი არ აქვს გამოგზავნილი მოთხოვნა მოცემულ განრიგზე" }, { status: 400 });
-    }
+  if (teamInOtherSlot) {
+    // Move team - delete old slot
+    await supabase
+      .from('slots')
+      .delete()
+      .eq('id', teamInOtherSlot.id);
+  }
 
-    // Check if slot is already taken
-    const existingSlot = await prisma.slot.findFirst({
-        where: { scrimId: id, slotNumber: Number(slotNumber) }
-    });
+  // Create new slot assignment
+  const { data: newSlot, error } = await supabase
+    .from('slots')
+    .insert({
+      scrim_id: id,
+      team_id: teamId,
+      slot_number: Number(slotNumber),
+      registered_by: user.id
+    })
+    .select()
+    .single();
 
-    if (existingSlot) {
-        // If team is already in this slot, do nothing
-        if (existingSlot.teamId === teamId) return NextResponse.json({ message: "Already assigned" });
-        
-        // Remove old team from this slot
-        await prisma.slot.delete({ where: { id: existingSlot.id } });
-    }
+  if (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Failed to create slot" }, { status: 500 });
+  }
 
-    // Check if team is already in another slot for this scrim
-    const teamInOtherSlot = await prisma.slot.findFirst({
-        where: { scrimId: id, teamId }
-    });
-
-    if (teamInOtherSlot) {
-        // Move team? Or error? Let's move them.
-        await prisma.slot.delete({ where: { id: teamInOtherSlot.id } });
-    }
-
-    // Create new slot assignment
-    const newSlot = await prisma.slot.create({
-        data: {
-            scrimId: id,
-            teamId,
-            slotNumber: Number(slotNumber)
-        }
-    });
-    const assignedAt = new Date().toISOString();
-    await prisma.systemConfig.upsert({
-        where: { key: `slot_assigned_at:${id}:team:${teamId}` },
-        update: { value: assignedAt },
-        create: { key: `slot_assigned_at:${id}:team:${teamId}`, value: assignedAt }
-    });
-    await prisma.systemConfig.deleteMany({
-        where: { key: `request:scrim:${id}:team:${teamId}` }
+  const assignedAt = new Date().toISOString();
+  await supabase
+    .from('system_config')
+    .upsert({
+      key: `slot_assigned_at:${id}:team:${teamId}`,
+      value: assignedAt,
+      updated_at: assignedAt
     });
 
-    return NextResponse.json(newSlot);
+  await supabase
+    .from('system_config')
+    .delete()
+    .eq('key', `request:scrim:${id}:team:${teamId}`);
+
+  return NextResponse.json(newSlot);
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-    const { id } = params;
-    const session = await auth();
-    if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'FOUNDER')) {
-        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUser();
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'FOUNDER')) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = await createClient();
+
+  const { searchParams } = new URL(req.url);
+  const slotNumber = searchParams.get('slot');
+
+  if (slotNumber) {
+    // Delete specific slot
+    const { data: slot } = await supabase
+      .from('slots')
+      .select('*')
+      .eq('scrim_id', id)
+      .eq('slot_number', Number(slotNumber))
+      .single();
+    
+    if (slot) {
+      await supabase
+        .from('slots')
+        .delete()
+        .eq('id', slot.id);
+
+      await supabase
+        .from('system_config')
+        .delete()
+        .eq('key', `slot_assigned_at:${id}:team:${slot.team_id}`);
     }
+  } else {
+    // Clear all slots
+    await supabase
+      .from('slots')
+      .delete()
+      .eq('scrim_id', id);
 
-    const { searchParams } = new URL(req.url);
-    const slotNumber = searchParams.get('slot');
+    // Clear all slot_assigned_at configs for this scrim
+    const { data: configs } = await supabase
+      .from('system_config')
+      .select('key')
+      .like('key', `slot_assigned_at:${id}:team:%`);
 
-    if (slotNumber) {
-        // Delete specific slot
-        const slot = await prisma.slot.findFirst({
-            where: { scrimId: id, slotNumber: Number(slotNumber) }
-        });
-        
-        if (slot) {
-            await prisma.slot.delete({ where: { id: slot.id } });
-            await prisma.systemConfig.deleteMany({
-                where: { key: `slot_assigned_at:${id}:team:${slot.teamId}` }
-            });
-        }
-    } else {
-        // Clear all slots (optional, if needed)
-        await prisma.slot.deleteMany({ where: { scrimId: id } });
-        await prisma.systemConfig.deleteMany({
-            where: { key: { startsWith: `slot_assigned_at:${id}:team:` } }
-        });
+    for (const config of configs || []) {
+      await supabase
+        .from('system_config')
+        .delete()
+        .eq('key', config.key);
     }
+  }
 
-    return NextResponse.json({ message: "Deleted" });
+  return NextResponse.json({ message: "Deleted" });
 }

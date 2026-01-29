@@ -1,17 +1,12 @@
-import { auth } from "@/auth";
+import { getUser } from "@/lib/auth";
 import Link from "next/link";
 import { LogOut, User as UserIcon, Shield, LogIn, UserPlus } from "lucide-react";
 import { handleSignOut } from "@/app/actions/auth-actions";
 
 export default async function UserNav() {
-  let session: Awaited<ReturnType<typeof auth>> | null = null;
-  try {
-    session = await auth();
-  } catch {
-    session = null;
-  }
+  const user = await getUser();
 
-  if (!session?.user) {
+  if (!user) {
     return (
       <div className="flex space-x-4 items-center">
         <Link
@@ -31,8 +26,6 @@ export default async function UserNav() {
       </div>
     );
   }
-
-  const user = session.user as any;
 
   return (
     <div className="flex items-center space-x-6">
@@ -55,13 +48,9 @@ export default async function UserNav() {
         </div>
 
         <Link href="/profile" className="relative group">
-          {user.image ? (
-            <img src={user.image} alt="Profile" className="w-9 h-9 rounded-xl border border-white/10 group-hover:border-primary/50 transition-colors object-cover" />
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-primary/50 transition-colors">
-              <span className="text-xs font-black text-primary/80">{user.username?.[0]?.toUpperCase()}</span>
-            </div>
-          )}
+          <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-primary/50 transition-colors">
+            <span className="text-xs font-black text-primary/80">{user.username?.[0]?.toUpperCase()}</span>
+          </div>
           <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-[#020305] rounded-full" />
         </Link>
       </div>
