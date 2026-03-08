@@ -398,24 +398,47 @@ export default function ProfilePage() {
                            </div>
                         </div>
 
-                        <div className="space-y-3">
-                           <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">ავატარის ლინკი (URL)</label>
-                           <Input 
-                             value={editData.avatar_url}
-                             onChange={(e) => setEditData({...editData, avatar_url: e.target.value})}
-                             placeholder="https://example.com/image.jpg"
-                             className="h-14 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 transition-all font-bold" 
-                           />
-                        </div>
+                        <div className="grid md:grid-cols-2 gap-8">
+                           <div className="space-y-4">
+                              <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სწრაფი ატვირთვა</label>
+                              <div className="grid grid-cols-2 gap-4">
+                                 <label className="cursor-pointer group">
+                                    <div className="h-28 glass border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 group-hover:border-primary/50 transition-all bg-primary/5">
+                                       <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                                       <span className="text-[9px] font-black uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">ავატარი</span>
+                                    </div>
+                                    <input 
+                                       type="file" 
+                                       className="hidden" 
+                                       accept="image/*" 
+                                       onChange={(e) => handleFileUpload(e, 'avatar')}
+                                       disabled={isUploading.type !== null}
+                                    />
+                                 </label>
+                                 <label className="cursor-pointer group">
+                                    <div className="h-28 glass border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 group-hover:border-primary/50 transition-all bg-primary/5">
+                                       <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                                       <span className="text-[9px] font-black uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">ბანერი</span>
+                                    </div>
+                                    <input 
+                                       type="file" 
+                                       className="hidden" 
+                                       accept="image/*" 
+                                       onChange={(e) => handleFileUpload(e, 'banner')}
+                                       disabled={isUploading.type !== null}
+                                    />
+                                 </label>
+                              </div>
+                           </div>
 
-                        <div className="space-y-3">
-                           <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">ბანერის ლინკი (URL)</label>
-                           <Input 
-                             value={editData.banner_url}
-                             onChange={(e) => setEditData({...editData, banner_url: e.target.value})}
-                             placeholder="https://example.com/banner.jpg"
-                             className="h-14 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 transition-all font-bold" 
-                           />
+                           <div className="space-y-4">
+                              <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-2 italic">მონაცემების სტატუსი</label>
+                              <div className="space-y-2 opacity-50">
+                                 <div className="text-[9px] font-bold text-muted-foreground truncate italic">AVATAR_{editData.avatar_url ? "READY" : "MISSING"}</div>
+                                 <div className="text-[9px] font-bold text-muted-foreground truncate italic">BANNER_{editData.banner_url ? "READY" : "MISSING"}</div>
+                                 <div className="text-[8px] text-primary font-black uppercase tracking-[0.2em] mt-2 italic">* ფოტოები აიტვირთება პირდაპირ სერვერზე</div>
+                              </div>
+                           </div>
                         </div>
 
                         <div className="space-y-3">
