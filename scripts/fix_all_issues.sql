@@ -1,5 +1,5 @@
 -- =====================================================
--- FINAL COMPREHENSIVE FIX SCRIPT
+-- FINAL COMPREHENSIVE FIX SCRIPT - VERSION 2
 -- Run this in Supabase SQL Editor to solve all issues
 -- =====================================================
 
@@ -49,7 +49,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS discord_username TEXT;
 -- Using permanent URLs for reliability
 UPDATE public.profiles 
 SET avatar_url = 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png' 
-WHERE avatar_url IS NULL OR avatar_url = '' OR avatar_url LIKE '%imgur%';
+WHERE avatar_url IS NULL OR avatar_url = '' OR avatar_url LIKE '%imgur%' OR avatar_url LIKE '%api.dicebear.com%';
 
 UPDATE public.profiles 
 SET banner_url = 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg' 
@@ -92,9 +92,10 @@ END;
 $$;
 
 -- 5. Fix Schedule Deletion Policy (Cascade and foreign keys)
--- Ensure scrim_requests has ON DELETE CASCADE for schedule_id
+-- Ensure ALL tables referencing schedules have ON DELETE CASCADE
 DO $$
 BEGIN
+    -- Fix scrim_requests
     IF EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE constraint_name = 'scrim_requests_schedule_id_fkey'
@@ -104,6 +105,20 @@ BEGIN
     
     ALTER TABLE public.scrim_requests 
     ADD CONSTRAINT scrim_requests_schedule_id_fkey 
+    FOREIGN KEY (schedule_id) 
+    REFERENCES public.schedules(id) 
+    ON DELETE CASCADE;
+
+    -- Fix results
+    IF EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'results_schedule_id_fkey'
+    ) THEN
+        ALTER TABLE public.results DROP CONSTRAINT results_schedule_id_fkey;
+    END IF;
+    
+    ALTER TABLE public.results 
+    ADD CONSTRAINT results_schedule_id_fkey 
     FOREIGN KEY (schedule_id) 
     REFERENCES public.schedules(id) 
     ON DELETE CASCADE;

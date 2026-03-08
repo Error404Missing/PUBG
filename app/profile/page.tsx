@@ -131,7 +131,6 @@ export default function ProfilePage() {
 
     setIsUploading({ type })
     
-    // Create bucket if it doesn't exist (though usually it should be pre-created)
     const fileExt = file.name.split('.').pop()
     const fileName = `${user.id}-${Math.random()}.${fileExt}`
     const filePath = `${type}s/${fileName}`
@@ -212,7 +211,7 @@ export default function ProfilePage() {
          <div 
            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
            style={{ 
-             backgroundImage: `url(${profile?.banner_url || 'https://images.unsplash.com/photo-1624206112918-f140f087f9b5?q=80&w=2070&auto=format&fit=crop'})`,
+             backgroundImage: `url(${profile?.banner_url || 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg'})`,
            }}
          />
          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
@@ -242,7 +241,7 @@ export default function ProfilePage() {
                <div className="relative group overflow-hidden">
                   <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] glass border-4 border-background overflow-hidden relative z-10 transition-transform hover:scale-105 duration-500">
                      <img 
-                       src={isEditing ? (editData.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + profile?.username) : (profile?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + profile?.username)} 
+                       src={isEditing ? (editData.avatar_url || 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png') : (profile?.avatar_url || 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png')} 
                        alt="Avatar"
                        className={`w-full h-full object-cover ${isUploading.type === 'avatar' ? 'opacity-30 blur-sm' : ''} transition-all duration-300`}
                      />
@@ -443,7 +442,7 @@ export default function ProfilePage() {
                            </div>
 
                            <div className="space-y-4">
-                              <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] ml-2 italic">მონაცემების სტატუსი</label>
+                              <label className="text-[10px) font-black text-white/40 uppercase tracking-[0.2em] ml-2 italic">მონაცემების სტატუსი</label>
                               <div className="space-y-2 opacity-50">
                                  <div className="text-[9px] font-bold text-muted-foreground truncate italic">AVATAR_{editData.avatar_url ? "READY" : "MISSING"}</div>
                                  <div className="text-[9px] font-bold text-muted-foreground truncate italic">BANNER_{editData.banner_url ? "READY" : "MISSING"}</div>

@@ -132,15 +132,22 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all duration-300 relative group overflow-hidden ${
-                    isActive ? 'text-primary' : 'text-muted-foreground hover:text-white'
+                    item.label === "ROOM INFO" 
+                      ? "text-red-500 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 scale-105" 
+                      : isActive 
+                        ? 'text-primary' 
+                        : 'text-muted-foreground hover:text-white'
                   }`}
                 >
                   <span className="relative z-10">{item.label}</span>
-                  {isActive && (
+                  {isActive && item.label !== "ROOM INFO" && (
                     <div className="absolute inset-0 bg-primary/10 -z-0" />
                   )}
                   {item.special === 'case' && (
                      <div className="absolute top-0 right-0 w-1 h-1 bg-secondary rounded-full animate-ping" />
+                  )}
+                  {item.label === "ROOM INFO" && (
+                    <div className="absolute inset-0 bg-red-500/5 -z-0 animate-pulse" />
                   )}
                 </Link>
               )
@@ -208,7 +215,11 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 rounded-xl glass border border-white/5 text-xs font-black uppercase tracking-widest text-center hover:bg-white/5 active:scale-95 transition-all text-white"
+                  className={`px-4 py-3 rounded-xl glass border text-xs font-black uppercase tracking-widest text-center hover:bg-white/5 active:scale-95 transition-all ${
+                    item.label === "ROOM INFO" 
+                      ? "bg-red-500/20 border-red-500/40 text-red-500 animate-pulse" 
+                      : "border-white/5 text-white"
+                  }`}
                 >
                   {item.label}
                 </Link>
