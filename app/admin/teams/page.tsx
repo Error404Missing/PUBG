@@ -144,9 +144,32 @@ export default function AdminTeamsPage() {
 
   const updateTeamStatus = async (teamId: string, status: string) => {
     const supabase = createClient()
+    
+    // Get team info for notification
+    const { data: teamData } = await supabase
+      .from("teams")
+      .select("leader_id, team_name")
+      .eq("id", teamId)
+      .single()
+
     const { error } = await supabase.from("teams").update({ status }).eq("id", teamId)
 
-    if (!error) {
+    if (!error && teamData) {
+      // Send notification
+      const isApproved = status === "approved"
+      const isRejected = status === "rejected"
+      
+      if (isApproved || isRejected) {
+        await supabase.from("notifications").insert({
+          user_id: teamData.leader_id,
+          title: isApproved ? "გუნდი დადასტურდა! ✅" : "გუნდი უარყოფილია ❌",
+          message: isApproved 
+            ? `გილოცავთ! თქვენი გუნდი "${teamData.team_name}" დადასტურდა. ახლა შეგიძლიათ გადახვიდეთ განრიგის გვერდზე, აირჩიოთ სასურველი მატჩი და მოითხოვოთ თამაში.`
+            : `სამწუხაროდ, თქვენი გუნდის "${teamData.team_name}" რეგისტრაცია უარყოფილია ადმინისტრაციის მიერ.`,
+          type: isApproved ? "success" : "error",
+        })
+      }
+      
       fetchTeams()
     }
   }

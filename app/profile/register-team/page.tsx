@@ -69,6 +69,14 @@ export default function RegisterTeamPage() {
 
       if (error) throw error
 
+      // Send notification
+      await supabase.from("notifications").insert({
+        user_id: user.id,
+        title: "გუნდი რეგისტრირებულია 📝",
+        message: `თქვენი გუნდი "${formData.teamName}" წარმატებით დარეგისტრირდა და იმყოფება განხილვის პროცესში. გთხოვთ დაელოდოთ ადმინისტრაციის პასუხს.`,
+        type: "info",
+      })
+
       router.push("/profile")
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "შეცდომა მოხდა")
