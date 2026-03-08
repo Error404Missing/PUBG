@@ -195,7 +195,7 @@ export default async function AdminRequestsPage() {
 
                        {req.status === "pending" && (
                          <div className="flex-shrink-0 lg:pl-8 lg:border-l lg:border-white/5">
-                            <AdminRequestActions requestId={req.id} />
+                            <AdminRequestActions requestId={req.id} teamId={req.teams?.id || ""} />
                          </div>
                        )}
                      </div>
