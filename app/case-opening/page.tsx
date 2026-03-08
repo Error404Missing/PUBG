@@ -30,7 +30,7 @@ const rewards: Reward[] = [
     borderColor: "border-gray-600",
     icon: X,
     days: 0,
-    probability: 10,
+    probability: 80, // High chance of nothing
   },
   {
     id: "vip_1_day",
@@ -41,7 +41,7 @@ const rewards: Reward[] = [
     borderColor: "border-green-500",
     icon: Star,
     days: 1,
-    probability: 40,
+    probability: 15, // Medium chance
   },
   {
     id: "vip_3_days",
@@ -52,7 +52,7 @@ const rewards: Reward[] = [
     borderColor: "border-blue-500",
     icon: Sparkles,
     days: 3,
-    probability: 35,
+    probability: 4, // Low chance
   },
   {
     id: "vip_1_week",
@@ -63,7 +63,7 @@ const rewards: Reward[] = [
     borderColor: "border-yellow-500",
     icon: Crown,
     days: 7,
-    probability: 15,
+    probability: 1, // Very low chance
   },
 ]
 

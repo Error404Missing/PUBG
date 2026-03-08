@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { 
   MessageSquare, Send, User, Shield, 
-  Search, ChevronLeft, Activity, Target
+  Search, ChevronLeft, Activity, Target,
+  RefreshCcw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,28 +19,46 @@ export default function AdminSupportPage() {
   const [messages, setMessages] = useState<any[]>([])
   const [activeChat, setActiveChat] = useState<string | null>(null)
   const [reply, setReply] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const chats = messages.reduce((acc: any, msg: any) => {
-    if (msg.sender === 'user') {
-      if (!acc[msg.userId]) {
-        acc[msg.userId] = {
-          userId: msg.userId,
-          username: msg.username,
-          lastMessage: msg.text,
-          time: msg.time,
-          messages: []
-        }
-      }
-      acc[msg.userId].messages.push(msg)
-      acc[msg.userId].lastMessage = msg.text
-      acc[msg.userId].time = msg.time
-    } else if (msg.sender === 'admin') {
-      if (acc[msg.targetUserId]) {
-        acc[msg.targetUserId].messages.push(msg)
+  // Persistent storage for session messages (simple local fallback)
+  useEffect(() => {
+    const saved = localStorage.getItem('support_admin_messages')
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved))
+      } catch (e) {
+        console.error("Failed to load saved messages")
       }
     }
+    setIsLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('support_admin_messages', JSON.stringify(messages))
+    }
+  }, [messages])
+
+  const chats = messages.reduce((acc: any, msg: any) => {
+    const userId = msg.sender === 'user' ? msg.userId : msg.targetUserId
+    if (!userId) return acc
+
+    if (!acc[userId]) {
+      acc[userId] = {
+        userId: userId,
+        username: msg.username || 'Anonymous',
+        lastMessage: msg.text,
+        time: msg.time,
+        messages: []
+      }
+    }
+    acc[userId].messages.push(msg)
+    acc[userId].lastMessage = msg.text
+    acc[userId].time = msg.time
+    if (msg.sender === 'user') acc[userId].username = msg.username
     return acc
   }, {})
 
@@ -65,13 +84,17 @@ export default function AdminSupportPage() {
     })
 
     channel.on('broadcast', { event: 'message' }, ({ payload }: { payload: any }) => {
-       setMessages(prev => [...prev, payload])
+       setMessages(prev => {
+         const exists = prev.some(m => m.id === payload.id)
+         if (exists) return prev
+         return [...prev, payload]
+       })
     }).subscribe()
 
     return () => {
        supabase.removeChannel(channel)
     }
-  }, [])
+  }, [router, supabase])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -100,28 +123,48 @@ export default function AdminSupportPage() {
     setReply("")
   }
 
+  const clearMessages = () => {
+    if (confirm("დარწმუნებული ხართ რომ გსურთ ჩატის ისტორიის გასუფთავება?")) {
+      setMessages([])
+      localStorage.removeItem('support_admin_messages')
+    }
+  }
+
+  if (isLoading) return null
+
   return (
     <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(0,180,255,0.03),transparent_70%)] -z-10" />
 
       <div className="container mx-auto max-w-7xl relative h-[700px] flex flex-col">
-        <Link 
-          href="/admin" 
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-8 group"
-        >
-          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
-        </Link>
+        <div className="flex items-center justify-between mb-8">
+          <Link 
+            href="/admin" 
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
+          </Link>
+
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={clearMessages}
+            className="h-8 border-rose-500/20 text-rose-500 hover:bg-rose-500/10 text-[10px] font-black uppercase tracking-widest px-4"
+          >
+            <RefreshCcw className="w-3 h-3 mr-2" /> History Reset
+          </Button>
+        </div>
 
         <div className="flex-1 flex gap-8 min-h-0">
           {/* Chat List */}
           <div className="w-80 flex flex-col gap-6">
-             <div className="glass-card p-6">
-                <h2 className="text-xl font-black text-white italic tracking-tighter uppercase mb-6 flex items-center gap-3">
+             <div className="glass-card p-6 flex flex-col h-full">
+                <h2 className="text-xl font-black text-white italic tracking-tighter uppercase mb-6 flex items-center gap-3 shrink-0">
                    <Activity className="w-5 h-5 text-primary" />
                    Active Intel
                 </h2>
-                <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-hide">
                    {Object.values(chats).length > 0 ? Object.values(chats).map((chat: any) => (
                       <button 
                         key={chat.userId}
@@ -156,14 +199,14 @@ export default function AdminSupportPage() {
                            <User className="w-6 h-6 text-primary" />
                         </div>
                         <div>
-                           <h3 className="text-xl font-black text-white italic truncate">{chats[activeChat].username}</h3>
+                           <h3 className="text-xl font-black text-white italic truncate max-w-[200px]">{chats[activeChat].username}</h3>
                            <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                               Encrypted Channel
                            </div>
                         </div>
                      </div>
-                     <Badge variant="outline" className="border-primary/20 text-primary uppercase italic text-[8px] tracking-[0.2em]">Session_{activeChat.slice(0,8)}</Badge>
+                     <Badge variant="outline" className="border-primary/20 text-primary uppercase italic text-[8px] tracking-[0.2em] hidden sm:flex">Session_{activeChat.slice(0,8)}</Badge>
                   </div>
 
                   {/* Messages Area */}
