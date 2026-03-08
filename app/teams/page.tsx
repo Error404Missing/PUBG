@@ -31,6 +31,7 @@ export default function TeamsPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [teams, setTeams] = useState<Team[]>([])
+  const [verifiedTeams, setVerifiedTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [teamsLoading, setTeamsLoading] = useState(false)
 
@@ -47,6 +48,16 @@ export default function TeamsPage() {
       .order("date", { ascending: true })
 
     setSchedules(data || [])
+
+    const { data: approvedTeamsData } = await supabase
+      .from("teams")
+      .select("*, profiles(username)")
+      .eq("status", "approved")
+      .order("is_vip", { ascending: false })
+      .order("created_at", { ascending: false })
+
+    setVerifiedTeams((approvedTeamsData as Team[]) || [])
+
     setLoading(false)
   }
 
@@ -135,6 +146,77 @@ export default function TeamsPage() {
             ) : (
               <div className="glass-card p-20 text-center italic text-muted-foreground">
                 ამჟამად აქტიური განრიგი არ არის
+              </div>
+            )}
+          </div>
+
+          <div className="mt-32 mb-12 text-center animate-reveal">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl glass border border-secondary/20 mb-6">
+              <Shield className="w-8 h-8 text-secondary" />
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black mb-4 text-white tracking-tighter italic">
+              დადასტურებული <span className="text-secondary tracking-normal">გუნდები</span>
+            </h2>
+            <p className="text-muted-foreground font-light max-w-2xl mx-auto">
+              ოფიციალურად რეგისტრირებული და ვერიფიცირებული გუნდების სია
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
+            {verifiedTeams.length > 0 ? (
+              verifiedTeams.map((team, i) => (
+                <div
+                  key={team.id}
+                  className={`glass-card p-8 group animate-reveal ${
+                    team.is_vip ? "border-secondary/30 ring-1 ring-secondary/20" : ""
+                  }`}
+                  style={{ animationDelay: `${i * 0.05}s` }}
+                >
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        {team.is_vip && <Crown className="w-5 h-5 text-secondary animate-pulse-soft" />}
+                        <h3 className="text-2xl font-black text-white italic tracking-tight group-hover:text-primary transition-colors">
+                          {team.team_name}
+                        </h3>
+                      </div>
+                      <Badge variant="outline" className="border-white/10 tracking-[0.2em] font-mono text-[10px] py-1">
+                        {team.team_tag}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-xl glass border border-white/5">
+                      <div className="flex items-center gap-3">
+                        <Shield className={`w-5 h-5 ${team.is_vip ? "text-secondary" : "text-primary/70"}`} />
+                        <div>
+                          <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Leader</div>
+                          <div className="text-sm font-bold text-white">{team.profiles?.username || "უცნობი"}</div>
+                        </div>
+                      </div>
+                      {team.is_vip && (
+                         <Badge variant="gold" className="font-black italic">VIP</Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-6 px-2">
+                       <div className="flex items-center gap-2">
+                          <Gamepad2 className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs font-bold text-muted-foreground">{team.players_count || 4} PLAYERS</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Verified</span>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="glass-card p-20 text-center col-span-full border-dashed border-white/10 opacity-50">
+                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground lowercase font-black tracking-widest">ვერიფიცირებული გუნდები ჯერ არ არის</p>
               </div>
             )}
           </div>

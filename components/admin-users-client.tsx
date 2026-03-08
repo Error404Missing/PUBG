@@ -254,7 +254,7 @@ export function AdminUsersClient({
                                 ბეჯის მინიჭება
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="glass-card bg-zinc-950 border-white/10 p-1">
+                            <DialogContent className="bg-black/95 backdrop-blur-3xl border border-white/10 p-1 rounded-3xl shadow-2xl">
                               <div className="p-8">
                                 <DialogHeader>
                                   <DialogTitle className="text-2xl font-black text-white italic uppercase tracking-tighter">
@@ -320,7 +320,7 @@ export function AdminUsersClient({
                                       დაბანვა
                                     </Button>
                                   </DialogTrigger>
-                                  <DialogContent className="glass-card bg-zinc-950 border-white/10 p-1">
+                                  <DialogContent className="bg-black/95 backdrop-blur-3xl border border-white/10 p-1 rounded-3xl shadow-2xl">
                                     <div className="p-8">
                                       <DialogHeader>
                                         <DialogTitle className="text-2xl font-black text-rose-500 italic uppercase tracking-tighter">
