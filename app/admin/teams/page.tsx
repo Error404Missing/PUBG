@@ -25,7 +25,10 @@ type Team = {
   slot_number: number | null
   players_count: number
   maps_count: number
-  leader: {
+  leader?: {
+    username: string
+  }
+  profiles?: {
     username: string
   }
 }
@@ -68,11 +71,13 @@ export default function AdminTeamsPage() {
     setIsLoading(true)
     const supabase = createClient()
 
-    console.log("Fetching teams with filter:", filter)
+    console.log("Admin: Fetching teams with filter:", filter)
 
-    // Using explicit join with alias 'leader'
+    // Robust fetch: Request both profiles and alias to be sure
+    // We try to get profiles joined via leader_id
     let query = supabase.from("teams").select(`
       *,
+      profiles!teams_leader_id_fkey(username),
       leader:leader_id(username)
     `).order("created_at", {
       ascending: false,
@@ -87,11 +92,12 @@ export default function AdminTeamsPage() {
     const { data, error } = await query
 
     if (error) {
-       console.error("Teams fetch error:", error)
+       console.error("Admin Teams fetch error:", error)
        setIsLoading(false)
        return
     }
 
+    console.log("Admin Teams response:", data)
     setTeams((data as any[]) || [])
     setIsLoading(false)
   }
@@ -229,7 +235,11 @@ export default function AdminTeamsPage() {
                           </div>
                           <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
                              <User className="w-3 h-3 text-primary" />
-                              ლიდერი: <span className="text-white">{team.leader?.username || "Anonymous"}</span>
+                              ლიდერი: <span className="text-white">{
+                                team.leader?.username || 
+                                team.profiles?.username || 
+                                "Anonymous"
+                              }</span>
                           </div>
                         </div>
                       </div>

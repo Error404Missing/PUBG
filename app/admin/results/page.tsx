@@ -46,6 +46,7 @@ export default function AdminResultsPage() {
     imageUrl: null
   })
   const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -75,10 +76,7 @@ export default function AdminResultsPage() {
     setResults((data as Result[]) || [])
   }
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const handleImageUpload = async (file: File) => {
     setIsUploading(true)
     const supabase = createClient()
 
@@ -101,6 +99,27 @@ export default function AdminResultsPage() {
     setFormData({ ...formData, imageUrl: publicUrl })
     setIsUploading(false)
     setToast({ message: "სურათი წარმატებით აიტვირთა", type: 'success' })
+  }
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleImageUpload(file)
+  }
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const onDragLeave = () => {
+    setIsDragging(false)
+  }
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) handleImageUpload(file)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -211,30 +230,53 @@ export default function AdminResultsPage() {
                   />
                 </div>
 
-                <div className="space-y-6">
+                  <div className="space-y-6">
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სურათის ატვირთვა / Upload Evidence</Label>
-                    <div className="relative group overflow-hidden rounded-[2rem] glass border-2 border-dashed border-white/10 hover:border-primary/50 transition-all">
+                    <div 
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                      className={`relative group overflow-hidden rounded-[2rem] glass border-2 border-dashed transition-all duration-500 ${
+                        isDragging ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-white/10 hover:border-primary/50'
+                      }`}
+                    >
                        <input
                          type="file"
                          accept="image/*"
-                         onChange={handleImageUpload}
+                         onChange={onFileChange}
                          className="absolute inset-0 opacity-0 cursor-pointer z-20"
                          disabled={isUploading}
                        />
                        <div className="p-12 flex flex-col items-center justify-center gap-4 text-center">
-                          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                             <Upload className="w-8 h-8" />
+                          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500 ${
+                            isDragging ? 'bg-primary text-white scale-110 rotate-12' : 'bg-primary/10 text-primary group-hover:scale-110'
+                          }`}>
+                             <Upload className="w-10 h-10" />
                           </div>
-                          <div>
-                             <p className="text-white font-bold italic">აირჩიეთ ფოტო ან ჩააგდეთ აქ</p>
-                             <p className="text-muted-foreground text-xs mt-1">PNG, JPG, JPEG (Max 5MB)</p>
+                          <div className="space-y-1">
+                             <p className="text-xl font-black text-white italic uppercase tracking-tighter">
+                               {isDragging ? "გაუშვით ხელი" : "ამოძრავეთ ფოტო აქ"}
+                             </p>
+                             <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest italic opacity-50">
+                               PNG, JPG, JPEG (Max 5MB)
+                             </p>
                           </div>
                        </div>
+                       
+                       {/* Uploading Overlay */}
                        {isUploading && (
-                          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-30">
-                             <Activity className="w-10 h-10 text-primary animate-spin" />
-                             <p className="text-[10px] font-black text-primary uppercase tracking-widest italic animate-pulse">Uploading_Data...</p>
+                          <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center gap-6 z-30">
+                             <div className="relative">
+                                <Activity className="w-16 h-16 text-primary animate-spin" />
+                                <div className="absolute inset-0 blur-xl bg-primary/20 animate-pulse" />
+                             </div>
+                             <div className="space-y-2 text-center">
+                                <p className="text-sm font-black text-white uppercase tracking-[0.3em] italic animate-pulse">Processing_Data...</p>
+                                <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden mx-auto">
+                                   <div className="h-full bg-primary animate-progress" />
+                                </div>
+                             </div>
                           </div>
                        )}
                     </div>
