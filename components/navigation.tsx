@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X, KeyRound, Users } from "lucide-react"
+import { Menu, X, KeyRound, Users, Shield, LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -20,51 +20,51 @@ export function Navigation() {
     map: string | null
   } | null>(null)
 
-  useEffect(() => {
-    const supabase = createClient()
+  const supabase = createClient()
 
-    const checkUserStatus = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+  const checkUserStatus = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    setUser(user)
 
-      if (user) {
-        const { data } = await supabase.from("profiles").select("is_admin, role").eq("id", user.id).single()
-        setIsAdmin(data?.is_admin || false)
+    if (user) {
+      const { data } = await supabase.from("profiles").select("is_admin, role").eq("id", user.id).single()
+      setIsAdmin(data?.is_admin || false)
 
-        const { data: teamData } = await supabase
-          .from("teams")
-          .select("id, status")
-          .eq("leader_id", user.id)
-          .eq("status", "approved")
-          .single()
+      const { data: teamData } = await supabase
+        .from("teams")
+        .select("id, status")
+        .eq("leader_id", user.id)
+        .eq("status", "approved")
+        .single()
 
-        const hasTeam = !!teamData
-        setHasApprovedTeam(hasTeam)
+      const hasTeam = !!teamData
+      setHasApprovedTeam(hasTeam)
 
-        if (hasTeam) {
-          const { data: settingsData } = await supabase
-            .from("site_settings")
-            .select("key, value")
-            .in("key", ["room_id", "room_password", "start_time", "map"])
+      if (hasTeam) {
+        const { data: settingsData } = await supabase
+          .from("site_settings")
+          .select("key, value")
+          .in("key", ["room_id", "room_password", "start_time", "map"])
 
-          if (settingsData) {
-            const roomData = {
-              room_id: settingsData.find((s) => s.key === "room_id")?.value || "",
-              room_password: settingsData.find((s) => s.key === "room_password")?.value || "",
-              start_time: settingsData.find((s) => s.key === "start_time")?.value || "",
-              map: settingsData.find((s) => s.key === "map")?.value || "",
-            }
+        if (settingsData) {
+          const roomData = {
+            room_id: settingsData.find((s) => s.key === "room_id")?.value || "",
+            room_password: settingsData.find((s) => s.key === "room_password")?.value || "",
+            start_time: settingsData.find((s) => s.key === "start_time")?.value || "",
+            map: settingsData.find((s) => s.key === "map")?.value || "",
+          }
 
-            if (roomData.room_id || roomData.room_password || roomData.start_time || roomData.map) {
-              setRoomInfo(roomData)
-            }
+          if (roomData.room_id || roomData.room_password || roomData.start_time || roomData.map) {
+            setRoomInfo(roomData)
           }
         }
       }
     }
+  }
 
+  useEffect(() => {
     checkUserStatus()
 
     const {
@@ -83,22 +83,21 @@ export function Navigation() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    window.location.href = "/"
+  }
+
   const navItems = [
     { href: "/", label: "მთავარი" },
     { href: "/schedule", label: "განრიგი" },
     { href: "/teams", label: "გუნდები" },
     { href: "/results", label: "შედეგები" },
     { href: "/blocked", label: "დაბლოკილები" },
-    { href: "/case-opening", label: "Case", special: "case" },
+    { href: "/case-opening", label: "კეისები", special: "case" },
     { href: "/vip", label: "VIP", special: "vip" },
     { href: "/rules", label: "წესები" },
     { href: "/contact", label: "კონტაქტი" },
-  ]
-
-  const adminItems = [
-    { href: "/admin", label: "ადმინ პანელი" },
-    { href: "/admin/teams", label: "გუნდების მართვა" },
-    { href: "/admin/settings", label: "პარამეტრები" },
   ]
 
   return (
@@ -141,31 +140,33 @@ export function Navigation() {
              {isAdmin && (
                 <Link 
                   href="/admin" 
-                  className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-secondary/20 text-secondary border border-secondary/30 hover:bg-secondary/30 transition-all"
+                  className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 transition-all group"
                 >
-                  Admin
+                  <Shield className="w-3 h-3 group-hover:rotate-12 transition-transform" />
+                  მართვა
                 </Link>
              )}
              
              {user ? (
                <div className="flex items-center gap-2">
-                 <Link href="/profile" className="w-10 h-10 rounded-full border border-white/10 glass flex items-center justify-center hover:border-primary/50 transition-colors overflow-hidden">
-                    <Users className="w-5 h-5 text-muted-foreground" />
+                 <Link href="/profile" className="w-10 h-10 rounded-full border border-white/10 glass flex items-center justify-center hover:border-primary/50 transition-all group overflow-hidden">
+                    <Users className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                  </Link>
                  <button 
                    onClick={handleLogout}
-                   className="hidden md:block text-xs font-bold text-muted-foreground hover:text-red-400 transition-colors px-2"
+                   className="hidden md:flex items-center gap-2 text-[10px] font-black text-muted-foreground hover:text-red-400 transition-colors px-3 py-2 uppercase tracking-widest"
                  >
+                   <LogOut className="w-3 h-3" />
                    გასვლა
                  </button>
                </div>
              ) : (
                <div className="flex items-center gap-2">
-                 <Link href="/auth/login" className="px-5 py-2 text-xs font-bold text-white hover:bg-white/5 rounded-xl transition-all">
-                   Login
+                 <Link href="/auth/login" className="px-5 py-2 text-xs font-bold text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-widest">
+                   შესვლა
                  </Link>
-                 <Link href="/auth/register" className="btn-premium px-5 py-2.5 text-xs text-white">
-                   Join Arena
+                 <Link href="/auth/register" className="btn-premium px-5 py-2.5 text-xs text-white font-black uppercase tracking-widest">
+                   რეგისტრაცია
                  </Link>
                </div>
              )}
@@ -190,15 +191,24 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 rounded-xl glass border border-white/5 text-sm font-bold text-center hover:bg-white/5 active:scale-95 transition-all text-white"
+                  className="px-4 py-3 rounded-xl glass border border-white/5 text-xs font-black uppercase tracking-widest text-center hover:bg-white/5 active:scale-95 transition-all text-white"
                 >
                   {item.label}
                 </Link>
               ))}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className="px-4 py-3 rounded-xl glass border border-secondary/20 text-secondary text-xs font-black uppercase tracking-widest text-center"
+                >
+                  მართვა
+                </Link>
+              )}
               {user && (
                  <button 
                   onClick={() => { handleLogout(); setIsOpen(false); }}
-                  className="px-4 py-3 rounded-xl glass border border-red-500/20 text-red-400 text-sm font-bold text-center"
+                  className="px-4 py-3 rounded-xl glass border border-red-500/20 text-red-red-400 text-xs font-black uppercase tracking-widest text-center"
                  >
                    გასვლა
                  </button>
@@ -208,9 +218,4 @@ export function Navigation() {
       )}
     </nav>
   )
-}
-
-const handleLogout = async () => {
-  const supabase = createClient()
-  await supabase.auth.signOut()
 }
