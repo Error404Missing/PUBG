@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createBrowserClient } from "@/lib/supabase/client"
-import { Settings, Save, Loader2, Clock } from "lucide-react"
+import { Settings, Save, Loader2, Clock, Globe, Shield, MessageSquare, ChevronLeft, Zap, Target } from "lucide-react"
+import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
 
 interface Setting {
   id: string
@@ -28,7 +30,6 @@ export default function AdminSettingsPage() {
   async function fetchSettings() {
     try {
       const { data, error } = await supabase.from("site_settings").select("*").order("key")
-
       if (error) throw error
       setSettings(data || [])
     } catch (error) {
@@ -43,7 +44,6 @@ export default function AdminSettingsPage() {
     try {
       for (const setting of settings) {
         const { error } = await supabase.from("site_settings").update({ value: setting.value }).eq("id", setting.id)
-
         if (error) throw error
       }
       alert("პარამეტრები წარმატებით შეინახა!")
@@ -64,99 +64,162 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="min-h-screen py-32 flex items-center justify-center">
+         <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-6" />
+            <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic font-bold">მონაცემების სინქრონიზაცია...</p>
+         </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="flex items-center gap-3 mb-8">
-        <Settings className="w-8 h-8 text-blue-400" />
-        <h1 className="text-4xl font-bold text-white">საიტის პარამეტრები</h1>
+    <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_0%_0%,rgba(180,0,255,0.03),transparent_70%)] -z-10" />
+
+      <div className="container mx-auto max-w-5xl relative">
+        <Link 
+          href="/admin" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-12 group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
+        </Link>
+
+        {/* Header */}
+        <div className="mb-16 animate-reveal">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 rounded-[2rem] glass border border-primary/20 flex items-center justify-center relative group">
+              <Settings className="w-10 h-10 text-primary transition-transform group-hover:rotate-90 duration-700" />
+              <div className="absolute inset-0 rounded-[2rem] bg-primary/20 blur-xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div>
+              <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">Site <span className="text-primary tracking-normal">Config</span></h1>
+              <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4 italic">გლობალური პარამეტრების მართვა</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-12 animate-reveal" style={{ animationDelay: '0.1s' }}>
+           {/* Room Info */}
+           <div className="glass-card p-1">
+              <div className="p-8 lg:p-12">
+                 <div className="flex items-center justify-between mb-10">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                          <Target className="w-6 h-6 text-purple-400" />
+                       </div>
+                       <div>
+                          <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic leading-none">Room Intel</h2>
+                          <p className="text-xs text-muted-foreground italic mt-1 uppercase tracking-widest font-bold">Global_Broadcast_Data</p>
+                       </div>
+                    </div>
+                    <Badge variant="outline" className="border-purple-500/20 text-purple-400">Tactical_Broadcast</Badge>
+                 </div>
+
+                 <div className="grid md:grid-cols-2 gap-8">
+                    {roomSettings.map((setting) => (
+                      <div key={setting.id} className="space-y-3">
+                        <Label htmlFor={setting.key} className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">
+                          {setting.description}
+                        </Label>
+                        {setting.key === "start_time" ? (
+                          <div className="relative">
+                             <Input
+                               id={setting.key}
+                               type="datetime-local"
+                               value={setting.value ? new Date(setting.value).toISOString().slice(0, 16) : ""}
+                               onChange={(e) =>
+                                 updateSetting(setting.key, e.target.value ? new Date(e.target.value).toISOString() : "")
+                               }
+                               className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold pl-12"
+                             />
+                             <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                          </div>
+                        ) : (
+                          <div className="relative">
+                             <Input
+                               id={setting.key}
+                               value={setting.value}
+                               onChange={(e) => updateSetting(setting.key, e.target.value)}
+                               className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold pl-12"
+                               placeholder={
+                                 setting.key === "room_id" ? "ROOM ID" : setting.key === "room_password" ? "PASSWORD" : "DETAILS"
+                               }
+                             />
+                             <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+
+           {/* Communication & Links */}
+           <div className="glass-card p-1">
+              <div className="p-8 lg:p-12">
+                 <div className="flex items-center justify-between mb-10">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                          <Globe className="w-6 h-6 text-blue-400" />
+                       </div>
+                       <div>
+                          <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic leading-none">Intel Links</h2>
+                          <p className="text-xs text-muted-foreground italic mt-1 uppercase tracking-widest font-bold">Social_And_Contact_Config</p>
+                       </div>
+                    </div>
+                    <Badge variant="outline" className="border-blue-500/20 text-blue-400 font-bold">Network_Admin</Badge>
+                 </div>
+
+                 <div className="space-y-8">
+                    {otherSettings.map((setting) => (
+                      <div key={setting.id} className="space-y-3">
+                        <Label htmlFor={setting.key} className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">
+                          {setting.description}
+                        </Label>
+                        <div className="relative group">
+                           <Input
+                             id={setting.key}
+                             value={setting.value}
+                             onChange={(e) => updateSetting(setting.key, e.target.value)}
+                             className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold pl-12"
+                           />
+                           <MessageSquare className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                        </div>
+                      </div>
+                    ))}
+                 </div>
+
+                 <div className="pt-12">
+                    <Button 
+                      onClick={handleSave} 
+                      disabled={saving} 
+                      variant="premium"
+                      className="h-20 w-full rounded-[2rem] font-black uppercase tracking-widest italic flex items-center gap-4 transition-all active:scale-[0.98]"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                          მიმდინარეობს შენახვა...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-6 h-6" />
+                          ყველა პარამეტრის დამახსოვრება
+                        </>
+                      )}
+                    </Button>
+                    
+                    <p className="text-center mt-6 text-[10px] text-muted-foreground uppercase tracking-[0.2em] italic font-bold">
+                       Warning: Changes affect the global interface for all operators.
+                    </p>
+                 </div>
+              </div>
+           </div>
+        </div>
       </div>
-
-      <Card className="glass-effect border-purple-500/20 mb-6">
-        <CardHeader>
-          <CardTitle className="text-purple-400 flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Room ინფორმაცია (გლობალური)
-          </CardTitle>
-          <CardDescription>ეს ინფორმაცია გამოჩნდება ყველა დადასტურებული გუნდის მენეჯერთან</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {roomSettings.map((setting) => (
-            <div key={setting.id} className="space-y-2">
-              <Label htmlFor={setting.key} className="text-gray-300">
-                {setting.description}
-              </Label>
-              {setting.key === "start_time" ? (
-                <Input
-                  id={setting.key}
-                  type="datetime-local"
-                  value={setting.value ? new Date(setting.value).toISOString().slice(0, 16) : ""}
-                  onChange={(e) =>
-                    updateSetting(setting.key, e.target.value ? new Date(e.target.value).toISOString() : "")
-                  }
-                  className="bg-gray-900 border-purple-500/30 text-white"
-                />
-              ) : (
-                <Input
-                  id={setting.key}
-                  value={setting.value}
-                  onChange={(e) => updateSetting(setting.key, e.target.value)}
-                  className="bg-gray-900 border-purple-500/30 text-white"
-                  placeholder={
-                    setting.key === "room_id"
-                      ? "12345678"
-                      : setting.key === "room_password"
-                        ? "პაროლი"
-                        : setting.key === "map"
-                          ? "მაგ: Erangel, Miramar, Sanhok..."
-                          : ""
-                  }
-                />
-              )}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="glass-effect border-gray-800">
-        <CardHeader>
-          <CardTitle className="text-white">ბმულებისა და კონტაქტების მართვა</CardTitle>
-          <CardDescription>შეცვალეთ საიტის სოციალური ქსელების ბმულები და საკონტაქტო ინფორმაცია</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {otherSettings.map((setting) => (
-            <div key={setting.id} className="space-y-2">
-              <Label htmlFor={setting.key} className="text-gray-300">
-                {setting.description}
-              </Label>
-              <Input
-                id={setting.key}
-                value={setting.value}
-                onChange={(e) => updateSetting(setting.key, e.target.value)}
-                className="bg-gray-900 border-gray-700 text-white"
-              />
-            </div>
-          ))}
-          <Button onClick={handleSave} disabled={saving} className="w-full bg-blue-600 hover:bg-blue-700 mt-6">
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                შენახვა...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                ყველა პარამეტრის შენახვა
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   )
 }

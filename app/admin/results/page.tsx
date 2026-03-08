@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,9 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Trophy, Plus, Trash2 } from "lucide-react"
+import { 
+  Trophy, Plus, Trash2, ChevronLeft, 
+  Upload, Image as ImageIcon, X, Save, 
+  ArrowRight, Activity, Calendar
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { format } from "date-fns"
+import { ka } from "date-fns/locale"
 
 type Result = {
   id: string
@@ -113,7 +120,6 @@ export default function AdminResultsPage() {
 
     const supabase = createClient()
 
-    // If there's an image, delete it from storage first
     if (imageUrl && imageUrl.includes("results/")) {
       const filePath = imageUrl.split("results/")[1]
       await supabase.storage.from("results").remove([`results/${filePath}`])
@@ -125,136 +131,174 @@ export default function AdminResultsPage() {
       fetchResults()
     }
   }
-  // </CHANGE>
 
   return (
-    <div className="min-h-screen py-12 px-4">
-      <div className="container mx-auto max-w-5xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-yellow-400 mb-2 flex items-center gap-2">
-              <Trophy className="w-10 h-10" />
-              შედეგების მართვა
-            </h1>
-            <p className="text-gray-400">დაამატე ტურნირის შედეგები და ფოტოები</p>
+    <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
+      <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_100%_0%,rgba(255,180,0,0.03),transparent_70%)] -z-10" />
+
+      <div className="container mx-auto max-w-5xl relative">
+        <Link 
+          href="/admin" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-12 group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
+        </Link>
+
+        {/* Header */}
+        <div className="mb-16 animate-reveal">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-[2rem] glass border border-blue-500/20 flex items-center justify-center relative group">
+                <Trophy className="w-10 h-10 text-blue-400 transition-transform group-hover:scale-110 duration-500" />
+                <div className="absolute inset-0 rounded-[2rem] bg-blue-500/20 blur-xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div>
+                <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">Match <span className="text-blue-400 tracking-normal">Results</span></h1>
+                <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4 italic">შედეგების და ფოტოების ადმინისტრირება</p>
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => setIsAdding(!isAdding)} 
+              variant={isAdding ? "outline" : "premium"}
+              className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest italic flex items-center gap-3 transition-all active:scale-95"
+            >
+              {isAdding ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              {isAdding ? "გაუქმება" : "ახალი შედეგი"}
+            </Button>
           </div>
-          <Button onClick={() => setIsAdding(true)} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            ახალი შედეგი
-          </Button>
         </div>
 
         {isAdding && (
-          <Card className="bg-black/50 border-blue-500/20 backdrop-blur-sm mb-6">
-            <CardHeader>
-              <CardTitle className="text-blue-400">ახალი შედეგის დამატება</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label className="text-gray-200">სათაური</Label>
+          <div className="glass-card p-1 animate-reveal mb-12">
+            <div className="p-8 lg:p-12 space-y-8">
+              <div className="flex items-center justify-between">
+                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">ახალი მონაცემის დამატება</h2>
+                 <Badge variant="outline" className="border-blue-500/20 text-blue-400">Entry_Mode</Badge>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სათაური</Label>
                   <Input
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="bg-gray-900/50 border-blue-500/30 text-white"
+                    className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold"
+                    placeholder="მაგ: Scrims Result #42"
                   />
                 </div>
-                <div>
-                  <Label className="text-gray-200">აღწერა</Label>
+
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">აღწერა</Label>
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="bg-gray-900/50 border-blue-500/30 text-white"
+                    className="h-32 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-sm italic py-4"
+                    placeholder="დაწერეთ დეტალური ინფორმაცია..."
                   />
                 </div>
-                <div>
-                  <Label className="text-gray-200">სურათის URL (ან ატვირთეთ)</Label>
-                  <Input
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    className="bg-gray-900/50 border-blue-500/30 text-white mb-2"
-                  />
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="bg-gray-900/50 border-blue-500/30 text-white"
-                      disabled={isUploading}
-                    />
-                    {isUploading && <span className="text-sm text-gray-400">იტვირთება...</span>}
+
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სურათის მართვა</Label>
+                    <div className="grid md:grid-cols-2 gap-4">
+                       <Input
+                         value={formData.imageUrl}
+                         onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                         placeholder="სურათის URL (https://...)"
+                         className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold"
+                       />
+                       <div className="relative group overflow-hidden rounded-xl">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="bg-black/40 border-white/10 text-white h-14 cursor-pointer file:h-14 file:bg-white/5 file:border-none file:text-white file:font-black file:text-[10px] file:uppercase file:px-6"
+                            disabled={isUploading}
+                          />
+                          {isUploading && (
+                             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                <Activity className="w-5 h-5 text-primary animate-spin" />
+                             </div>
+                          )}
+                       </div>
+                    </div>
                   </div>
+
                   {formData.imageUrl && (
-                    <div className="mt-2 relative w-full h-48">
+                    <div className="relative w-full h-64 rounded-[2rem] overflow-hidden border border-white/10 glass animate-reveal">
                       <Image
                         src={formData.imageUrl || "/placeholder.svg"}
                         alt="Preview"
                         fill
-                        className="object-cover rounded-md"
+                        className="object-cover transition-transform duration-700 hover:scale-105"
                         onError={() => setFormData({ ...formData, imageUrl: "" })}
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/50 to-transparent" />
+                      <div className="absolute bottom-6 left-6">
+                         <Badge variant="outline" className="bg-black/50 border-white/10 text-[9px] font-black uppercase tracking-widest italic">Live_Preview</Badge>
+                      </div>
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                    დამატება
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => setIsAdding(false)}
-                    variant="outline"
-                    className="border-gray-500/50"
-                  >
-                    გაუქმება
-                  </Button>
-                </div>
+
+                <Button type="submit" className="h-16 w-full rounded-2xl font-black uppercase tracking-widest italic" variant="premium">
+                  <Save className="w-5 h-5 mr-3" />
+                  შედეგის გამოქვეყნება
+                </Button>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        <div className="space-y-6">
-          {results.map((result) => (
-            <Card key={result.id} className="bg-black/50 border-blue-500/20 backdrop-blur-sm overflow-hidden">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-2xl text-blue-400">{result.title}</CardTitle>
-                    {result.description && <p className="text-gray-400 mt-2">{result.description}</p>}
-                  </div>
-                  <Button
-                    onClick={() => deleteResult(result.id, result.image_url)}
-                    size="sm"
-                    variant="outline"
-                    className="border-red-500/50 text-red-400 hover:bg-red-500/10 flex items-center gap-1"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              {result.image_url && (
-                <CardContent>
-                  <div className="relative w-full h-96 rounded-lg overflow-hidden">
-                    <Image
-                      src={result.image_url || "/placeholder.svg"}
-                      alt={result.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                </CardContent>
-              )}
-            </Card>
+        <div className="grid gap-12 animate-reveal" style={{ animationDelay: '0.1s' }}>
+          {results.map((result, i) => (
+            <div key={result.id} className="glass-card p-1 group">
+               <div className="relative h-96 w-full rounded-[2.5rem] overflow-hidden">
+                   {result.image_url ? (
+                      <Image
+                        src={result.image_url}
+                        alt={result.title}
+                        fill
+                        className="object-cover transition-transform duration-[1.5s] group-hover:scale-110"
+                      />
+                   ) : (
+                      <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                         <ImageIcon className="w-20 h-20 text-white/10" />
+                      </div>
+                   )}
+                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                   
+                   <div className="absolute bottom-0 left-0 w-full p-10 flex items-end justify-between">
+                      <div className="max-w-2xl">
+                         <div className="flex items-center gap-3 mb-4">
+                            <Badge variant="outline" className="border-secondary/20 text-secondary bg-secondary/10 px-3 py-1 font-black text-[9px] tracking-widest uppercase italic italic">
+                               <Calendar className="w-3 h-3 mr-1.5" />
+                               {format(new Date(result.created_at), "PPP", { locale: ka })}
+                            </Badge>
+                         </div>
+                         <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-4 leading-none">{result.title}</h2>
+                         <p className="text-muted-foreground font-light italic leading-relaxed line-clamp-2">{result.description}</p>
+                      </div>
+                      <Button
+                        onClick={() => deleteResult(result.id, result.image_url)}
+                        variant="outline"
+                        className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 mb-2 transition-all active:scale-95"
+                      >
+                        <Trash2 className="w-6 h-6" />
+                      </Button>
+                   </div>
+               </div>
+            </div>
           ))}
+          
           {results.length === 0 && (
-            <Card className="bg-black/50 border-blue-500/20">
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-400">შედეგები ჯერ არ არის დამატებული</p>
-              </CardContent>
-            </Card>
+            <div className="glass-card p-20 text-center">
+               <Trophy className="w-20 h-20 text-muted-foreground mx-auto mb-6 opacity-10" />
+               <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic">შედეგები არ მოიძებნა</p>
+            </div>
           )}
         </div>
       </div>

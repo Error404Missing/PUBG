@@ -18,6 +18,11 @@ import {
   Award,
   Zap,
   ChevronLeft,
+  Activity,
+  User,
+  ArrowRight,
+  ShieldCheck,
+  Star
 } from "lucide-react"
 import Link from "next/link"
 
@@ -31,8 +36,6 @@ interface UserProfile {
   badge?: string | null
   created_at: string
 }
-
-
 
 export function AdminUsersClient({
   users,
@@ -117,256 +120,259 @@ export function AdminUsersClient({
   }
 
   return (
-    <div className="min-h-screen py-12 px-4">
-      <div className="container mx-auto max-w-7xl">
-        <div className="mb-8">
-          <Link
-            href="/admin"
-            className="text-sm text-gray-400 hover:text-blue-400 transition-colors flex items-center gap-1 mb-4"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            ადმინ პანელი
-          </Link>
-          <h1 className="text-4xl font-bold text-yellow-400 mb-2 flex items-center gap-3">
-            <Users className="w-10 h-10" />
-            მომხმარებლების მართვა
-          </h1>
-          <p className="text-gray-400">ყველა რეგისტრირებული მომხმარებლის მართვა</p>
+    <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_100%_100%,rgba(255,180,0,0.03),transparent_70%)] -z-10" />
+
+      <div className="container mx-auto max-w-7xl relative">
+        <Link 
+          href="/admin" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-12 group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
+        </Link>
+
+        {/* Header */}
+        <div className="mb-16 animate-reveal">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-[2rem] glass border border-primary/20 flex items-center justify-center relative group">
+                <Users className="w-10 h-10 text-primary transition-transform group-hover:scale-110 duration-500" />
+                <div className="absolute inset-0 rounded-[2rem] bg-primary/20 blur-xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div>
+                <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">User <span className="text-primary tracking-normal">Intel</span></h1>
+                <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4 italic">ოპერატორების და როლების მართვა</p>
+              </div>
+            </div>
+
+            <div className="flex-1 max-w-md">
+               <div className="relative group">
+                  <Input
+                    placeholder="ძიება სახელით ან ID-ით..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-16 pl-12 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-xs font-bold transition-all"
+                  />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors" />
+               </div>
+            </div>
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="mb-6 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-          <Input
-            placeholder="ძიება სახელით ან ID-ით..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-gray-900/50 border-blue-500/30 text-white"
-          />
-        </div>
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-black/50 border-blue-500/20">
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-blue-400">{userList.length}</p>
-              <p className="text-sm text-gray-400">სულ</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-black/50 border-green-500/20">
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-green-400">
-                {Object.keys(vipMap).length}
-              </p>
-              <p className="text-sm text-gray-400">VIP</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-black/50 border-red-500/20">
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-red-400">
-                {userList.filter((u) => u.is_banned).length}
-              </p>
-              <p className="text-sm text-gray-400">დაბანილი</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-black/50 border-yellow-500/20">
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-yellow-400">
-                {userList.filter((u) => u.is_admin).length}
-              </p>
-              <p className="text-sm text-gray-400">ადმინი</p>
-            </CardContent>
-          </Card>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-reveal" style={{ animationDelay: '0.1s' }}>
+          {[
+            { label: "სულ", count: userList.length, color: "blue", icon: Users },
+            { label: "VIP", count: Object.keys(vipMap).length, color: "secondary", icon: Star },
+            { label: "დაბანილი", count: userList.filter((u) => u.is_banned).length, color: "rose", icon: Ban },
+            { label: "ადმინი", count: userList.filter((u) => u.is_admin).length, color: "emerald", icon: ShieldCheck }
+          ].map((stat, i) => (
+             <div key={i} className={`p-8 rounded-[2.5rem] glass border border-${stat.color === 'secondary' ? 'primary' : stat.color}-500/10 group hover:scale-[1.02] transition-all duration-500`}>
+                <div className="flex items-center justify-between mb-4">
+                   <div className={`w-10 h-10 rounded-xl bg-${stat.color === 'secondary' ? 'primary' : stat.color}-500/10 flex items-center justify-center text-${stat.color === 'secondary' ? 'primary' : stat.color}-400`}>
+                      <stat.icon className="w-5 h-5" />
+                   </div>
+                </div>
+                <div className="text-4xl font-black text-white italic tracking-tighter mb-1">{stat.count}</div>
+                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">{stat.label}</div>
+             </div>
+          ))}
         </div>
 
         {/* Users List */}
-        <div className="space-y-3">
+        <div className="space-y-6 animate-reveal" style={{ animationDelay: '0.2s' }}>
           {filteredUsers.map((u) => {
             const hasVip = !!vipMap[u.id]
 
             return (
-              <Card
+              <div
                 key={u.id}
-                className={`bg-black/50 backdrop-blur-sm transition-all ${
-                  u.is_banned
-                    ? "border-red-500/40"
-                    : u.is_admin
-                      ? "border-yellow-500/30"
-                      : "border-blue-500/20 hover:border-blue-500/40"
+                className={`glass-card p-1 transition-all duration-500 hover:scale-[1.005] ${
+                  u.is_banned ? 'opacity-60 grayscale' : ''
                 }`}
               >
-                <CardContent className="py-4">
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    {/* User Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="font-semibold text-white truncate">
-                          {u.username || "უცნობი"}
-                        </span>
-                        {u.is_admin && (
-                          <Badge className="bg-yellow-600 text-yellow-100 text-xs flex items-center gap-1">
-                            <Shield className="w-3 h-3" />
-                            ადმინი
-                          </Badge>
-                        )}
-                        {u.is_banned && (
-                          <Badge className="bg-red-600 text-red-100 text-xs flex items-center gap-1">
-                            <Ban className="w-3 h-3" />
-                            დაბანილი
-                          </Badge>
-                        )}
-                        {hasVip && (
-                          <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs flex items-center gap-1">
-                            <Zap className="w-3 h-3" />
-                            VIP
-                          </Badge>
-                        )}
-                        {u.badge && (
-                          <Badge className="bg-blue-600 text-white text-xs flex items-center gap-1">
-                            <Award className="w-3 h-3" />
-                            {u.badge}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 truncate">ID: {u.id}</p>
-                      {u.is_banned && u.ban_reason && (
-                        <p className="text-xs text-red-400 mt-1">
-                          მიზეზი: {u.ban_reason}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Badge Dialog */}
-                      <Dialog open={dialogOpen && selectedUser?.id === u.id} onOpenChange={(open) => {
-                        setDialogOpen(open)
-                        if (open) {
-                          setSelectedUser(u)
-                          setBadgeText(u.badge || "")
-                        }
-                      }}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10 bg-transparent"
-                          >
-                            <Award className="w-4 h-4 mr-1" />
-                            ბეჯი
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-gray-950 border-blue-500/30">
-                          <DialogHeader>
-                            <DialogTitle className="text-blue-400">
-                              ბეჯის მინიჭება - {u.username}
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4 pt-4">
-                            <div>
-                              <Label className="text-gray-300">ჩაწერეთ ბეჯის ტექსტი</Label>
-                              <Input
-                                value={badgeText}
-                                onChange={(e) => setBadgeText(e.target.value)}
-                                placeholder="მაგ: PRO, ჩემპიონი, ვეტერანი..."
-                                className="bg-gray-900/50 border-blue-500/30 text-white mt-2"
-                              />
-                              <p className="text-xs text-gray-500 mt-1">რაც ჩაწერთ, ის გამოჩნდება მომხმარებლის პროფილზე</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() => handleSetBadge(u.id)}
-                                disabled={isLoading || !badgeText.trim()}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                              >
-                                {isLoading ? "იტვირთება..." : "მინიჭება"}
-                              </Button>
-                              {u.badge && (
-                                <Button
-                                  onClick={() => handleRemoveBadge(u.id)}
-                                  disabled={isLoading}
-                                  variant="outline"
-                                  className="border-red-500/30 text-red-400 hover:bg-red-500/10 bg-transparent"
-                                >
-                                  წაშლა
-                                </Button>
-                              )}
-                            </div>
+                 <div className="p-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+                       <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-4 mb-4">
+                             <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                <User className="w-7 h-7 text-white/50" />
+                             </div>
+                             <div>
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                   <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{u.username || "უცნობი"}</h3>
+                                   <Badge variant="outline" className="border-white/5 text-white/20 px-2 py-0 text-[8px] font-black italic tracking-widest uppercase">ID: {u.id.slice(0, 8)}</Badge>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                   {u.is_admin && <Badge variant="secondary" className="px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase">Admin_Access_Lv3</Badge>}
+                                   {u.is_banned && <Badge variant="destructive" className="px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase">Operator_Terminated</Badge>}
+                                   {hasVip && <Badge variant="gold" className="px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase">Elite_Unit</Badge>}
+                                   {u.badge && <Badge className="bg-primary/20 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase">{u.badge}</Badge>}
+                                </div>
+                             </div>
                           </div>
-                        </DialogContent>
-                      </Dialog>
+                          {u.is_banned && u.ban_reason && (
+                             <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl mb-4 text-xs italic text-rose-400 font-bold uppercase tracking-widest">
+                                Protocol Violation: {u.ban_reason}
+                             </div>
+                          )}
+                       </div>
 
-                      {/* Ban/Unban */}
-                      {!u.is_admin && (
-                        <>
-                          {u.is_banned ? (
-                            <Button
-                              size="sm"
-                              onClick={() => handleUnbanUser(u.id)}
-                              disabled={isLoading}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <Unlock className="w-4 h-4 mr-1" />
-                              განბანვა
-                            </Button>
-                          ) : (
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-red-500/30 text-red-400 hover:bg-red-500/10 bg-transparent"
-                                  onClick={() => setSelectedUser(u)}
-                                >
-                                  <Ban className="w-4 h-4 mr-1" />
-                                  დაბანვა
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="bg-gray-950 border-red-500/30">
+                       <div className="flex flex-wrap items-center gap-3">
+                          {/* Badge Dialog */}
+                          <Dialog open={dialogOpen && selectedUser?.id === u.id} onOpenChange={(open) => {
+                            setDialogOpen(open)
+                            if (open) {
+                              setSelectedUser(u)
+                              setBadgeText(u.badge || "")
+                            }
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="h-12 border-primary/20 text-primary hover:bg-primary/5 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                              >
+                                <Award className="w-4 h-4 mr-2" />
+                                ბეჯის მინიჭება
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="glass-card bg-zinc-950 border-white/10 p-1">
+                              <div className="p-8">
                                 <DialogHeader>
-                                  <DialogTitle className="text-red-400">
-                                    მომხმარებლის დაბანვა - {u.username}
+                                  <DialogTitle className="text-2xl font-black text-white italic uppercase tracking-tighter">
+                                    ბეჯის მართვა: {u.username}
                                   </DialogTitle>
                                 </DialogHeader>
-                                <div className="space-y-4 pt-4">
-                                  <div>
-                                    <Label className="text-gray-300">დაბანვის მიზეზი</Label>
-                                    <Textarea
-                                      placeholder="მიუთითეთ მიზეზი..."
-                                      value={banReason}
-                                      onChange={(e) => setBanReason(e.target.value)}
-                                      className="bg-gray-900/50 border-red-500/30 text-white mt-2"
+                                <div className="space-y-6 pt-8">
+                                  <div className="space-y-3">
+                                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic font-bold">Badge Intel</Label>
+                                    <Input
+                                      value={badgeText}
+                                      onChange={(e) => setBadgeText(e.target.value)}
+                                      placeholder="მაგ: PRO, CHAMPION..."
+                                      className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold"
                                     />
                                   </div>
-                                  <Button
-                                    onClick={() => handleBanUser(u.id)}
-                                    disabled={isLoading}
-                                    className="w-full bg-red-600 hover:bg-red-700"
-                                  >
-                                    {isLoading ? "იტვირთება..." : "დაბანვა"}
-                                  </Button>
+                                  <div className="flex gap-4">
+                                    <Button
+                                      onClick={() => handleSetBadge(u.id)}
+                                      disabled={isLoading || !badgeText.trim()}
+                                      variant="premium"
+                                      className="h-14 flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest italic"
+                                    >
+                                      {isLoading ? "Saving..." : "მინიჭება"}
+                                    </Button>
+                                    {u.badge && (
+                                      <Button
+                                        onClick={() => handleRemoveBadge(u.id)}
+                                        disabled={isLoading}
+                                        variant="outline"
+                                        className="h-14 px-6 rounded-xl border-rose-500/20 text-rose-400"
+                                      >
+                                        <Trash2 className="w-5 h-5" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
-                              </DialogContent>
-                            </Dialog>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          {/* Ban/Unban */}
+                          {!u.is_admin && (
+                            <>
+                              {u.is_banned ? (
+                                <Button
+                                  onClick={() => handleUnbanUser(u.id)}
+                                  disabled={isLoading}
+                                  className="h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                                >
+                                  <Unlock className="w-4 h-4 mr-2" />
+                                  განბანვა
+                                </Button>
+                              ) : (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className="h-12 border-rose-500/20 text-rose-400 hover:bg-rose-500/5 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                                      onClick={() => setSelectedUser(u)}
+                                    >
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      დაბანვა
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="glass-card bg-zinc-950 border-white/10 p-1">
+                                    <div className="p-8">
+                                      <DialogHeader>
+                                        <DialogTitle className="text-2xl font-black text-rose-500 italic uppercase tracking-tighter">
+                                          PROTOCOL_TERMINATION: {u.username}
+                                        </DialogTitle>
+                                      </DialogHeader>
+                                      <div className="space-y-6 pt-8">
+                                        <div className="space-y-3">
+                                          <Label className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] ml-2 italic font-bold">Violation Intel</Label>
+                                          <Textarea
+                                            placeholder="მიუთითეთ მიზეზი..."
+                                            value={banReason}
+                                            onChange={(e) => setBanReason(e.target.value)}
+                                            className="h-32 bg-black/40 border-rose-500/20 rounded-xl focus:border-rose-500/50 text-xs font-bold"
+                                          />
+                                        </div>
+                                        <Button
+                                          onClick={() => handleBanUser(u.id)}
+                                          disabled={isLoading}
+                                          className="h-16 w-full bg-rose-600 hover:bg-rose-700 rounded-2xl font-black text-[11px] uppercase tracking-widest italic"
+                                        >
+                                          {isLoading ? "Terminating..." : "დაბანვა / Terminate"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                            </>
                           )}
-                        </>
-                      )}
+                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                 </div>
+              </div>
             )
           })}
 
           {filteredUsers.length === 0 && (
-            <Card className="bg-black/50 border-blue-500/20">
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-400">მომხმარებლები ვერ მოიძებნა</p>
-              </CardContent>
-            </Card>
+            <div className="glass-card p-20 text-center">
+               <Users className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
+               <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic">მომხმარებლები არ მოიძებნა</p>
+            </div>
           )}
         </div>
       </div>
     </div>
+  )
+}
+
+function Trash2(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
   )
 }

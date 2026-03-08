@@ -9,6 +9,10 @@ import {
   CheckCircle,
   XCircle,
   Gamepad2,
+  Users,
+  Calendar,
+  ArrowRight,
+  Shield
 } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -62,122 +66,148 @@ export default async function AdminRequestsPage() {
   const rejectedCount = requests?.filter((r) => r.status === "rejected").length || 0
 
   return (
-    <div className="min-h-screen py-12 px-4">
-      <div className="container mx-auto max-w-7xl">
-        <div className="mb-8">
-          <Link
-            href="/admin"
-            className="text-sm text-gray-400 hover:text-blue-400 transition-colors flex items-center gap-1 mb-4"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            ადმინ პანელი
-          </Link>
-          <h1 className="text-4xl font-bold text-yellow-400 mb-2 flex items-center gap-3">
-            <Gamepad2 className="w-10 h-10" />
-            თამაშის მოთხოვნები
-          </h1>
-          <p className="text-gray-400">გუნდების თამაშის მოთხოვნების მართვა</p>
+    <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(0,180,255,0.03),transparent_70%)] -z-10" />
+
+      <div className="container mx-auto max-w-7xl relative">
+        <Link 
+          href="/admin" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-12 group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
+        </Link>
+
+        {/* Header */}
+        <div className="mb-16 animate-reveal">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 rounded-[2rem] glass border border-emerald-500/20 flex items-center justify-center relative group">
+              <Gamepad2 className="w-10 h-10 text-emerald-400 transition-transform group-hover:scale-110 duration-500" />
+              <div className="absolute inset-0 rounded-[2rem] bg-emerald-500/20 blur-xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div>
+              <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">Game <span className="text-emerald-400 tracking-normal">Requests</span></h1>
+              <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4 italic">თამაშის მოთხოვნების ადმინისტრირება</p>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <Card className="bg-black/50 border-yellow-500/20">
-            <CardContent className="pt-6 text-center">
-              <Clock className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-              <p className="text-3xl font-bold text-yellow-400">{pendingCount}</p>
-              <p className="text-sm text-gray-400">მოლოდინში</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-black/50 border-green-500/20">
-            <CardContent className="pt-6 text-center">
-              <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
-              <p className="text-3xl font-bold text-green-400">{approvedCount}</p>
-              <p className="text-sm text-gray-400">დადასტურებული</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-black/50 border-red-500/20">
-            <CardContent className="pt-6 text-center">
-              <XCircle className="w-6 h-6 text-red-400 mx-auto mb-2" />
-              <p className="text-3xl font-bold text-red-400">{rejectedCount}</p>
-              <p className="text-sm text-gray-400">უარყოფილი</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-reveal" style={{ animationDelay: '0.1s' }}>
+          {[
+            { label: "მოლოდინში", count: pendingCount, color: "yellow", icon: Clock },
+            { label: "დადასტურებული", count: approvedCount, color: "emerald", icon: CheckCircle },
+            { label: "უარყოფილი", count: rejectedCount, color: "rose", icon: XCircle }
+          ].map((stat, i) => (
+             <div key={i} className={`p-8 rounded-[2.5rem] glass border border-${stat.color}-500/10 group hover:scale-[1.02] transition-all duration-500`}>
+                <div className="flex items-center justify-between mb-4">
+                   <div className={`w-12 h-12 rounded-2xl bg-${stat.color}-500/10 flex items-center justify-center`}>
+                      <stat.icon className={`w-6 h-6 text-${stat.color}-400`} />
+                   </div>
+                   <div className="text-[10px] font-black text-white/20 uppercase tracking-widest italic font-bold">Live_Stats</div>
+                </div>
+                <div className="text-4xl md:text-5xl font-black text-white italic tracking-tighter mb-1">{stat.count}</div>
+                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">{stat.label}</div>
+             </div>
+          ))}
         </div>
 
         {/* Requests List */}
-        <div className="space-y-3">
+        <div className="space-y-6 animate-reveal" style={{ animationDelay: '0.2s' }}>
           {requests && requests.length > 0 ? (
             requests.map((req) => {
-              const statusColor =
+              const themeColor =
                 req.status === "approved"
-                  ? "border-green-500/30"
+                  ? "emerald"
                   : req.status === "rejected"
-                    ? "border-red-500/30"
-                    : "border-yellow-500/30"
+                    ? "rose"
+                    : "yellow"
 
               return (
-                <Card key={req.id} className={`bg-black/50 backdrop-blur-sm ${statusColor}`}>
-                  <CardContent className="py-4">
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="font-semibold text-white">
-                            {req.teams?.team_name || "უცნობი გუნდი"}
-                          </span>
-                          <span className="text-gray-500 text-sm">
-                            [{req.teams?.team_tag}]
-                          </span>
-                          {req.has_vip && (
-                            <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs flex items-center gap-1">
-                              <Zap className="w-3 h-3" />
-                              VIP
-                            </Badge>
-                          )}
-                          <Badge
-                            className={
-                              req.status === "approved"
-                                ? "bg-green-600 text-white text-xs"
-                                : req.status === "rejected"
-                                  ? "bg-red-600 text-white text-xs"
-                                  : "bg-yellow-600 text-white text-xs"
-                            }
-                          >
-                            {req.status === "approved"
-                              ? "დადასტურებული"
-                              : req.status === "rejected"
-                                ? "უარყოფილი"
-                                : "მოლოდინში"}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-400">
-                          მატჩი: {req.schedules?.title || "უცნობი"}{" "}
-                          {req.schedules?.date && (
-                            <span className="text-gray-500">
-                              ({format(new Date(req.schedules.date), "PPP", { locale: ka })})
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          ლიდერი: {req.teams?.leader_id ? leaderMap[req.teams.leader_id] || "უცნობი" : "უცნობი"}
-                          {" | "}
-                          გაიგზავნა: {format(new Date(req.created_at), "PPP p", { locale: ka })}
-                        </p>
-                      </div>
+                <div key={req.id} className={`glass-card p-1 transition-all duration-500 hover:scale-[1.005] ${
+                   req.has_vip ? 'shadow-[0_0_50px_-12px_rgba(255,180,0,0.1)]' : ''
+                }`}>
+                   <div className="p-6 md:p-8">
+                     <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+                       <div className="flex-1 min-w-0">
+                         <div className="flex flex-wrap items-center gap-4 mb-4">
+                           <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-xl bg-${themeColor}-500/10 border border-${themeColor}-500/20 flex items-center justify-center`}>
+                                 <Shield className={`w-6 h-6 text-${themeColor}-400`} />
+                              </div>
+                              <div>
+                                 <div className="flex items-center gap-2">
+                                    <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{req.teams?.team_name || "უცნობი გუნდი"}</h3>
+                                    <span className="text-lg font-black text-white/20 italic tracking-widest">[{req.teams?.team_tag}]</span>
+                                 </div>
+                                 <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic flex items-center gap-2">
+                                    <Users className="w-3 h-3 text-primary" />
+                                    ლიდერი: <span className="text-white">{req.teams?.leader_id ? leaderMap[req.teams.leader_id] || "უცნობი" : "უცნობი"}</span>
+                                 </div>
+                              </div>
+                           </div>
 
-                      {req.status === "pending" && (
-                        <AdminRequestActions requestId={req.id} />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                           <div className="flex items-center gap-2">
+                              {req.has_vip && (
+                                <Badge variant="gold" className="px-3 py-1 font-black text-[9px] tracking-widest">
+                                  <Zap className="w-3 h-3 mr-1" />
+                                  ELITE_UNIT
+                                </Badge>
+                              )}
+                              <Badge className={`px-3 py-1 uppercase italic font-black text-[9px] tracking-widest border ${
+                                req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                req.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                                'bg-red-500/10 text-red-400 border-red-500/20'
+                              }`}>
+                                {req.status === "approved" ? "Auth_Verified" : req.status === "rejected" ? "Denied" : "Awaiting_Review"}
+                              </Badge>
+                           </div>
+                         </div>
+                         
+                         <div className="grid md:grid-cols-2 gap-4">
+                            <div className="glass p-4 rounded-2xl border border-white/5 flex items-center gap-4">
+                               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                  <Calendar className="w-5 h-5 text-blue-400" />
+                               </div>
+                               <div>
+                                  <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">ოპერატიული_მატჩი</div>
+                                  <div className="text-sm font-bold text-white italic tracking-tight">{req.schedules?.title || "უცნობი"}</div>
+                               </div>
+                            </div>
+                            <div className="glass p-4 rounded-2xl border border-white/5 flex items-center gap-4">
+                               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                                  <Clock className="w-5 h-5 text-purple-400" />
+                               </div>
+                               <div>
+                                  <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">დროის_შტამპი</div>
+                                  <div className="text-sm font-bold text-white italic tracking-tight lowercase">
+                                     {req.schedules?.date ? format(new Date(req.schedules.date), "PPP", { locale: ka }) : "N/A"}
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+
+                         <div className="mt-4 flex items-center gap-2 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] italic">
+                            Intel_Logged: {format(new Date(req.created_at), "PPP p", { locale: ka })}
+                         </div>
+                       </div>
+
+                       {req.status === "pending" && (
+                         <div className="flex-shrink-0 lg:pl-8 lg:border-l lg:border-white/5">
+                            <AdminRequestActions requestId={req.id} />
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                </div>
               )
             })
           ) : (
-            <Card className="bg-black/50 border-blue-500/20">
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-400">თამაშის მოთხოვნები არ არის</p>
-              </CardContent>
-            </Card>
+             <div className="glass-card p-20 text-center">
+                <Gamepad2 className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
+                <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic">მოთხოვნები არ მოიძებნა</p>
+             </div>
           )}
         </div>
       </div>

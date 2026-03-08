@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,8 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar, Plus, Trash2 } from "lucide-react"
+import { 
+  Calendar, Plus, Trash2, ChevronLeft, 
+  Clock, MapPin, Users, Target, Save, X,
+  ArrowRight, Activity, Shield
+} from "lucide-react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { format } from "date-fns"
+import { ka } from "date-fns/locale"
 
 type Schedule = {
   id: string
@@ -104,140 +111,217 @@ export default function AdminSchedulePage() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-4">
-      <div className="container mx-auto max-w-5xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-yellow-400 mb-2 flex items-center gap-2">
-              <Calendar className="w-10 h-10" />
-              განრიგის მართვა
-            </h1>
-            <p className="text-gray-400">დაამატე ახალი მატჩები და ტურნირები</p>
+    <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_100%_0%,rgba(0,180,255,0.03),transparent_70%)] -z-10" />
+
+      <div className="container mx-auto max-w-5xl relative">
+        <Link 
+          href="/admin" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-12 group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
+        </Link>
+
+        {/* Header */}
+        <div className="mb-16 animate-reveal">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-[2rem] glass border border-sky-500/20 flex items-center justify-center relative group">
+                <Calendar className="w-10 h-10 text-sky-400 transition-transform group-hover:scale-110 duration-500" />
+                <div className="absolute inset-0 rounded-[2rem] bg-sky-500/20 blur-xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div>
+                <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">Match <span className="text-sky-400 tracking-normal">Schedule</span></h1>
+                <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4 italic">განრიგის და ტურნირების ადმინისტრირება</p>
+              </div>
+            </div>
+
+            {!isAdding && (
+              <Button 
+                onClick={() => setIsAdding(true)} 
+                variant="premium"
+                className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest italic flex items-center gap-3 active:scale-95 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                ახალი მატჩი
+              </Button>
+            )}
           </div>
-          <Button onClick={() => setIsAdding(true)} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            ახალი მატჩი
-          </Button>
         </div>
 
         {isAdding && (
-          <Card className="bg-black/50 border-blue-500/20 backdrop-blur-sm mb-6">
-            <CardHeader>
-              <CardTitle className="text-blue-400">ახალი მატჩის დამატება</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label className="text-gray-200">სათაური</Label>
+          <div className="glass-card p-1 animate-reveal mb-12">
+            <div className="p-8 lg:p-12 space-y-8">
+              <div className="flex items-center justify-between">
+                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">ახალი ოპერაციის დამატება</h2>
+                 <Badge variant="outline" className="border-sky-500/20 text-sky-400">Tactical_Planning</Badge>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სათაური / Operation Title</Label>
                   <Input
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="bg-gray-900/50 border-blue-500/30 text-white"
+                    className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold"
+                    placeholder="მაგ: Daily Scrims #12"
                   />
                 </div>
-                <div>
-                  <Label className="text-gray-200">აღწერა</Label>
+
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">აღწერა / Mission Intel</Label>
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="bg-gray-900/50 border-blue-500/30 text-white"
+                    className="h-32 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-sm italic py-4"
+                    placeholder="დაწერეთ მატჩის დეტალები..."
                   />
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-200">თარიღი</Label>
-                    <Input
-                      type="date"
-                      required
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="bg-gray-900/50 border-blue-500/30 text-white"
-                    />
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">თარიღი / Deployment Date</Label>
+                    <div className="relative">
+                       <Input
+                         type="date"
+                         required
+                         value={formData.date}
+                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                       />
+                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-gray-200">დრო</Label>
-                    <Input
-                      type="time"
-                      required
-                      value={formData.time}
-                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                      className="bg-gray-900/50 border-blue-500/30 text-white"
-                    />
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-200">რუკა</Label>
-                    <Input
-                      value={formData.mapName}
-                      onChange={(e) => setFormData({ ...formData, mapName: e.target.value })}
-                      placeholder="Erangel, Miramar, etc."
-                      className="bg-gray-900/50 border-blue-500/30 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-gray-200">მაქს. გუნდები</Label>
-                    <Input
-                      type="number"
-                      required
-                      value={formData.maxTeams}
-                      onChange={(e) => setFormData({ ...formData, maxTeams: e.target.value })}
-                      className="bg-gray-900/50 border-blue-500/30 text-white"
-                    />
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">დრო / Deployment Time</Label>
+                    <div className="relative">
+                       <Input
+                         type="time"
+                         required
+                         value={formData.time}
+                         onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                       />
+                       <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                    დამატება
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">რუკა / Sector (Map)</Label>
+                    <div className="relative">
+                       <Input
+                         value={formData.mapName}
+                         onChange={(e) => setFormData({ ...formData, mapName: e.target.value })}
+                         placeholder="Erangel, Miramar..."
+                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                       />
+                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">გუნდები / Max Units</Label>
+                    <div className="relative">
+                       <Input
+                         type="number"
+                         required
+                         value={formData.maxTeams}
+                         onChange={(e) => setFormData({ ...formData, maxTeams: e.target.value })}
+                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                       />
+                       <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Button type="submit" variant="premium" className="h-16 flex-1 rounded-2xl font-black uppercase tracking-widest italic flex items-center gap-3">
+                    <Save className="w-5 h-5" />
+                    ოპერაციის გააქტიურება
                   </Button>
                   <Button
                     type="button"
                     onClick={() => setIsAdding(false)}
                     variant="outline"
-                    className="border-gray-500/50"
+                    className="h-16 px-10 rounded-2xl border-white/10 hover:bg-white/5 font-black uppercase tracking-widest italic"
                   >
+                    <X className="w-5 h-5 mr-3" />
                     გაუქმება
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        <div className="space-y-4">
-          {schedules.map((schedule) => (
-            <Card key={schedule.id} className="bg-black/50 border-blue-500/20 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-blue-400 mb-2">{schedule.title}</h3>
-                    {schedule.description && <p className="text-gray-400 mb-4">{schedule.description}</p>}
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-300">
-                      <span>თარიღი: {new Date(schedule.date).toLocaleDateString("ka-GE")}</span>
-                      <span>დრო: {new Date(schedule.date).toLocaleTimeString("ka-GE")}</span>
-                      {schedule.map_name && <span>რუკა: {schedule.map_name}</span>}
-                      <span>მაქს. გუნდები: {schedule.max_teams}</span>
-                    </div>
+        <div className="space-y-6 animate-reveal" style={{ animationDelay: '0.1s' }}>
+          {schedules.map((schedule, i) => (
+            <div key={schedule.id} className="glass-card p-1 group">
+               <div className="p-8 lg:p-10">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                     <div className="flex-1 space-y-6">
+                        <div className="flex items-center gap-6">
+                           <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center relative">
+                              <Shield className="w-7 h-7 text-sky-400" />
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                           </div>
+                           <div>
+                              <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">{schedule.title}</h3>
+                              <div className="flex items-center gap-2">
+                                 <Badge variant="outline" className="border-white/5 text-muted-foreground bg-white/5 text-[9px] font-black uppercase tracking-widest italic italic">Match_ID: {schedule.id.slice(0, 8)}</Badge>
+                              </div>
+                           </div>
+                        </div>
+
+                        {schedule.description && (
+                           <p className="text-muted-foreground font-light italic leading-relaxed border-l-2 border-sky-500/20 pl-6 py-2">
+                              {schedule.description}
+                           </p>
+                        )}
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Deployment</div>
+                              <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "PPP", { locale: ka })}</div>
+                           </div>
+                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Time_H-M</div>
+                              <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "p", { locale: ka })}</div>
+                           </div>
+                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Sector</div>
+                              <div className="text-sm font-bold text-secondary italic font-black uppercase">{schedule.map_name || "Unknown"}</div>
+                           </div>
+                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Max_Units</div>
+                              <div className="text-sm font-bold text-white italic">{schedule.max_teams} Teams</div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <div className="flex lg:flex-col gap-3">
+                        <Button
+                          onClick={() => deleteSchedule(schedule.id)}
+                          variant="outline"
+                          className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
+                        >
+                          <Trash2 className="w-6 h-6" />
+                        </Button>
+                     </div>
                   </div>
-                  <Button
-                    onClick={() => deleteSchedule(schedule.id)}
-                    size="sm"
-                    variant="outline"
-                    className="border-red-500/50 text-red-400 hover:bg-red-500/10 flex items-center gap-1"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+               </div>
+            </div>
           ))}
+          
           {schedules.length === 0 && (
-            <Card className="bg-black/50 border-blue-500/20">
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-400">მატჩები ჯერ არ არის დამატებული</p>
-              </CardContent>
-            </Card>
+            <div className="glass-card p-20 text-center">
+               <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
+               <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic">განრიგი ცარიელია</p>
+            </div>
           )}
         </div>
       </div>

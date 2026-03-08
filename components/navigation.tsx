@@ -106,8 +106,9 @@ export function Navigation() {
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="text-2xl font-black tracking-tighter text-white group-hover:scale-105 transition-transform duration-300">
+            <div className="text-2xl font-black tracking-tighter text-white group-hover:scale-105 transition-transform duration-300 flex items-center gap-2">
               PUBG<span className="text-primary italic">ARENA</span>
+              <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/20">V2.0</span>
             </div>
           </Link>
 
