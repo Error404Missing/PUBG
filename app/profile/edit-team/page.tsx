@@ -39,7 +39,7 @@ export default function EditTeamPage() {
           .from("teams")
           .select("*")
           .eq("leader_id", user.id)
-          .eq("status", "draft")
+          .in("status", ["draft", "pending"])
           .single()
 
         if (team) {
@@ -80,7 +80,7 @@ export default function EditTeamPage() {
           maps_count: Number.parseInt(formData.mapsCount),
         })
         .eq("leader_id", userId)
-        .eq("status", "draft")
+        .in("status", ["draft", "pending"])
 
       if (error) throw error
 

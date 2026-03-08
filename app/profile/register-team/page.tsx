@@ -57,7 +57,7 @@ export default function RegisterTeamPage() {
         leader_id: userId,
         players_count: Number.parseInt(formData.playersCount),
         maps_count: Number.parseInt(formData.mapsCount),
-        status: "draft",
+        status: "pending",
       })
 
       if (error) throw error

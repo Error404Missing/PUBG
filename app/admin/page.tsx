@@ -5,7 +5,7 @@ import {
   Users, Calendar, Trophy, Ban, Gamepad2, 
   UserCog, Shield, Zap, Target, Activity,
   ChevronRight, LayoutDashboard, Settings, Layers,
-  CheckCircle2
+  CheckCircle2, MessageSquare
 } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -90,6 +90,13 @@ export default async function AdminPage() {
       desc: "Arena-ს წესების და პირობების რედაქტირება", 
       icon: Shield, 
       color: "red" 
+    },
+    { 
+      href: "/admin/support", 
+      label: "მხარდაჭერის ცენტრი", 
+      desc: "მომხმარებლებთან პირდაპირი ჩატი და დახმარება", 
+      icon: MessageSquare, 
+      color: "sky" 
     },
   ]
 

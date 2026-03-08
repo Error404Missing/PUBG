@@ -4,14 +4,42 @@ import { useState, useEffect, useRef } from "react"
 import { MessageCircle, X, Send, User, ShieldCheck, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { createClient } from "@/lib/supabase/client"
 
 export function SupportChat() {
   const [isOpen, setIsOpen] = useState(false)
   const [message, setMessage] = useState("")
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<any[]>([
     { id: 1, text: "გამარჯობა! როგორ შეგვიძლია დაგეხმაროთ?", sender: "admin", time: "12:00" }
   ])
+  const [user, setUser] = useState<any>(null)
+  const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      setUser(authUser)
+    })
+
+    const channel = supabase.channel('support-chat', {
+       config: {
+         broadcast: { self: true }
+       }
+    })
+
+    channel.on('broadcast', { event: 'message' }, ({ payload }: any) => {
+       // Only show messages for this user or sent by admin to this user
+       if (payload.sender === 'admin' && payload.targetUserId === user?.id) {
+          setMessages((prev: any[]) => [...prev, payload])
+       } else if (payload.sender === 'user' && payload.userId === user?.id) {
+          setMessages((prev: any[]) => [...prev, payload])
+       }
+    }).subscribe()
+
+    return () => {
+       supabase.removeChannel(channel)
+    }
+  }, [user?.id])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -19,29 +47,26 @@ export function SupportChat() {
     }
   }, [messages, isOpen])
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!message.trim()) return
+    if (!message.trim() || !user) return
 
     const newMessage = {
       id: Date.now(),
       text: message,
       sender: "user",
+      userId: user.id,
+      username: user.user_metadata?.username || user.email,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
-    setMessages([...messages, newMessage])
-    setMessage("")
+    await supabase.channel('support-chat').send({
+       type: 'broadcast',
+       event: 'message',
+       payload: newMessage
+    })
 
-    // Simple automated response mock
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        text: "თქვენი შეტყობინება მიღებულია. ადმინისტრატორი მალე გიპასუხებთ.",
-        sender: "admin",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }])
-    }, 1500)
+    setMessage("")
   }
 
   return (
