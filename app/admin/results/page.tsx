@@ -27,6 +27,7 @@ type Result = {
   title: string
   description: string | null
   image_url: string | null
+  winner_team: string | null
   created_at: string
 }
 
@@ -39,6 +40,7 @@ export default function AdminResultsPage() {
     title: "",
     description: "",
     imageUrl: "",
+    winnerTeam: "",
   })
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, resultId: string | null, imageUrl: string | null }>({
     isOpen: false,
@@ -139,6 +141,7 @@ export default function AdminResultsPage() {
       title: formData.title,
       description: formData.description || null,
       image_url: formData.imageUrl || null,
+      winner_team: formData.winnerTeam || null,
     })
 
     if (error) {
@@ -151,6 +154,7 @@ export default function AdminResultsPage() {
         title: "",
         description: "",
         imageUrl: "",
+        winnerTeam: "",
       })
       fetchResults()
     }
@@ -237,6 +241,18 @@ export default function AdminResultsPage() {
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold"
                     placeholder="მაგ: Scrims Result #42"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-secondary uppercase tracking-[0.2em] ml-2 italic">
+                    გმარჯველი გუნდი / Winner Team
+                  </Label>
+                  <Input
+                    value={formData.winnerTeam}
+                    onChange={(e) => setFormData({ ...formData, winnerTeam: e.target.value })}
+                    className="h-16 bg-black/40 border-secondary/20 rounded-2xl focus:border-secondary/50 text-md font-bold text-secondary"
+                    placeholder="მაგ.: ALPHA SQUAD"
                   />
                 </div>
 
@@ -361,10 +377,16 @@ export default function AdminResultsPage() {
                    <div className="absolute bottom-0 left-0 w-full p-10 flex items-end justify-between">
                       <div className="max-w-2xl">
                          <div className="flex items-center gap-3 mb-4">
-                            <Badge variant="outline" className="border-secondary/20 text-secondary bg-secondary/10 px-3 py-1 font-black text-[9px] tracking-widest uppercase italic italic">
+                            <Badge variant="outline" className="border-secondary/20 text-secondary bg-secondary/10 px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">
                                <Calendar className="w-3 h-3 mr-1.5" />
                                {format(new Date(result.created_at), "PPP", { locale: ka })}
                             </Badge>
+                            {result.winner_team && (
+                               <Badge className="bg-secondary/20 text-secondary border border-secondary/40 px-4 py-1.5 font-black text-[10px] tracking-widest uppercase italic">
+                                  <Trophy className="w-3 h-3 mr-1.5" />
+                                  {result.winner_team}
+                               </Badge>
+                            )}
                          </div>
                          <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-4 leading-none">{result.title}</h2>
                          <p className="text-muted-foreground font-light italic leading-relaxed line-clamp-2">{result.description}</p>

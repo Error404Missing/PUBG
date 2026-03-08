@@ -271,12 +271,18 @@ export default function ProfilePage() {
 
                {/* Text Info */}
                <div className="flex-1 pb-2">
-                  <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
                      <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">{profile?.username || 'ოპერატორი'}</h1>
                      {vipStatus && (
                         <div className="flex items-center gap-1.5 bg-secondary/20 px-3 py-1 rounded-full text-secondary text-[10px] font-black tracking-widest border border-secondary/30">
                            <Zap className="w-3 h-3" />
                            VIP_ELITE
+                        </div>
+                     )}
+                     {profile?.badge && (
+                        <div className="flex items-center gap-1.5 bg-primary/20 px-3 py-1 rounded-full text-primary text-[10px] font-black tracking-widest border border-primary/30">
+                           <Award className="w-3 h-3" />
+                           {profile.badge}
                         </div>
                      )}
                   </div>

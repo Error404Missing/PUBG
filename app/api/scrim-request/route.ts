@@ -47,13 +47,18 @@ export async function POST(request: Request) {
     }
 
     // Check if team leader has VIP status
-    const { data: vipStatus } = await supabase
-      .from("user_vip_status")
-      .select("vip_until")
-      .eq("user_id", user.id)
-      .single()
-
-    const hasVip = !!(vipStatus && new Date(vipStatus.vip_until) > new Date())
+    let hasVip = false
+    try {
+      const { data: vipStatus } = await supabase
+        .from("user_vip_status")
+        .select("vip_until")
+        .eq("user_id", user.id)
+        .maybeSingle()
+      hasVip = !!(vipStatus && new Date(vipStatus.vip_until) > new Date())
+    } catch (e) {
+      // user_vip_status view might not exist yet, continue without VIP
+      console.warn("VIP status check failed:", e)
+    }
 
     // Create scrim request
     const { data: scrimRequest, error } = await supabase
