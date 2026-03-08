@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { CustomConfirm } from "@/components/ui/custom-confirm"
 import { format } from "date-fns"
 import { ka } from "date-fns/locale"
 
@@ -37,6 +38,11 @@ export default function AdminResultsPage() {
     title: "",
     description: "",
     imageUrl: "",
+  })
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, resultId: string | null, imageUrl: string | null }>({
+    isOpen: false,
+    resultId: null,
+    imageUrl: null
   })
 
   useEffect(() => {
@@ -116,8 +122,6 @@ export default function AdminResultsPage() {
   }
 
   const deleteResult = async (id: string, imageUrl: string | null) => {
-    if (!confirm("დარწმუნებული ხართ რომ გსურთ შედეგის წაშლა?")) return
-
     const supabase = createClient()
 
     if (imageUrl && imageUrl.includes("results/")) {
@@ -282,8 +286,8 @@ export default function AdminResultsPage() {
                          <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-4 leading-none">{result.title}</h2>
                          <p className="text-muted-foreground font-light italic leading-relaxed line-clamp-2">{result.description}</p>
                       </div>
-                      <Button
-                        onClick={() => deleteResult(result.id, result.image_url)}
+                       <Button
+                        onClick={() => setDeleteConfirm({ isOpen: true, resultId: result.id, imageUrl: result.image_url })}
                         variant="outline"
                         className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 mb-2 transition-all active:scale-95"
                       >
@@ -302,6 +306,16 @@ export default function AdminResultsPage() {
           )}
         </div>
       </div>
+
+      <CustomConfirm
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, resultId: null, imageUrl: null })}
+        onConfirm={() => deleteConfirm.resultId && deleteResult(deleteConfirm.resultId, deleteConfirm.imageUrl)}
+        title="შედეგის წაშლა"
+        description="დარწმუნებული ხართ რომ გსურთ ამ შედეგის წაშლა? ეს ქმედება შეუქცევადია."
+        confirmText="წაშლა"
+        variant="danger"
+      />
     </div>
   )
 }

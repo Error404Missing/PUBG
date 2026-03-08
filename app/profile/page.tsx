@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { CustomConfirm } from "@/components/ui/custom-confirm"
 
 export default function ProfilePage() {
   const supabase = createBrowserClient()
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   const [userTeam, setUserTeam] = useState<any>(null)
   const [vipStatus, setVipStatus] = useState<any>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   
   // Edit States
@@ -120,8 +122,6 @@ export default function ProfilePage() {
   }
 
   const handleDeleteTeam = async () => {
-    if (!confirm("დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა? ეს ქმედება შეუქცევადია.")) return
-    
     setLoading(true)
     const { error } = await supabase
       .from("teams")
@@ -423,7 +423,7 @@ export default function ProfilePage() {
                                        </Link>
                                     </Button>
                                     <Button 
-                                      onClick={handleDeleteTeam}
+                                      onClick={() => setIsDeleteConfirmOpen(true)}
                                       variant="outline" 
                                       className="h-14 w-14 rounded-2xl border-rose-500/20 text-rose-500 hover:bg-rose-500/10 transition-colors"
                                     >
@@ -446,6 +446,16 @@ export default function ProfilePage() {
             </div>
          </div>
       </div>
+
+      <CustomConfirm
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteTeam}
+        title="გუნდის წაშლა"
+        description="დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა? ეს ქმედება შეუქცევადია და გუნდის აღდგენა შეუძლებელი იქნება."
+        confirmText="წაშლა"
+        variant="danger"
+      />
     </div>
   )
 }

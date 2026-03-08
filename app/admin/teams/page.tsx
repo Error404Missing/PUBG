@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { CustomConfirm } from "@/components/ui/custom-confirm"
 
 type Team = {
   id: string
@@ -36,6 +37,10 @@ export default function AdminTeamsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingSlot, setEditingSlot] = useState<string | null>(null)
   const [slotValue, setSlotValue] = useState<string>("")
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, teamId: string | null }>({
+    isOpen: false,
+    teamId: null
+  })
 
   useEffect(() => {
     checkAuth()
@@ -111,8 +116,6 @@ export default function AdminTeamsPage() {
   }
 
   const deleteTeam = async (teamId: string) => {
-    if (!confirm("დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა?")) return
-
     const supabase = createClient()
     const { error } = await supabase.from("teams").delete().eq("id", teamId)
 
@@ -325,13 +328,13 @@ export default function AdminTeamsPage() {
                           <Crown className="w-4 h-4 mr-2" />
                           {team.is_vip ? "VIP ამოღება" : "VIP სტატუსი"}
                         </Button>
-                        <Button
-                          onClick={() => deleteTeam(team.id)}
-                          variant="outline"
-                          className="border-red-500/20 text-red-400 hover:bg-red-500/5 rounded-xl w-12 p-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                         <Button
+                           onClick={() => setDeleteConfirm({ isOpen: true, teamId: team.id })}
+                           variant="outline"
+                           className="border-red-500/20 text-red-400 hover:bg-red-500/5 rounded-xl w-12 p-0"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </Button>
                       </div>
                     </div>
                   </div>
@@ -346,6 +349,16 @@ export default function AdminTeamsPage() {
           </div>
         )}
       </div>
+
+      <CustomConfirm
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, teamId: null })}
+        onConfirm={() => deleteConfirm.teamId && deleteTeam(deleteConfirm.teamId)}
+        title="გუნდის წაშლა (ADMIN)"
+        description="დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა? ეს ქმედება შეუქცევადია."
+        confirmText="წაშლა"
+        variant="danger"
+      />
     </div>
   )
 }

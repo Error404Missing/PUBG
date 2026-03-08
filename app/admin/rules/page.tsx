@@ -16,6 +16,7 @@ import {
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { CustomConfirm } from "@/components/ui/custom-confirm"
 
 type Rule = {
   id: string
@@ -33,6 +34,10 @@ export default function AdminRulesPage() {
     title: "",
     content: "",
     orderNumber: "",
+  })
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, ruleId: string | null }>({
+    isOpen: false,
+    ruleId: null
   })
 
   useEffect(() => {
@@ -123,8 +128,6 @@ export default function AdminRulesPage() {
   }
 
   const deleteRule = async (id: string) => {
-    if (!confirm("დარწმუნებული ხართ რომ გსურთ წესის წაშლა?")) return
-
     const supabase = createClient()
     const { error } = await supabase.from("rules").delete().eq("id", id)
 
@@ -275,8 +278,8 @@ export default function AdminRulesPage() {
                           >
                             <Edit className="w-5 h-5" />
                           </Button>
-                          <Button
-                            onClick={() => deleteRule(rule.id)}
+                           <Button
+                            onClick={() => setDeleteConfirm({ isOpen: true, ruleId: rule.id })}
                             variant="outline"
                             className="w-12 h-12 rounded-xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
                           >
@@ -295,6 +298,16 @@ export default function AdminRulesPage() {
           )}
         </div>
       </div>
+
+      <CustomConfirm
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, ruleId: null })}
+        onConfirm={() => deleteConfirm.ruleId && deleteRule(deleteConfirm.ruleId)}
+        title="Directive-ს წაშლა"
+        description="დარწმუნებული ხართ რომ გსურთ ამ პროტოკოლის წაშლა? ეს ქმედება შეუქცევადია."
+        confirmText="წაშლა"
+        variant="danger"
+      />
     </div>
   )
 }

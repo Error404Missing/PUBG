@@ -16,6 +16,7 @@ import {
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { CustomConfirm } from "@/components/ui/custom-confirm"
 import { format } from "date-fns"
 import { ka } from "date-fns/locale"
 
@@ -40,6 +41,10 @@ export default function AdminSchedulePage() {
     time: "",
     mapName: "",
     maxTeams: "100",
+  })
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, scheduleId: string | null }>({
+    isOpen: false,
+    scheduleId: null
   })
 
   useEffect(() => {
@@ -100,8 +105,6 @@ export default function AdminSchedulePage() {
   }
 
   const deleteSchedule = async (id: string) => {
-    if (!confirm("დარწმუნებული ხართ რომ გსურთ მატჩის წაშლა?")) return
-
     const supabase = createClient()
     const { error } = await supabase.from("schedules").delete().eq("id", id)
 
@@ -305,7 +308,7 @@ export default function AdminSchedulePage() {
 
                      <div className="flex lg:flex-col gap-3">
                         <Button
-                          onClick={() => deleteSchedule(schedule.id)}
+                          onClick={() => setDeleteConfirm({ isOpen: true, scheduleId: schedule.id })}
                           variant="outline"
                           className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
                         >
@@ -325,6 +328,16 @@ export default function AdminSchedulePage() {
           )}
         </div>
       </div>
+
+      <CustomConfirm
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, scheduleId: null })}
+        onConfirm={() => deleteConfirm.scheduleId && deleteSchedule(deleteConfirm.scheduleId)}
+        title="მატჩის წაშლა"
+        description="დარწმუნებული ხართ რომ გსურთ ამ მატჩის წაშლა განრიგიდან? ეს მოქმედება შეუქცევადია."
+        confirmText="წაშლა"
+        variant="danger"
+      />
     </div>
   )
 }

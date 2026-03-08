@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { CustomConfirm } from "@/components/ui/custom-confirm"
 
 export default function AdminSupportPage() {
   const router = useRouter()
@@ -20,6 +21,7 @@ export default function AdminSupportPage() {
   const [activeChat, setActiveChat] = useState<string | null>(null)
   const [reply, setReply] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
   const [channelStatus, setChannelStatus] = useState("disconnected")
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -134,10 +136,8 @@ export default function AdminSupportPage() {
   }
 
   const clearMessages = () => {
-    if (confirm("დარწმუნებული ხართ რომ გსურთ ჩატის ისტორიის გასუფთავება?")) {
-      setMessages([])
-      localStorage.removeItem('support_admin_messages')
-    }
+    setMessages([])
+    localStorage.removeItem('support_admin_messages')
   }
 
   if (isLoading) return null
@@ -166,7 +166,7 @@ export default function AdminSupportPage() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={clearMessages}
+              onClick={() => setIsClearConfirmOpen(true)}
               className="h-8 border-rose-500/20 text-rose-500 hover:bg-rose-500/10 text-[10px] font-black uppercase tracking-widest px-4"
             >
               <RefreshCcw className="w-3 h-3 mr-2" /> History Reset
@@ -274,6 +274,16 @@ export default function AdminSupportPage() {
           </div>
         </div>
       </div>
+
+      <CustomConfirm
+        isOpen={isClearConfirmOpen}
+        onClose={() => setIsClearConfirmOpen(false)}
+        onConfirm={clearMessages}
+        title="ისტორიის გასუფთავება"
+        description="დარწმუნებული ხართ რომ გსურთ ჩატის ისტორიის გასუფთავება? ყველა მიმდინარე შეტყობინება წაიშლება თქვენი პანელიდან."
+        confirmText="გასუფთავება"
+        variant="warning"
+      />
     </div>
   )
 }
