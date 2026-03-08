@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { 
   Check, X, Ban, Crown, Trash2, Users, 
   MapPin, ChevronLeft, Target, Shield, 
-  Search, Filter, Activity, Save
+  Search, Filter, Activity, Save, RefreshCcw
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -24,7 +24,7 @@ type Team = {
   slot_number: number | null
   players_count: number
   maps_count: number
-  profiles: {
+  leader: {
     username: string
   }
 }
@@ -63,7 +63,11 @@ export default function AdminTeamsPage() {
     setIsLoading(true)
     const supabase = createClient()
 
-    let query = supabase.from("teams").select("*, profiles(username)").order("created_at", {
+    // Use an explicit join to ensure profile info is fetched correctly
+    let query = supabase.from("teams").select(`
+      *,
+      leader:profiles(username)
+    `).order("created_at", {
       ascending: false,
     })
 
@@ -141,7 +145,17 @@ export default function AdminTeamsPage() {
               </div>
               <div>
                 <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">Unit <span className="text-blue-400 tracking-normal">Control</span></h1>
-                <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4 italic">გუნდების რეგისტრაცია და სტატუსები</p>
+                <div className="flex items-center gap-4 mt-4">
+                  <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs italic">გუნდების რეგისტრაცია და სტატუსები</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={fetchTeams}
+                    className="h-7 border-blue-500/20 text-blue-400 text-[8px] font-black uppercase tracking-widest px-3 rounded-lg hover:bg-blue-500/5"
+                  >
+                    <RefreshCcw className="w-3 h-3 mr-1.5" /> Force Sync
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -201,9 +215,7 @@ export default function AdminTeamsPage() {
                           <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
                              <User className="w-3 h-3 text-primary" />
                              ლიდერი: <span className="text-white">{
-                               Array.isArray(team.profiles) 
-                                 ? (team.profiles[0]?.username || "დაუკავშირებელი") 
-                                 : (team.profiles?.username || "დაუკავშირებელი")
+                               team.leader?.username || "Anonymous"
                              }</span>
                           </div>
                         </div>

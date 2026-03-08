@@ -10,25 +10,11 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "PUBG Scrims Registration",
-  description: "რეგისტრაცია PUBG ტურნირებში - კონკურენტული გუნდური თამაში",
-  generator: "v0.app",
+  title: "ARENA | Cyber-Luxury Scrims",
+  description: "ელიტარული PUBG ტურნირები და სკრიმები. შექმენი შენი გუნდი და გახდი ჩემპიონი.",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
+    icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-gaming-V5o8O2Z2qW6P3n7M1f9S8L7K5J4H3G.png",
+    apple: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-gaming-V5o8O2Z2qW6P3n7M1f9S8L7K5J4H3G.png",
   },
 }
 

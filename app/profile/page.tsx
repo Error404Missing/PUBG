@@ -82,7 +82,7 @@ export default function ProfilePage() {
       .from("user_vip_status")
       .select("vip_until")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
 
     if (vipData && new Date(vipData.vip_until) > new Date()) {
       setVipStatus(vipData)
