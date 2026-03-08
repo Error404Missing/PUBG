@@ -70,15 +70,17 @@ export default function AdminTeamsPage() {
 
     console.log("Fetching teams with filter:", filter)
 
-    // Using explicit join via leader_id
+    // Using explicit join with alias 'leader'
     let query = supabase.from("teams").select(`
       *,
-      profiles:leader_id(username)
+      leader:leader_id(username)
     `).order("created_at", {
       ascending: false,
     })
 
-    if (filter !== "all") {
+    if (filter === "vip") {
+      query = query.eq("is_vip", true)
+    } else if (filter !== "all") {
       query = query.eq("status", filter)
     }
 
@@ -88,11 +90,6 @@ export default function AdminTeamsPage() {
        console.error("Teams fetch error:", error)
        setIsLoading(false)
        return
-    }
-
-    console.log("Teams fetched successfully:", data?.length, "records found")
-    if (data && data.length > 0) {
-      console.log("Sample team data:", data[0])
     }
 
     setTeams((data as any[]) || [])
@@ -182,6 +179,7 @@ export default function AdminTeamsPage() {
                 { id: "all", label: "ყველა", color: "blue" },
                 { id: "pending", label: "განხილვაში", color: "yellow" },
                 { id: "approved", label: "დადასტურებული", color: "emerald" },
+                { id: "vip", label: "VIP", color: "secondary" },
                 { id: "rejected", label: "უარყოფილი", color: "rose" },
                 { id: "blocked", label: "დაბლოკილი", color: "red" }
               ].map((f) => (
@@ -190,7 +188,7 @@ export default function AdminTeamsPage() {
                   onClick={() => setFilter(f.id)}
                   className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all italic border ${
                     filter === f.id 
-                      ? `bg-${f.color}-500/10 border-${f.color}-500/30 text-${f.color}-400` 
+                      ? f.id === 'vip' ? 'bg-secondary/10 border-secondary/30 text-secondary' : `bg-${f.color}-500/10 border-${f.color}-500/30 text-${f.color}-400` 
                       : 'border-transparent text-muted-foreground hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -231,13 +229,7 @@ export default function AdminTeamsPage() {
                           </div>
                           <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
                              <User className="w-3 h-3 text-primary" />
-                             ლიდერი: <span className="text-white">{
-                               (() => {
-                                 const p = (team as any).profiles || (team as any).leader;
-                                 if (Array.isArray(p)) return p[0]?.username || "Anonymous";
-                                 return p?.username || "Anonymous";
-                               })()
-                             }</span>
+                              ლიდერი: <span className="text-white">{team.leader?.username || "Anonymous"}</span>
                           </div>
                         </div>
                       </div>

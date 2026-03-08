@@ -72,56 +72,61 @@ ALTER TABLE public.results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rules ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
-CREATE POLICY "Anyone can view profiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can update any profile" ON public.profiles FOR UPDATE USING (
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
+);
 
 -- Teams policies
-CREATE POLICY "Anyone can view approved teams" ON public.teams FOR SELECT USING (true);
+CREATE POLICY "Anyone can view approved teams" ON public.teams FOR SELECT USING (status = 'approved');
+CREATE POLICY "Admins can view all teams" ON public.teams FOR SELECT USING (
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
+);
 CREATE POLICY "Users can insert their own team" ON public.teams FOR INSERT WITH CHECK (auth.uid() = leader_id);
 CREATE POLICY "Team leaders can update their own team" ON public.teams FOR UPDATE USING (auth.uid() = leader_id);
 CREATE POLICY "Admins can update any team" ON public.teams FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 CREATE POLICY "Team leaders can delete their own team" ON public.teams FOR DELETE USING (auth.uid() = leader_id);
 CREATE POLICY "Admins can delete teams" ON public.teams FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 
 -- Schedules policies
 CREATE POLICY "Anyone can view schedules" ON public.schedules FOR SELECT USING (true);
 CREATE POLICY "Admins can insert schedules" ON public.schedules FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 CREATE POLICY "Admins can update schedules" ON public.schedules FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 CREATE POLICY "Admins can delete schedules" ON public.schedules FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 
 -- Results policies
 CREATE POLICY "Anyone can view results" ON public.results FOR SELECT USING (true);
 CREATE POLICY "Admins can insert results" ON public.results FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 CREATE POLICY "Admins can update results" ON public.results FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 CREATE POLICY "Admins can delete results" ON public.results FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 
 -- Rules policies
 CREATE POLICY "Anyone can view rules" ON public.rules FOR SELECT USING (true);
 CREATE POLICY "Admins can insert rules" ON public.rules FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 CREATE POLICY "Admins can update rules" ON public.rules FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 CREATE POLICY "Admins can delete rules" ON public.rules FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+  auth.uid() IN (SELECT id FROM public.profiles WHERE is_admin = true OR role = 'admin')
 );
 
 -- Ensure all admins have is_admin = true
