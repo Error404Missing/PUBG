@@ -109,12 +109,10 @@ export default function AdminTeamsPage() {
 
     console.log("Admin: Fetching teams with filter:", filter)
 
-    // Robust fetch: Request both profiles and alias to be sure
-    // We try to get profiles joined via leader_id
+    // Robust fetch: Request profiles joined via leader_id
     let query = supabase.from("teams").select(`
       *,
-      profiles!teams_leader_id_fkey(username),
-      leader:leader_id(username)
+      profiles:leader_id(username)
     `).order("created_at", {
       ascending: false,
     })
