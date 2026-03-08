@@ -76,20 +76,28 @@ export default function AdminTeamsPage() {
     setIsSettingUp(true)
     try {
       // 1. Fix Storage
+      console.log("Starting Storage Setup...")
       const storageRes = await fetch("/api/admin/setup-storage")
       const storageData = await storageRes.json()
       
+      if (!storageData.success) {
+        throw new Error(storageData.error || "Storage setup failed")
+      }
+
       // 2. Fix RLS
+      console.log("Starting RLS Sync...")
       const rlsRes = await fetch("/api/admin/fix-rls", { method: 'POST' })
       const rlsData = await rlsRes.json()
 
       if (storageData.success && rlsData.success) {
         setToast({ message: "სისტემა წარმატებით განახლდა და გასწორდა", type: 'success' })
+        fetchTeams()
       } else {
-        setToast({ message: "ზოგიერთი კომპონენტი ვერ გასწორდა", type: 'error' })
+        setToast({ message: "ზოგიერთი კომპონენტი ვერ გასწორდა: " + (rlsData.error || ""), type: 'error' })
       }
-    } catch (error) {
-       setToast({ message: "შეცდომა სერვერთან კავშირისას", type: 'error' })
+    } catch (error: any) {
+       console.error("System Setup Error:", error)
+       setToast({ message: "შეცდომა: " + (error.message || "სერვერთან კავშირის პრობლემა"), type: 'error' })
     } finally {
       setIsSettingUp(false)
     }
@@ -121,11 +129,17 @@ export default function AdminTeamsPage() {
 
     if (error) {
        console.error("Admin Teams fetch error:", error)
+       setToast({ message: "გუნდების წამოღების შეცდომა: " + error.message, type: 'error' })
        setIsLoading(false)
        return
     }
 
-    console.log("Admin Teams response:", data)
+    console.log("Admin Teams Raw Data:", JSON.stringify(data, null, 2))
+    
+    if (data && data.length === 0) {
+      console.log("Warning: Query returned 0 teams. Filter:", filter)
+    }
+
     setTeams((data as any[]) || [])
     setIsLoading(false)
   }
