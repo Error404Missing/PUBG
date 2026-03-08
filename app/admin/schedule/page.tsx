@@ -112,12 +112,24 @@ export default function AdminSchedulePage() {
 
   const deleteSchedule = async (id: string) => {
     const supabase = createClient()
-    const { error } = await supabase.from("schedules").delete().eq("id", id)
+    
+    // Use count: 'exact' to check if anything was actually deleted
+    // If RLS prevents deletion, Supabase returns error: null but count: 0
+    const { error, count } = await supabase
+      .from("schedules")
+      .delete({ count: 'exact' })
+      .eq("id", id)
 
     if (error) {
       console.error("Schedule deletion error:", error)
       setToast({ 
-        message: "წაშლა ვერ მოხერხდა. შესაძლოა ამ მატჩზე რეგისტრირებულები არიან გუნდები.", 
+        message: "წაშლა ვერ მოხერხდა. შესაძლოა სისტემური შეცდომაა.", 
+        type: 'error' 
+      })
+    } else if (count === 0) {
+      console.warn("No rows deleted. Likely RLS policy issue.")
+      setToast({ 
+        message: "წაშლა ვერ მოხერხდა. შესაძლოა არ გაქვთ საკმარისი უფლებები.", 
         type: 'error' 
       })
     } else {

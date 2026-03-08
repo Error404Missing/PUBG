@@ -36,6 +36,10 @@ export default function LoginPage() {
     }
   }
 
+  const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "")
+  const msgFromUrl = searchParams.get("message")
+  const errFromUrl = searchParams.get("error")
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Decor */}
@@ -70,26 +74,35 @@ export default function LoginPage() {
                        </div>
                     </div>
 
-                    <div className="group relative">
-                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-3 block px-1 group-focus-within:text-primary transition-colors">Credential: Password</label>
-                       <div className="relative">
-                          <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors" />
-                          <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••••"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="bg-white/5 border-white/5 h-16 pl-14 text-white placeholder:text-white/10 focus:border-primary/50 focus:bg-white/10 transition-all rounded-2xl font-bold tracking-tight"
-                          />
-                       </div>
-                    </div>
+                     <div className="group relative">
+                        <div className="flex justify-between items-center mb-3">
+                           <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground block px-1 group-focus-within:text-primary transition-colors">Credential: Password</label>
+                           <Link href="/auth/forgot-password"  className="text-[9px] font-black uppercase tracking-widest text-primary/50 hover:text-primary transition-colors">დაგავიწყდათ პაროლი?</Link>
+                        </div>
+                        <div className="relative">
+                           <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                           <Input
+                             id="password"
+                             type="password"
+                             placeholder="••••••••"
+                             required
+                             value={password}
+                             onChange={(e) => setPassword(e.target.value)}
+                             className="bg-white/5 border-white/5 h-16 pl-14 text-white placeholder:text-white/10 focus:border-primary/50 focus:bg-white/10 transition-all rounded-2xl font-bold tracking-tight"
+                           />
+                        </div>
+                     </div>
                  </div>
 
-                 {error && (
+                 {(error || errFromUrl) && (
                     <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold animate-reveal">
-                       {error}
+                       {error || (errFromUrl === 'Invalid_Code' ? 'ბმული არასწორია' : errFromUrl)}
+                    </div>
+                 )}
+
+                 {msgFromUrl && (
+                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-sm font-bold animate-reveal">
+                       {msgFromUrl === 'Password_Reset_Success' ? 'პაროლი წარმატებით შეიცვალა' : msgFromUrl}
                     </div>
                  )}
 

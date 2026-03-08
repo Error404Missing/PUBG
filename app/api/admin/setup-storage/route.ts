@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       throw listError
     }
 
-    const requiredBuckets = ["results", "avatars", "banners"]
+    const requiredBuckets = ["results", "profiles"]
     const results = []
     
     for (const bucketName of requiredBuckets) {

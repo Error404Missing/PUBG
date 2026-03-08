@@ -1,57 +1,92 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { MessageCircle, X, Send, User, ShieldCheck, Zap } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { MessageCircle, X, Send, ShieldCheck } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 
 export function SupportChat() {
   const [isOpen, setIsOpen] = useState(false)
   const [message, setMessage] = useState("")
-  const [messages, setMessages] = useState<any[]>([
-    { id: 1, text: "გამარჯობა! როგორ შეგვიძლია დაგეხმაროთ?", sender: "admin", time: "12:00" }
-  ])
+  const [messages, setMessages] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const channelRef = useRef<any>(null)
 
+  // 1. Initial Load: Fetch user and existing messages
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+    const initChat = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
       setUser(authUser)
-    })
 
-    const channel = supabase.channel('support-chat', {
-       config: {
-         broadcast: { self: true, ack: true }
-       }
-    })
+      // Fetch message history
+      const { data: history } = await supabase
+        .from("support_messages")
+        .select("*")
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: true })
 
-    channel.on('broadcast', { event: 'message' }, ({ payload }: any) => {
-       // Only show messages for this user or sent by admin to this user
-       if (payload.sender === 'admin' && payload.targetUserId === user?.id) {
-          setMessages((prev: any[]) => {
-             if (prev.some(m => m.id === payload.id)) return prev;
-             return [...prev, payload]
-          })
-       } else if (payload.sender === 'user' && payload.userId === user?.id) {
-          setMessages((prev: any[]) => {
-             if (prev.some(m => m.id === payload.id)) return prev;
-             return [...prev, payload]
-          })
-       }
-    }).subscribe((status) => {
-       console.log("Chat Channel Status:", status)
-    })
+      if (history) {
+        setMessages(history.map(m => ({
+          id: m.id,
+          text: m.message,
+          sender: m.sender_type,
+          time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        })))
+      }
+    }
 
-    channelRef.current = channel
+    initChat()
+
+    // 2. Real-time Subscription: Listen for new messages
+    const channel = supabase
+      .channel('support-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages'
+        },
+        (payload) => {
+          // If message belongs to this user, add it to state
+          if (payload.new.user_id === user?.id || (user?.id && payload.new.user_id === user?.id)) {
+            const newMessage = {
+              id: payload.new.id,
+              text: payload.new.message,
+              sender: payload.new.sender_type,
+              time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+            
+            setMessages((prev) => {
+              if (prev.some(m => m.id === newMessage.id)) return prev
+              return [...prev, newMessage]
+            })
+
+            // Increment unread if chat is closed and it's from admin
+            if (!isOpen && payload.new.sender_type === 'admin') {
+              setUnreadCount(prev => prev + 1)
+            }
+          }
+        }
+      )
+      .subscribe()
 
     return () => {
-       supabase.removeChannel(channel)
+      supabase.removeChannel(channel)
     }
-  }, [user?.id])
+  }, [supabase, user?.id, isOpen])
 
+  // Clear unread on open
+  useEffect(() => {
+    if (isOpen) {
+      setUnreadCount(0)
+    }
+  }, [isOpen])
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -60,29 +95,28 @@ export function SupportChat() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!message.trim() || !user || !channelRef.current) return
+    if (!message.trim() || !user) return
 
-    const newMessage = {
-      id: Date.now(),
-      text: message,
-      sender: "user",
-      userId: user.id,
-      username: user.user_metadata?.username || user.email,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
+    const msgText = message.trim()
+    setMessage("") // Clear input immediately
 
     try {
-      await channelRef.current.send({
-         type: 'broadcast',
-         event: 'message',
-         payload: newMessage
-      })
+      const { error } = await supabase
+        .from("support_messages")
+        .insert({
+          user_id: user.id,
+          message: msgText,
+          sender_type: 'user',
+          sender_id: user.id
+        })
+
+      if (error) throw error
     } catch (err) {
       console.error("Failed to send message:", err)
     }
-
-    setMessage("")
   }
+
+  if (!user) return null 
 
   return (
     <div className="fixed bottom-8 right-8 z-[1000]">
@@ -116,6 +150,11 @@ export function SupportChat() {
              ref={scrollRef}
              className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide"
            >
+              {messages.length === 0 && (
+                <div className="text-center py-10 opacity-30 italic text-xs text-white">
+                  შეტყობინებები არ არის...
+                </div>
+              )}
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                    <div className={`max-w-[80%] p-4 rounded-2xl text-sm ${
@@ -123,7 +162,7 @@ export function SupportChat() {
                       ? 'bg-primary text-white rounded-tr-none' 
                       : 'glass border border-white/10 text-white/90 rounded-tl-none'
                    }`}>
-                      <p className="leading-relaxed">{msg.text}</p>
+                      <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
                       <div className={`text-[9px] mt-2 font-bold uppercase tracking-widest ${msg.sender === 'user' ? 'text-white/50' : 'text-white/30'}`}>
                          {msg.time}
                       </div>
@@ -158,16 +197,16 @@ export function SupportChat() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl ${
+        className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-2xl relative ${
           isOpen 
             ? 'bg-white text-black rotate-90' 
             : 'bg-primary text-white hover:scale-110 active:scale-95'
         }`}
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-8 h-8" />}
-        {!isOpen && (
-          <div className="absolute -top-1 -right-1 w-5 h-5 bg-secondary text-black text-[10px] font-black rounded-full flex items-center justify-center border-4 border-background animate-bounce">
-            1
+        {!isOpen && unreadCount > 0 && (
+          <div className="absolute -top-1 -right-1 w-6 h-6 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-4 border-background animate-bounce shadow-lg">
+            {unreadCount}
           </div>
         )}
       </button>

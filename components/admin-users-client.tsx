@@ -247,6 +247,16 @@ export function AdminUsersClient({
                        </div>
 
                        <div className="flex flex-wrap items-center gap-3">
+                           <Link href={`/profile/${u.id}`} target="_blank">
+                              <Button
+                                variant="outline"
+                                className="h-12 border-primary/20 text-primary hover:bg-primary/5 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                              >
+                                <User className="w-4 h-4 mr-2" />
+                                პროფილი
+                              </Button>
+                           </Link>
+
                           {/* Badge Dialog */}
                           <Dialog open={dialogOpen && selectedUser?.id === u.id} onOpenChange={(open) => {
                             setDialogOpen(open)

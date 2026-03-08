@@ -92,47 +92,58 @@ $$;
 
 -- 5. Fix Schedule Deletion Policy (Cascade and foreign keys)
 DO $$
+DECLARE
+    r record;
 BEGIN
-    -- Fix scrim_requests
-    IF EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_name = 'scrim_requests_schedule_id_fkey'
-    ) THEN
-        ALTER TABLE public.scrim_requests DROP CONSTRAINT scrim_requests_schedule_id_fkey;
-    END IF;
+    -- Drop ALL existing foreign keys referencing schedules(id) from scrim_requests
+    FOR r IN (
+        SELECT tc.constraint_name 
+        FROM information_schema.table_constraints AS tc 
+        JOIN information_schema.key_column_usage AS kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        WHERE tc.table_name = 'scrim_requests' 
+        AND tc.table_schema = 'public' 
+        AND kcu.column_name = 'schedule_id'
+        AND tc.constraint_type = 'FOREIGN KEY'
+    ) LOOP
+        EXECUTE 'ALTER TABLE public.scrim_requests DROP CONSTRAINT IF EXISTS ' || quote_ident(r.constraint_name);
+    END LOOP;
     
-    ALTER TABLE public.scrim_requests 
-    ADD CONSTRAINT scrim_requests_schedule_id_fkey 
-    FOREIGN KEY (schedule_id) 
-    REFERENCES public.schedules(id) 
-    ON DELETE CASCADE;
-
-    -- Fix results (Robust Check)
-    -- First, ensure column exists
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'results' 
-        AND column_name = 'schedule_id'
-    ) THEN
-        ALTER TABLE public.results ADD COLUMN schedule_id UUID;
-    END IF;
-
-    -- Now drop old constraint if exists
-    IF EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_name = 'results_schedule_id_fkey'
-    ) THEN
-        ALTER TABLE public.results DROP CONSTRAINT results_schedule_id_fkey;
-    END IF;
-    
-    -- Add the cascaded constraint
-    ALTER TABLE public.results 
-    ADD CONSTRAINT results_schedule_id_fkey 
-    FOREIGN KEY (schedule_id) 
-    REFERENCES public.schedules(id) 
-    ON DELETE CASCADE;
+    -- Drop ALL existing foreign keys referencing schedules(id) from results
+    FOR r IN (
+        SELECT tc.constraint_name 
+        FROM information_schema.table_constraints AS tc 
+        JOIN information_schema.key_column_usage AS kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        WHERE tc.table_name = 'results' 
+        AND tc.table_schema = 'public' 
+        AND kcu.column_name = 'schedule_id'
+        AND tc.constraint_type = 'FOREIGN KEY'
+    ) LOOP
+        EXECUTE 'ALTER TABLE public.results DROP CONSTRAINT IF EXISTS ' || quote_ident(r.constraint_name);
+    END LOOP;
 END $$;
+
+-- Add back constraints with ON DELETE CASCADE
+ALTER TABLE public.scrim_requests 
+ADD CONSTRAINT scrim_requests_schedule_id_fkey 
+FOREIGN KEY (schedule_id) 
+REFERENCES public.schedules(id) 
+ON DELETE CASCADE;
+
+ALTER TABLE public.results 
+ADD CONSTRAINT results_schedule_id_fkey 
+FOREIGN KEY (schedule_id) 
+REFERENCES public.schedules(id) 
+ON DELETE CASCADE;
+
+-- Update Schedules RLS Policies to use EXISTS (standard Practice)
+DROP POLICY IF EXISTS "Admins can delete schedules" ON public.schedules;
+CREATE POLICY "Admins can delete schedules" ON public.schedules FOR DELETE USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
+);
 
 -- 6. Add trigger for VIP Case Opening to update Profile Checkbox/Badge
 CREATE OR REPLACE FUNCTION public.on_vip_status_change()
@@ -161,5 +172,34 @@ VALUES
 ('Registration Deadline', 'სკრიმებზე რეგისტრაცია წყდება მატჩის დაწყებამდე 2 საათით ადრე. ამ დროის შემდეგ მოთხოვნები აღარ განიხილება.', 4),
 ('Team Requirements', 'გუნდი უნდა შედგებოდეს მინიმუმ 4 ძირითადი მოთამაშისგან. დაუშვებელია სხვა გუნდის მოთამაშეების გამოყენება (Ringer) ადმინისტრაციასთან შეთანხმების გარეშე.', 5);
 
--- 8. Reload Schema
+-- 8. Storage Buckets and Policies Support
+-- This ensures 'profiles' and 'results' buckets exist with correct RLS
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('profiles', 'profiles', true), ('results', 'results', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DO $$
+BEGIN
+    -- Profiles Policies
+    DROP POLICY IF EXISTS "Public Access Profiles" ON storage.objects;
+    CREATE POLICY "Public Access Profiles" ON storage.objects FOR SELECT USING (bucket_id = 'profiles');
+    
+    DROP POLICY IF EXISTS "Users can upload their own profile images" ON storage.objects;
+    CREATE POLICY "Users can upload their own profile images" ON storage.objects FOR INSERT TO authenticated 
+    WITH CHECK (bucket_id = 'profiles');
+
+    DROP POLICY IF EXISTS "Users can update their own profile images" ON storage.objects;
+    CREATE POLICY "Users can update their own profile images" ON storage.objects FOR UPDATE TO authenticated 
+    USING (bucket_id = 'profiles');
+
+    -- Results Policies
+    DROP POLICY IF EXISTS "Public Access Results" ON storage.objects;
+    CREATE POLICY "Public Access Results" ON storage.objects FOR SELECT USING (bucket_id = 'results');
+
+    DROP POLICY IF EXISTS "Admins can upload results" ON storage.objects;
+    CREATE POLICY "Admins can upload results" ON storage.objects FOR INSERT TO authenticated 
+    WITH CHECK (bucket_id = 'results' AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin')));
+END $$;
+
+-- 9. Reload Schema
 NOTIFY pgrst, 'reload schema';
