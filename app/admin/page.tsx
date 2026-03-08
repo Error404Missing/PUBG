@@ -4,10 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { 
   Users, Calendar, Trophy, Ban, Gamepad2, 
   UserCog, Shield, Zap, Target, Activity,
-  ChevronRight, LayoutDashboard, Settings, Layers
+  ChevronRight, LayoutDashboard, Settings, Layers,
+  CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 export const dynamic = "force-dynamic"
 
@@ -28,7 +30,7 @@ export default async function AdminPage() {
     redirect("/")
   }
 
-  // Fetch counts
+  // Fetch counts with safety
   const { count: pendingTeams } = await supabase.from("teams").select("*", { count: "exact", head: true }).eq("status", "pending")
   const { count: approvedTeams } = await supabase.from("teams").select("*", { count: "exact", head: true }).eq("status", "approved")
   const { count: blockedTeams } = await supabase.from("teams").select("*", { count: "exact", head: true }).eq("status", "blocked")
@@ -37,10 +39,10 @@ export default async function AdminPage() {
   const { count: pendingRequests } = await supabase.from("scrim_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
 
   const stats = [
-    { label: "განხილვაში", value: pendingTeams || 0, color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20", icon: Activity },
-    { label: "აქტიური", value: approvedTeams || 0, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", icon: CheckCircle2 },
-    { label: "დაბლოკილი", value: blockedTeams || 0, color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/20", icon: Ban },
-    { label: "მატჩები", value: totalSchedules || 0, color: "text-sky-400", bg: "bg-sky-400/10", border: "border-sky-400/20", icon: Calendar },
+    { label: "განხილვაში", value: pendingTeams ?? 0, color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20", icon: Activity },
+    { label: "აქტიური", value: approvedTeams ?? 0, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", icon: CheckCircle2 },
+    { label: "დაბლოკილი", value: blockedTeams ?? 0, color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/20", icon: Ban },
+    { label: "მატჩები", value: totalSchedules ?? 0, color: "text-sky-400", bg: "bg-sky-400/10", border: "border-sky-400/20", icon: Calendar },
   ]
 
   const adminLinks = [
@@ -179,25 +181,5 @@ export default async function AdminPage() {
         </div>
       </div>
     </div>
-  )
-}
-
-function CheckCircle2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   )
 }
