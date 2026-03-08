@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+
+export const dynamic = "force-dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Calendar, Trophy, Ban, Gamepad2, UserCog } from "lucide-react"
 import Link from "next/link"

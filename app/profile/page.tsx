@@ -5,7 +5,7 @@ import { createBrowserClient } from "@/lib/supabase/client"
 import { 
   User, Mail, Shield, Edit3, Camera, 
   Award, Zap, Hash, MessageSquare, 
-  ChevronRight, Save, LogOut, ExternalLink
+  ChevronRight, Save, LogOut, ExternalLink, X
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -148,7 +148,7 @@ export default function ProfilePage() {
                {/* Text Info */}
                <div className="flex-1 pb-2">
                   <div className="flex flex-wrap items-center gap-3 mb-2">
-                     <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase">{profile?.username}</h1>
+                     <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase">{profile?.username || 'Operator'}</h1>
                      {vipStatus && (
                         <div className="flex items-center gap-1.5 bg-secondary/20 px-3 py-1 rounded-full text-secondary text-[10px] font-black tracking-widest border border-secondary/30">
                            <Zap className="w-3 h-3" />
@@ -158,7 +158,7 @@ export default function ProfilePage() {
                   </div>
                   <p className="text-muted-foreground text-xs font-bold tracking-[0.3em] uppercase flex items-center gap-2">
                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                     {profile?.role || 'Operator'} // Active_Status
+                     {profile?.role || 'Unit'} // Active_Status
                   </p>
                </div>
 
@@ -198,7 +198,7 @@ export default function ProfilePage() {
                               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                                  <Award className="w-4 h-4 text-primary" />
                               </div>
-                              <span className="text-sm font-bold text-white uppercase tracking-wider">{profile?.role?.toUpperCase() || 'USER'}</span>
+                              <span className="text-sm font-bold text-white uppercase tracking-wider">{String(profile?.role || 'USER').toUpperCase()}</span>
                            </div>
                            <Badge variant="outline" className="text-[8px] border-white/10 opacity-50">Verified</Badge>
                         </div>
