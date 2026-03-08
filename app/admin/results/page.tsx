@@ -159,14 +159,25 @@ export default function AdminResultsPage() {
   const deleteResult = async (id: string, imageUrl: string | null) => {
     const supabase = createClient()
 
-    if (imageUrl && imageUrl.includes("results/")) {
-      const filePath = imageUrl.split("results/")[1]
-      await supabase.storage.from("results").remove([`results/${filePath}`])
+    if (imageUrl) {
+      try {
+        // Extract file path from public URL - handle both formats
+        const urlParts = imageUrl.split('/object/public/results/')
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1]
+          await supabase.storage.from('results').remove([filePath])
+        }
+      } catch (e) {
+        console.warn('Image delete failed:', e)
+      }
     }
 
     const { error } = await supabase.from("results").delete().eq("id", id)
 
-    if (!error) {
+    if (error) {
+      console.error("Delete error:", error)
+      alert("წაშლის შეცდომა: " + error.message)
+    } else {
       fetchResults()
     }
   }

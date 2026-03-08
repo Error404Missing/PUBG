@@ -58,6 +58,7 @@ export function AdminUsersClient({
   const [badgeText, setBadgeText] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [banDialogUserId, setBanDialogUserId] = useState<string | null>(null)
 
   const filteredUsers = userList.filter(
     (u) =>
@@ -80,7 +81,10 @@ export function AdminUsersClient({
       .update({ is_banned: true, ban_reason: banReason || "წესების დარღვევა", ban_until: banUntilDate })
       .eq("id", userId)
 
-    if (!error) {
+    if (error) {
+      console.error("Ban error:", error)
+      alert("ბანის შეცდომა: " + error.message)
+    } else {
       setUserList((prev) =>
         prev.map((u) =>
           u.id === userId ? { ...u, is_banned: true, ban_reason: banReason || "წესების დარღვევა", ban_until: banUntilDate } : u
@@ -88,6 +92,7 @@ export function AdminUsersClient({
       )
       setBanReason("")
       setBanDuration("permanent")
+      setBanDialogUserId(null) // close dialog
     }
     setIsLoading(false)
   }
@@ -309,12 +314,14 @@ export function AdminUsersClient({
                                   განბანვა
                                 </Button>
                               ) : (
-                                <Dialog>
+                                <Dialog open={banDialogUserId === u.id} onOpenChange={(open) => {
+                                  if (!open) setBanDialogUserId(null)
+                                }}>
                                   <DialogTrigger asChild>
                                     <Button
                                       variant="outline"
                                       className="h-12 border-rose-500/20 text-rose-400 hover:bg-rose-500/5 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
-                                      onClick={() => setSelectedUser(u)}
+                                      onClick={() => setBanDialogUserId(u.id)}
                                     >
                                       <Ban className="w-4 h-4 mr-2" />
                                       დაბანვა

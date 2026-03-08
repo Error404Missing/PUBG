@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     // Verify that the user owns this team
     const { data: team } = await supabase
       .from("teams")
-      .select("id")
+      .select("id, status")
       .eq("id", team_id)
       .eq("leader_id", user.id)
       .single()

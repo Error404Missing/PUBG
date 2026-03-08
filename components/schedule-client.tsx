@@ -3,9 +3,8 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { AlertCircle, CheckCircle2, Zap, ArrowRight } from "lucide-react"
+import { CheckCircle2, Zap, ArrowRight, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import { createBrowserClient } from "@/lib/supabase/client"
 
 interface ScheduleClientProps {
   scheduleId: string
@@ -17,11 +16,9 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const supabase = createBrowserClient()
 
   const handleRequestGame = async () => {
     if (!user) {
-      // Redirect to login
       window.location.href = "/auth/login"
       return
     }
@@ -31,28 +28,32 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
       return
     }
 
-    // User has a team, request the game
+    // User has a team, request the game via API
     setIsLoading(true)
     try {
-      // Create scrim request
-      const { error } = await supabase.from("scrim_requests").insert({
-        team_id: userTeam.id,
-        schedule_id: scheduleId,
-        status: "pending",
-        created_at: new Date().toISOString(),
+      const res = await fetch("/api/scrim-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ team_id: userTeam.id, schedule_id: scheduleId }),
       })
 
-      if (error) throw error
+      const data = await res.json()
 
-      // Update team status to pending if it's draft
-      if (userTeam.status === "draft") {
-        await supabase.from("teams").update({ status: "pending" }).eq("id", userTeam.id)
+      if (!res.ok) {
+        if (res.status === 409) {
+          // Already requested
+          setShowSuccess(true)
+          setTimeout(() => setShowSuccess(false), 5000)
+          return
+        }
+        throw new Error(data.error || "შეცდომა")
       }
 
       setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 3000)
-    } catch (error) {
+      setTimeout(() => setShowSuccess(false), 5000)
+    } catch (error: any) {
       console.error("[v0] Error requesting game:", error)
+      alert("შეცდომა: " + (error.message || "მოთხოვნა ვერ გაიგზავნა"))
     } finally {
       setIsLoading(false)
     }
