@@ -36,7 +36,7 @@ CREATE POLICY "Admins can update any request" ON public.scrim_requests
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND is_admin = true
+      WHERE id = auth.uid() AND (is_admin = true OR role = 'admin')
     )
   );
 
@@ -44,6 +44,6 @@ CREATE POLICY "Admins can delete requests" ON public.scrim_requests
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM public.profiles 
-      WHERE id = auth.uid() AND is_admin = true
+      WHERE id = auth.uid() AND (is_admin = true OR role = 'admin')
     )
   );
