@@ -44,6 +44,37 @@ export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsPr
       await supabase.from("teams").update(teamUpdate).eq("id", teamId)
     }
 
+    // 3. Send notification to team leader + Update Role
+    try {
+      // Get team leader id
+      const { data: teamData } = await supabase
+        .from("teams")
+        .select("leader_id, team_name")
+        .eq("id", teamId)
+        .maybeSingle()
+
+      if (teamData?.leader_id) {
+        const isApproved = status === "approved"
+        
+        if (isApproved) {
+            // Update role to manager
+            await supabase.from("profiles").update({ role: 'manager' }).eq("id", teamData.leader_id)
+        }
+
+        const slotMsg = slotNumber && isApproved ? ` სლოტი: #${slotNumber}` : ""
+        await supabase.from("notifications").insert({
+          user_id: teamData.leader_id,
+          title: isApproved ? "გუნდი დადასტურდა ✅" : "გუნდი უარყოფილდა ❌",
+          message: isApproved
+            ? `თქვენი გუნდი "${teamData.team_name}" დადასტურდა!${slotMsg} ახლა შეგიძლიათ "Room Info" ნავიგაციაში ნახოთ.`
+            : `სამწუხაროდ, თქვენი გუნდის "${teamData.team_name}" მოთხოვნა უარყოფილიკია ადმინისტრაციის მიერ.`,
+          type: isApproved ? "success" : "error",
+        })
+      }
+    } catch (e) {
+      console.warn("Notification/Role update failed:", e)
+    }
+
     setIsDone(true)
     setIsLoading(false)
 

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Bell } from "lucide-react"
 import {
   Users,
   Search,
@@ -59,6 +60,10 @@ export function AdminUsersClient({
   const [isLoading, setIsLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [banDialogUserId, setBanDialogUserId] = useState<string | null>(null)
+  const [notifTitle, setNotifTitle] = useState("")
+  const [notifMessage, setNotifMessage] = useState("")
+  const [notifType, setNotifType] = useState<"info" | "success" | "warning" | "error">("info")
+  const [notifDialogUserId, setNotifDialogUserId] = useState<string | null>(null)
 
   const filteredUsers = userList.filter(
     (u) =>
@@ -296,6 +301,90 @@ export function AdminUsersClient({
                                       </Button>
                                     )}
                                   </div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          {/* Notification Dialog */}
+                          <Dialog open={notifDialogUserId === u.id} onOpenChange={(open) => {
+                            if (!open) setNotifDialogUserId(null)
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="h-12 border-blue-500/20 text-blue-400 hover:bg-blue-500/5 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                                onClick={() => setNotifDialogUserId(u.id)}
+                              >
+                                <Bell className="w-4 h-4 mr-2" />
+                                შეტყობინება
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-black/95 backdrop-blur-3xl border border-white/10 p-1 rounded-3xl shadow-2xl">
+                              <div className="p-8">
+                                <DialogHeader>
+                                  <DialogTitle className="text-2xl font-black text-blue-400 italic uppercase tracking-tighter">
+                                    BROADCAST: {u.username}
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-6 pt-8">
+                                  <div className="space-y-3">
+                                    <Label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] ml-2 italic">სათაური</Label>
+                                    <Input
+                                      placeholder="შეტყობინების სათაური..."
+                                      value={notifTitle}
+                                      onChange={(e) => setNotifTitle(e.target.value)}
+                                      className="h-12 bg-black/40 border-blue-500/20 rounded-xl focus:border-blue-500/50 text-xs font-bold"
+                                    />
+                                  </div>
+                                  <div className="space-y-3">
+                                    <Label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] ml-2 italic">შეტყობინება</Label>
+                                    <Textarea
+                                      placeholder="ტექსტი..."
+                                      value={notifMessage}
+                                      onChange={(e) => setNotifMessage(e.target.value)}
+                                      className="h-28 bg-black/40 border-blue-500/20 rounded-xl focus:border-blue-500/50 text-xs font-bold"
+                                    />
+                                  </div>
+                                  <div className="space-y-3">
+                                    <Label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] ml-2 italic">ტიპი</Label>
+                                    <Select value={notifType} onValueChange={(v: any) => setNotifType(v)}>
+                                      <SelectTrigger className="w-full h-12 bg-black/40 border-blue-500/20 rounded-xl font-bold">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-zinc-950 border-white/10">
+                                        <SelectItem value="info">ℹ️ ინფო</SelectItem>
+                                        <SelectItem value="success">✅ წარმატება</SelectItem>
+                                        <SelectItem value="warning">⚠️ გაფრთხილება</SelectItem>
+                                        <SelectItem value="error">❌ შეცდომა</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <Button
+                                    onClick={async () => {
+                                      if (!notifTitle.trim() || !notifMessage.trim()) return
+                                      setIsLoading(true)
+                                      const { error } = await supabase.from("notifications").insert({
+                                        user_id: u.id,
+                                        title: notifTitle.trim(),
+                                        message: notifMessage.trim(),
+                                        type: notifType,
+                                      })
+                                      setIsLoading(false)
+                                      if (!error) {
+                                        setNotifTitle("")
+                                        setNotifMessage("")
+                                        setNotifType("info")
+                                        setNotifDialogUserId(null)
+                                      } else {
+                                        alert("შეცდომა: " + error.message)
+                                      }
+                                    }}
+                                    disabled={isLoading || !notifTitle.trim() || !notifMessage.trim()}
+                                    className="h-14 w-full bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-[11px] uppercase tracking-widest italic"
+                                  >
+                                    {isLoading ? "იგზავნება..." : "გაგზავნა / Broadcast"}
+                                  </Button>
                                 </div>
                               </div>
                             </DialogContent>

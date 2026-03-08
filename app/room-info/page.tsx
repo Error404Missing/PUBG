@@ -13,14 +13,16 @@ export default async function RoomInfoPage() {
     redirect("/auth/login")
   }
 
-  const { data: teamData } = await supabase
-    .from("teams")
-    .select("id, status")
-    .eq("leader_id", user.id)
-    .eq("status", "approved")
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_admin")
+    .eq("id", user.id)
     .single()
 
-  if (!teamData) {
+  const isManager = profile?.role === "manager"
+  const isAdmin = profile?.is_admin
+
+  if (!isManager && !isAdmin) {
     redirect("/")
   }
 

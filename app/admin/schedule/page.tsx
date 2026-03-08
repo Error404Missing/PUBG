@@ -114,9 +114,17 @@ export default function AdminSchedulePage() {
     const supabase = createClient()
     const { error } = await supabase.from("schedules").delete().eq("id", id)
 
-    if (!error) {
+    if (error) {
+      console.error("Schedule deletion error:", error)
+      setToast({ 
+        message: "წაშლა ვერ მოხერხდა. შესაძლოა ამ მატჩზე რეგისტრირებულები არიან გუნდები.", 
+        type: 'error' 
+      })
+    } else {
+      setToast({ message: "მატჩი წარმატებით წაიშალა", type: 'success' })
       fetchSchedules()
     }
+    setDeleteConfirm({ isOpen: false, scheduleId: null })
   }
 
   return (

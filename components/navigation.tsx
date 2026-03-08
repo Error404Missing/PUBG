@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Menu, X, KeyRound, Users, Shield, LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { NotificationBell } from "@/components/notification-bell"
 
 export function Navigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [hasApprovedTeam, setHasApprovedTeam] = useState(false)
   const [roomInfo, setRoomInfo] = useState<{
     room_id: string | null
@@ -27,10 +30,11 @@ export function Navigation() {
       data: { user },
     } = await supabase.auth.getUser()
     setUser(user)
-
     if (user) {
+      setUserId(user.id)
       const { data } = await supabase.from("profiles").select("is_admin, role").eq("id", user.id).single()
       setIsAdmin(data?.is_admin || false)
+      setUserRole(data?.role || null)
 
       const { data: teamData } = await supabase
         .from("teams")
@@ -75,6 +79,7 @@ export function Navigation() {
         checkUserStatus()
       } else {
         setIsAdmin(false)
+        setUserRole(null)
         setHasApprovedTeam(false)
         setRoomInfo(null)
       }
@@ -88,7 +93,7 @@ export function Navigation() {
     window.location.href = "/"
   }
 
-  const navItems = [
+  const baseNavItems = [
     { href: "/", label: "მთავარი" },
     { href: "/schedule", label: "განრიგი" },
     { href: "/teams", label: "გუნდები" },
@@ -99,6 +104,12 @@ export function Navigation() {
     { href: "/rules", label: "წესები" },
     { href: "/contact", label: "კონტაქტი" },
   ]
+
+  const navItems = [...baseNavItems]
+  
+  if (userRole === "manager" || isAdmin) {
+    navItems.splice(4, 0, { href: "/room-info", label: "ROOM INFO" })
+  }
 
   return (
     <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-7xl">
@@ -148,6 +159,11 @@ export function Navigation() {
                 </Link>
              )}
              
+             {/* Notification Bell - Desktop */}
+             {user && userId && (
+               <NotificationBell userId={userId} />
+             )}
+
              {user ? (
                <div className="hidden lg:flex items-center gap-2">
                  <Link href="/profile" className="w-10 h-10 rounded-full border border-white/10 glass flex items-center justify-center hover:border-primary/50 transition-all group overflow-hidden">
