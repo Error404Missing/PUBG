@@ -112,7 +112,7 @@ export default function AdminTeamsPage() {
     // Robust fetch using explicit relationship syntax
     let query = supabase.from("teams").select(`
       *,
-      profiles!leader_id(username)
+      profiles(username)
     `).order("created_at", {
       ascending: false,
     })

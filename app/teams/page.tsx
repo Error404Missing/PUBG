@@ -64,7 +64,7 @@ export default function TeamsPage() {
       const teamIds = requests.map((r) => r.team_id)
       const { data: teamsData } = await supabase
         .from("teams")
-        .select("*, profiles!teams_leader_id_fkey(username)")
+        .select("*, profiles(username)")
         .in("id", teamIds)
         .order("is_vip", { ascending: false })
         .order("created_at", { ascending: false })

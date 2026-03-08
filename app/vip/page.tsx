@@ -9,7 +9,7 @@ export default async function VIPPage() {
   const supabase = await createClient()
   const { data: vipTeams } = await supabase
     .from("teams")
-    .select("*, profiles!teams_leader_id_fkey(username)")
+    .select("*, profiles(username)")
     .eq("is_vip", true)
     .eq("status", "approved")
     .order("created_at", { ascending: false })

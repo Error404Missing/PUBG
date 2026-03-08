@@ -5,9 +5,9 @@ export default async function BlockedPage() {
   const supabase = await createClient()
   const { data: blockedTeams } = await supabase
     .from("teams")
-    .select("*, profiles!teams_leader_id_fkey(username)")
+    .select("*, profiles(username)")
     .eq("status", "blocked")
-    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
 
   return (
     <div className="min-h-screen py-32 px-4 relative overflow-hidden">
