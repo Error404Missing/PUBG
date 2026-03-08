@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 export default function ProfilePage() {
   const supabase = createBrowserClient()
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
   
   // Edit States
   const [editData, setEditData] = useState({
@@ -112,13 +114,11 @@ export default function ProfilePage() {
 
     if (error) {
       console.error("Update Error:", error)
-      setMessage({ type: 'error', text: "შეცდომა განახლებისას: " + error.message })
+      setToast({ message: "შეცდომა განახლებისას: " + error.message, type: 'error' })
     } else {
-      setMessage({ type: 'success', text: "მონაცემები წარმატებით განახლდა" })
+      setToast({ message: "მონაცემები წარმატებით განახლდა", type: 'success' })
       await fetchUserData()
       setIsEditing(false)
-      // Auto-hide message after 3 seconds
-      setTimeout(() => setMessage(null), 3000)
     }
   }
 
@@ -164,13 +164,18 @@ export default function ProfilePage() {
       .eq("id", userTeam.id)
 
     if (error) {
-       setMessage({ type: 'error', text: "შეცდომა წაშლისას: " + error.message })
+       console.error("Delete Error:", error)
+       let errorMsg = "შეცდომა წაშლისას: " + error.message;
+       if (error.message.includes("policy")) {
+         errorMsg = "თქვენ არ გაქვთ ამ გუნდის წაშლის უფლება. გთხოვთ მიმართოთ ადმინისტრაციას.";
+       }
+       setToast({ message: errorMsg, type: 'error' })
        setLoading(false)
     } else {
-       setMessage({ type: 'success', text: "გუნდი წარმატებით წაიშალა" })
+       setToast({ message: "გუნდი წარმატებით წაიშალა", type: 'success' })
        setUserTeam(null)
        setLoading(false)
-       setTimeout(() => setMessage(null), 3000)
+       setIsDeleteConfirmOpen(false)
     }
   }
 
@@ -548,9 +553,17 @@ export default function ProfilePage() {
         onConfirm={handleDeleteTeam}
         title="გუნდის წაშლა"
         description="დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა? ეს ქმედება შეუქცევადია და გუნდის აღდგენა შეუძლებელი იქნება."
-        confirmText="წაშლა"
+        confirmText="გუნდის წაშლა"
         variant="danger"
       />
+
+      {toast && (
+        <LuxuryToast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   )
 }

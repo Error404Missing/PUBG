@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
 import { format } from "date-fns"
 import { ka } from "date-fns/locale"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 type Result = {
   id: string
@@ -44,6 +45,7 @@ export default function AdminResultsPage() {
     resultId: null,
     imageUrl: null
   })
+  const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -87,7 +89,7 @@ export default function AdminResultsPage() {
     const { error: uploadError } = await supabase.storage.from("results").upload(filePath, file)
 
     if (uploadError) {
-      alert("სურათის ატვირთვა ვერ მოხერხდა")
+      setToast({ message: "სურათის ატვირთვა ვერ მოხერხდა", type: 'error' })
       setIsUploading(false)
       return
     }
@@ -98,6 +100,7 @@ export default function AdminResultsPage() {
 
     setFormData({ ...formData, imageUrl: publicUrl })
     setIsUploading(false)
+    setToast({ message: "სურათი წარმატებით აიტვირთა", type: 'success' })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,9 +115,9 @@ export default function AdminResultsPage() {
 
     if (error) {
        console.error("Result creation error:", error)
-       alert("შეცდომა შედეგის გამოქვეყნებისას: " + error.message)
+       setToast({ message: "შეცდომა შედეგის გამოქვეყნებისას: " + error.message, type: 'error' })
     } else {
-      alert("შედეგი წარმატებით გამოქვეყნდა")
+      setToast({ message: "შედეგი წარმატებით გამოქვეყნდა", type: 'success' })
       setIsAdding(false)
       setFormData({
         title: "",
@@ -334,6 +337,14 @@ export default function AdminResultsPage() {
         confirmText="წაშლა"
         variant="danger"
       />
+
+      {toast && (
+        <LuxuryToast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   )
 }

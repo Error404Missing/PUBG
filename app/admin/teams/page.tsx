@@ -68,10 +68,12 @@ export default function AdminTeamsPage() {
     setIsLoading(true)
     const supabase = createClient()
 
-    // Simplified but robust query
+    console.log("Fetching teams with filter:", filter)
+
+    // Using explicit join via leader_id
     let query = supabase.from("teams").select(`
       *,
-      profiles(username)
+      profiles:leader_id(username)
     `).order("created_at", {
       ascending: false,
     })
@@ -88,7 +90,12 @@ export default function AdminTeamsPage() {
        return
     }
 
-    setTeams((data as Team[]) || [])
+    console.log("Teams fetched successfully:", data?.length, "records found")
+    if (data && data.length > 0) {
+      console.log("Sample team data:", data[0])
+    }
+
+    setTeams((data as any[]) || [])
     setIsLoading(false)
   }
 

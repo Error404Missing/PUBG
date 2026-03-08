@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
 import { format } from "date-fns"
 import { ka } from "date-fns/locale"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 type Schedule = {
   id: string
@@ -46,6 +47,7 @@ export default function AdminSchedulePage() {
     isOpen: false,
     scheduleId: null
   })
+  const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
 
   useEffect(() => {
     checkAuth()
@@ -92,9 +94,9 @@ export default function AdminSchedulePage() {
 
     if (error) {
        console.error("Schedule creation error:", error)
-       alert("შეცდომა განრიგის შექმნისას: " + error.message)
+       setToast({ message: "შეცდომა განრიგის შექმნისას: " + error.message, type: 'error' })
     } else {
-      alert("განრიგი წარმატებით შეიქმნა")
+      setToast({ message: "განრიგი წარმატებით შეიქმნა", type: 'success' })
       setIsAdding(false)
       setFormData({
         title: "",
@@ -342,6 +344,14 @@ export default function AdminSchedulePage() {
         confirmText="წაშლა"
         variant="danger"
       />
+
+      {toast && (
+        <LuxuryToast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   )
 }

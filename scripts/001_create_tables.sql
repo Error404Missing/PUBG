@@ -83,6 +83,7 @@ CREATE POLICY "Team leaders can update their own team" ON public.teams FOR UPDAT
 CREATE POLICY "Admins can update any team" ON public.teams FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
 );
+CREATE POLICY "Team leaders can delete their own team" ON public.teams FOR DELETE USING (auth.uid() = leader_id);
 CREATE POLICY "Admins can delete teams" ON public.teams FOR DELETE USING (
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (is_admin = true OR role = 'admin'))
 );
