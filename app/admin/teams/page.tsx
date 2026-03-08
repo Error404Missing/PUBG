@@ -63,7 +63,7 @@ export default function AdminTeamsPage() {
     setIsLoading(true)
     const supabase = createClient()
 
-    let query = supabase.from("teams").select("*, profiles!teams_leader_id_fkey(username)").order("created_at", {
+    let query = supabase.from("teams").select("*, profiles(username)").order("created_at", {
       ascending: false,
     })
 
@@ -200,7 +200,11 @@ export default function AdminTeamsPage() {
                           </div>
                           <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
                              <User className="w-3 h-3 text-primary" />
-                             ლიდერი: <span className="text-white">{team.profiles?.username}</span>
+                             ლიდერი: <span className="text-white">{
+                               Array.isArray(team.profiles) 
+                                 ? (team.profiles[0]?.username || "დაუკავშირებელი") 
+                                 : (team.profiles?.username || "დაუკავშირებელი")
+                             }</span>
                           </div>
                         </div>
                       </div>

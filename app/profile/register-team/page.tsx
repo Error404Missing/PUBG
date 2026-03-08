@@ -49,12 +49,19 @@ export default function RegisterTeamPage() {
     setError(null)
 
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      setError("გთხოვთ გაიაროთ ავტორიზაცია")
+      setIsLoading(false)
+      return
+    }
 
     try {
       const { error } = await supabase.from("teams").insert({
         team_name: formData.teamName,
         team_tag: formData.teamTag,
-        leader_id: userId,
+        leader_id: user.id,
         players_count: Number.parseInt(formData.playersCount),
         maps_count: Number.parseInt(formData.mapsCount),
         status: "pending",

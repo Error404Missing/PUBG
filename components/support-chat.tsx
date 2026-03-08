@@ -15,6 +15,7 @@ export function SupportChat() {
   const [user, setUser] = useState<any>(null)
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef<any>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: authUser } }) => {
@@ -23,18 +24,28 @@ export function SupportChat() {
 
     const channel = supabase.channel('support-chat', {
        config: {
-         broadcast: { self: true }
+         broadcast: { self: true, ack: true }
        }
     })
 
     channel.on('broadcast', { event: 'message' }, ({ payload }: any) => {
        // Only show messages for this user or sent by admin to this user
        if (payload.sender === 'admin' && payload.targetUserId === user?.id) {
-          setMessages((prev: any[]) => [...prev, payload])
+          setMessages((prev: any[]) => {
+             if (prev.some(m => m.id === payload.id)) return prev;
+             return [...prev, payload]
+          })
        } else if (payload.sender === 'user' && payload.userId === user?.id) {
-          setMessages((prev: any[]) => [...prev, payload])
+          setMessages((prev: any[]) => {
+             if (prev.some(m => m.id === payload.id)) return prev;
+             return [...prev, payload]
+          })
        }
-    }).subscribe()
+    }).subscribe((status) => {
+       console.log("Chat Channel Status:", status)
+    })
+
+    channelRef.current = channel
 
     return () => {
        supabase.removeChannel(channel)
@@ -49,7 +60,7 @@ export function SupportChat() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!message.trim() || !user) return
+    if (!message.trim() || !user || !channelRef.current) return
 
     const newMessage = {
       id: Date.now(),
@@ -60,11 +71,15 @@ export function SupportChat() {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
-    await supabase.channel('support-chat').send({
-       type: 'broadcast',
-       event: 'message',
-       payload: newMessage
-    })
+    try {
+      await channelRef.current.send({
+         type: 'broadcast',
+         event: 'message',
+         payload: newMessage
+      })
+    } catch (err) {
+      console.error("Failed to send message:", err)
+    }
 
     setMessage("")
   }

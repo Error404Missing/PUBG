@@ -20,8 +20,10 @@ export default function AdminSupportPage() {
   const [activeChat, setActiveChat] = useState<string | null>(null)
   const [reply, setReply] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [channelStatus, setChannelStatus] = useState("disconnected")
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef<any>(null)
 
   // Persistent storage for session messages (simple local fallback)
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function AdminSupportPage() {
 
     const channel = supabase.channel('support-chat', {
        config: {
-         broadcast: { self: true }
+         broadcast: { self: true, ack: true }
        }
     })
 
@@ -89,7 +91,11 @@ export default function AdminSupportPage() {
          if (exists) return prev
          return [...prev, payload]
        })
-    }).subscribe()
+    }).subscribe((status) => {
+       setChannelStatus(status)
+    })
+
+    channelRef.current = channel
 
     return () => {
        supabase.removeChannel(channel)
@@ -104,7 +110,7 @@ export default function AdminSupportPage() {
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!reply.trim() || !activeChat || !user) return
+    if (!reply.trim() || !activeChat || !user || !channelRef.current) return
 
     const newMessage = {
       id: Date.now(),
@@ -114,11 +120,15 @@ export default function AdminSupportPage() {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
-    await supabase.channel('support-chat').send({
-       type: 'broadcast',
-       event: 'message',
-       payload: newMessage
-    })
+    try {
+      await channelRef.current.send({
+         type: 'broadcast',
+         event: 'message',
+         payload: newMessage
+      })
+    } catch (err) {
+      console.error("Failed to send reply:", err)
+    }
 
     setReply("")
   }
@@ -146,14 +156,22 @@ export default function AdminSupportPage() {
             <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
           </Link>
 
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={clearMessages}
-            className="h-8 border-rose-500/20 text-rose-500 hover:bg-rose-500/10 text-[10px] font-black uppercase tracking-widest px-4"
-          >
-            <RefreshCcw className="w-3 h-3 mr-2" /> History Reset
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className={`px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-2 ${
+              channelStatus === 'SUBSCRIBED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${channelStatus === 'SUBSCRIBED' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+              Channel: {channelStatus}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={clearMessages}
+              className="h-8 border-rose-500/20 text-rose-500 hover:bg-rose-500/10 text-[10px] font-black uppercase tracking-widest px-4"
+            >
+              <RefreshCcw className="w-3 h-3 mr-2" /> History Reset
+            </Button>
+          </div>
         </div>
 
         <div className="flex-1 flex gap-8 min-h-0">
