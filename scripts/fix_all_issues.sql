@@ -1,5 +1,5 @@
 -- =====================================================
--- FINAL COMPREHENSIVE FIX SCRIPT - VERSION 2
+-- FINAL COMPREHENSIVE FIX SCRIPT - VERSION 3
 -- Run this in Supabase SQL Editor to solve all issues
 -- =====================================================
 
@@ -46,7 +46,6 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS ban_until TIMESTAMP WITH TI
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS discord_username TEXT;
 
 -- 3. Fix DEFAULT images for profiles (Dark Theme)
--- Using permanent URLs for reliability
 UPDATE public.profiles 
 SET avatar_url = 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png' 
 WHERE avatar_url IS NULL OR avatar_url = '' OR avatar_url LIKE '%imgur%' OR avatar_url LIKE '%api.dicebear.com%';
@@ -92,7 +91,6 @@ END;
 $$;
 
 -- 5. Fix Schedule Deletion Policy (Cascade and foreign keys)
--- Ensure ALL tables referencing schedules have ON DELETE CASCADE
 DO $$
 BEGIN
     -- Fix scrim_requests
@@ -109,7 +107,18 @@ BEGIN
     REFERENCES public.schedules(id) 
     ON DELETE CASCADE;
 
-    -- Fix results
+    -- Fix results (Robust Check)
+    -- First, ensure column exists
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'results' 
+        AND column_name = 'schedule_id'
+    ) THEN
+        ALTER TABLE public.results ADD COLUMN schedule_id UUID;
+    END IF;
+
+    -- Now drop old constraint if exists
     IF EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE constraint_name = 'results_schedule_id_fkey'
@@ -117,6 +126,7 @@ BEGIN
         ALTER TABLE public.results DROP CONSTRAINT results_schedule_id_fkey;
     END IF;
     
+    -- Add the cascaded constraint
     ALTER TABLE public.results 
     ADD CONSTRAINT results_schedule_id_fkey 
     FOREIGN KEY (schedule_id) 
@@ -125,15 +135,12 @@ BEGIN
 END $$;
 
 -- 6. Add trigger for VIP Case Opening to update Profile Checkbox/Badge
--- Ensure user_vip_status updates is_vip in teams if exists
 CREATE OR REPLACE FUNCTION public.on_vip_status_change()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Update user's teams to reflect VIP status
   UPDATE public.teams 
   SET is_vip = (NEW.vip_until > NOW())
   WHERE leader_id = NEW.user_id;
-
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
