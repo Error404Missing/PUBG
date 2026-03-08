@@ -136,7 +136,7 @@ export function Navigation() {
             })}
           </div>
 
-          {/* Action Buttons */}
+           {/* Action Buttons */}
           <div className="flex items-center gap-3">
              {isAdmin && (
                 <Link 
@@ -149,20 +149,20 @@ export function Navigation() {
              )}
              
              {user ? (
-               <div className="flex items-center gap-2">
+               <div className="hidden lg:flex items-center gap-2">
                  <Link href="/profile" className="w-10 h-10 rounded-full border border-white/10 glass flex items-center justify-center hover:border-primary/50 transition-all group overflow-hidden">
                     <Users className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                  </Link>
                  <button 
                    onClick={handleLogout}
-                   className="hidden md:flex items-center gap-2 text-[10px] font-black text-muted-foreground hover:text-red-400 transition-colors px-3 py-2 uppercase tracking-widest"
+                   className="flex items-center gap-2 text-[10px] font-black text-muted-foreground hover:text-red-400 transition-colors px-3 py-2 uppercase tracking-widest"
                  >
                    <LogOut className="w-3 h-3" />
                    გასვლა
                  </button>
                </div>
              ) : (
-               <div className="flex items-center gap-2">
+               <div className="hidden lg:flex items-center gap-2">
                  <Link href="/auth/login" className="px-5 py-2 text-xs font-bold text-white hover:bg-white/5 rounded-xl transition-all uppercase tracking-widest">
                    შესვლა
                  </Link>
@@ -197,22 +197,54 @@ export function Navigation() {
                   {item.label}
                 </Link>
               ))}
+           </div>
+           
+           <div className="flex flex-col gap-3 mt-6 pt-6 border-t border-white/10">
               {isAdmin && (
                 <Link
                   href="/admin"
                   onClick={() => setIsOpen(false)}
-                  className="px-4 py-3 rounded-xl glass border border-secondary/20 text-secondary text-xs font-black uppercase tracking-widest text-center"
+                  className="px-4 py-3 rounded-xl glass border border-secondary/20 text-secondary text-xs font-black uppercase tracking-widest text-center flex justify-center items-center gap-2"
                 >
+                  <Shield className="w-4 h-4" />
                   მართვა
                 </Link>
               )}
-              {user && (
-                 <button 
-                  onClick={() => { handleLogout(); setIsOpen(false); }}
-                  className="px-4 py-3 rounded-xl glass border border-red-500/20 text-red-red-400 text-xs font-black uppercase tracking-widest text-center"
-                 >
-                   გასვლა
-                 </button>
+              {user ? (
+                 <>
+                   <Link
+                     href="/profile"
+                     onClick={() => setIsOpen(false)}
+                     className="px-4 py-3 rounded-xl glass border border-primary/20 text-primary text-xs font-black uppercase tracking-widest text-center flex justify-center items-center gap-2"
+                   >
+                     <Users className="w-4 h-4" />
+                     ჩემი პროფილი
+                   </Link>
+                   <button 
+                    onClick={() => { handleLogout(); setIsOpen(false); }}
+                    className="px-4 py-3 rounded-xl glass border border-red-500/20 text-red-500 text-xs font-black uppercase tracking-widest text-center flex justify-center items-center gap-2"
+                   >
+                     <LogOut className="w-4 h-4" />
+                     გასვლა
+                   </button>
+                 </>
+              ) : (
+                 <>
+                   <Link
+                     href="/auth/login"
+                     onClick={() => setIsOpen(false)}
+                     className="px-4 py-3 rounded-xl glass border border-white/5 text-white text-xs font-black uppercase tracking-widest text-center"
+                   >
+                     შესვლა
+                   </Link>
+                   <Link
+                     href="/auth/register"
+                     onClick={() => setIsOpen(false)}
+                     className="px-4 py-3 rounded-xl bg-primary text-black font-black uppercase tracking-widest text-center text-xs"
+                   >
+                     რეგისტრაცია
+                   </Link>
+                 </>
               )}
            </div>
         </div>

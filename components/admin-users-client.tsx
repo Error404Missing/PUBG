@@ -28,6 +28,7 @@ import {
   Crown
 } from "lucide-react"
 import Link from "next/link"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface UserProfile {
   id: string
@@ -36,6 +37,7 @@ interface UserProfile {
   is_admin: boolean
   is_banned?: boolean
   ban_reason?: string | null
+  ban_until?: string | null
   badge?: string | null
   created_at: string
 }
@@ -52,6 +54,7 @@ export function AdminUsersClient({
   const [userList, setUserList] = useState(users)
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [banReason, setBanReason] = useState("")
+  const [banDuration, setBanDuration] = useState("permanent")
   const [badgeText, setBadgeText] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -64,18 +67,27 @@ export function AdminUsersClient({
 
   const handleBanUser = async (userId: string) => {
     setIsLoading(true)
+    let banUntilDate = null
+    if (banDuration !== "permanent") {
+       const days = parseInt(banDuration)
+       const date = new Date()
+       date.setDate(date.getDate() + days)
+       banUntilDate = date.toISOString()
+    }
+
     const { error } = await supabase
       .from("profiles")
-      .update({ is_banned: true, ban_reason: banReason || "წესების დარღვევა" })
+      .update({ is_banned: true, ban_reason: banReason || "წესების დარღვევა", ban_until: banUntilDate })
       .eq("id", userId)
 
     if (!error) {
       setUserList((prev) =>
         prev.map((u) =>
-          u.id === userId ? { ...u, is_banned: true, ban_reason: banReason || "წესების დარღვევა" } : u
+          u.id === userId ? { ...u, is_banned: true, ban_reason: banReason || "წესების დარღვევა", ban_until: banUntilDate } : u
         )
       )
       setBanReason("")
+      setBanDuration("permanent")
     }
     setIsLoading(false)
   }
@@ -84,12 +96,12 @@ export function AdminUsersClient({
     setIsLoading(true)
     const { error } = await supabase
       .from("profiles")
-      .update({ is_banned: false, ban_reason: null })
+      .update({ is_banned: false, ban_reason: null, ban_until: null })
       .eq("id", userId)
 
     if (!error) {
       setUserList((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, is_banned: false, ban_reason: null } : u))
+        prev.map((u) => (u.id === userId ? { ...u, is_banned: false, ban_reason: null, ban_until: null } : u))
       )
     }
     setIsLoading(false)
@@ -217,8 +229,9 @@ export function AdminUsersClient({
                              </div>
                           </div>
                           {u.is_banned && u.ban_reason && (
-                             <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl mb-4 text-xs italic text-rose-400 font-bold uppercase tracking-widest">
-                                Protocol Violation: {u.ban_reason}
+                             <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl mb-4 text-xs italic text-rose-400 font-bold uppercase tracking-widest flex flex-col gap-1">
+                                <div>Protocol Violation: {u.ban_reason}</div>
+                                {u.ban_until && <div>Expires: {new Date(u.ban_until).toLocaleString('ka-GE')}</div>}
                              </div>
                           )}
                        </div>
@@ -323,6 +336,21 @@ export function AdminUsersClient({
                                             onChange={(e) => setBanReason(e.target.value)}
                                             className="h-32 bg-black/40 border-rose-500/20 rounded-xl focus:border-rose-500/50 text-xs font-bold"
                                           />
+                                        </div>
+                                        <div className="space-y-3">
+                                          <Label className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] ml-2 italic font-bold">Duration / ხანგრძლივობა</Label>
+                                          <Select value={banDuration} onValueChange={setBanDuration}>
+                                             <SelectTrigger className="w-full h-14 bg-black/40 border-rose-500/20 rounded-xl font-bold">
+                                               <SelectValue placeholder="აირჩიეთ ხანგრძლივობა" />
+                                             </SelectTrigger>
+                                             <SelectContent className="glass-card border-white/10">
+                                               <SelectItem value="1">1 დღე (24 საათი)</SelectItem>
+                                               <SelectItem value="3">3 დღე</SelectItem>
+                                               <SelectItem value="7">1 კვირა</SelectItem>
+                                               <SelectItem value="30">1 თვე</SelectItem>
+                                               <SelectItem value="permanent">პერმანენტული (უსასრულო)</SelectItem>
+                                             </SelectContent>
+                                          </Select>
                                         </div>
                                         <Button
                                           onClick={() => handleBanUser(u.id)}
