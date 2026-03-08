@@ -1,0 +1,163 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #020204;
+  --foreground: #ffffff;
+  --card: #050508;
+  --card-foreground: #ffffff;
+  --popover: #050508;
+  --popover-foreground: #ffffff;
+  --primary: #3b82f6; /* Blue */
+  --primary-foreground: #ffffff;
+  --secondary: #eab308; /* Yellow/Gold */
+  --secondary-foreground: #000000;
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+  --accent: #8b5cf6; /* Purple */
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #1e293b;
+  --input: #0f172a;
+  --ring: #3b82f6;
+  --radius: 1rem;
+}
+
+@theme inline {
+  --font-sans: "Inter", "Geist", sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+/* Base Styles */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    background-color: var(--background);
+    @apply text-foreground selection:bg-primary/30 selection:text-primary-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+  }
+}
+
+/* Animations */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(100px) rotate(0deg); }
+  to { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes shimmer-fast {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@layer utilities {
+  .animate-reveal {
+    animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-float-subtle {
+    animation: float-subtle 6s ease-in-out infinite;
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  .glass-darker {
+    @apply bg-black/40 backdrop-blur-2xl border border-white/5;
+  }
+
+  .glass-card {
+    @apply relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-transparent backdrop-blur-md border border-white/10 shadow-2xl transition-all duration-500;
+  }
+
+  .glass-card:hover {
+    @apply -translate-y-2 border-primary/30 shadow-primary/20 bg-white/15;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 15px currentColor;
+  }
+
+  .bg-mesh {
+    background-color: var(--background);
+    background-image: 
+      radial-gradient(at 0% 0%, oklch(0.3 0.1 260 / 0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, oklch(0.4 0.1 300 / 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, oklch(0.5 0.2 45 / 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, oklch(0.2 0.05 250 / 0.05) 0px, transparent 50%);
+  }
+
+  .hero-gradient-new {
+    background: radial-gradient(circle at 50% -20%, oklch(0.5 0.2 260 / 0.2), transparent 70%),
+                linear-gradient(to bottom, oklch(0.02 0.01 250), oklch(0.05 0.02 250));
+  }
+
+  .btn-premium {
+    @apply relative overflow-hidden px-8 py-3 rounded-full font-bold transition-all duration-300 active:scale-95;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    box-shadow: 0 4px 15px oklch(0.5 0.2 260 / 0.3);
+  }
+
+  .btn-premium::before {
+    content: '';
+    @apply absolute inset-0 bg-white/20 translate-x-[-100%] transition-transform duration-500;
+  }
+
+  .btn-premium:hover::before {
+    @apply translate-x-[100%];
+  }
+
+  .border-glow {
+    @apply relative;
+  }
+
+  .border-glow::after {
+    content: '';
+    @apply absolute inset-[-1px] rounded-[inherit] bg-gradient-to-r from-primary via-accent to-secondary opacity-0 transition-opacity duration-500 -z-10;
+  }
+
+  .border-glow:hover::after {
+    @apply opacity-100 blur-sm;
+  }
+}
