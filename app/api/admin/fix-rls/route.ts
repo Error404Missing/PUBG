@@ -4,6 +4,17 @@ import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST(req: NextRequest) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("Missing credentials in fix-rls:", { url: !!supabaseUrl, key: !!serviceRoleKey })
+      return NextResponse.json({ 
+        success: false, 
+        error: "Missing SUPABASE_SERVICE_ROLE_KEY. Please add it to Vercel/Local .env" 
+      }, { status: 500 })
+    }
+
     const supabase = createAdminClient()
     const serverSupabase = await createServerClient()
     
