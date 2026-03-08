@@ -77,28 +77,33 @@ export default function AdminResultsPage() {
   }
 
   const handleImageUpload = async (file: File) => {
+    if (!file) return
     setIsUploading(true)
     const supabase = createClient()
 
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${Math.random()}.${fileExt}`
-    const filePath = `results/${fileName}`
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${Math.random()}.${fileExt}`
+      const filePath = `results/${fileName}`
 
-    const { error: uploadError } = await supabase.storage.from("results").upload(filePath, file)
+      const { error: uploadError } = await supabase.storage.from("results").upload(filePath, file)
 
-    if (uploadError) {
-      setToast({ message: "სურათის ატვირთვა ვერ მოხერხდა", type: 'error' })
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("results").getPublicUrl(filePath)
+
+      setFormData(prev => ({ ...prev, imageUrl: publicUrl }))
+      setToast({ message: "სურათი წარმატებით აიტვირთა", type: 'success' })
+    } catch (error: any) {
+      console.error("Upload error:", error)
+      setToast({ message: "სურათის ატვირთვა ვერ მოხერხდა: " + (error.message || ""), type: 'error' })
+    } finally {
       setIsUploading(false)
-      return
     }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("results").getPublicUrl(filePath)
-
-    setFormData({ ...formData, imageUrl: publicUrl })
-    setIsUploading(false)
-    setToast({ message: "სურათი წარმატებით აიტვირთა", type: 'success' })
   }
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,15 +113,19 @@ export default function AdminResultsPage() {
 
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDragging(true)
   }
 
-  const onDragLeave = () => {
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     setIsDragging(false)
   }
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDragging(false)
     const file = e.dataTransfer.files?.[0]
     if (file) handleImageUpload(file)

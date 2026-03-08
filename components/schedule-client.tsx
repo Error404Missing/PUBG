@@ -94,21 +94,21 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
               <h4 className="text-white font-semibold mb-2">როგორ დავრეგისტრიროთ გუნდი:</h4>
               <ol className="text-gray-300 text-sm space-y-2">
-                <li className="flex gap-2">
-                  <span className="text-blue-400 font-bold">1.</span>
-                  <span>დაბრუნდით პროფილზე</span>
+                <li className="flex gap-2 text-white/90">
+                  <span className="text-blue-400 font-black">1.</span>
+                  <span>გადადით "პროფილის" გვერდზე.</span>
                 </li>
-                <li className="flex gap-2">
-                  <span className="text-blue-400 font-bold">2.</span>
-                  <span>დააჭირეთ "გუნდის რეგისტრაცია" ღილაკს</span>
+                <li className="flex gap-2 text-white/90">
+                  <span className="text-blue-400 font-black">2.</span>
+                  <span>დააჭირეთ "გუნდის რეგისტრაცია" (Enlistment) ღილაკს.</span>
                 </li>
-                <li className="flex gap-2">
-                  <span className="text-blue-400 font-bold">3.</span>
-                  <span>შეავსეთ გუნდის ინფორმაცია (სახელი, ტეგი, მოთამაშეები)</span>
+                <li className="flex gap-2 text-white/90">
+                  <span className="text-blue-400 font-black">3.</span>
+                  <span>შეიყვანეთ გუნდის სახელი, ტეგი და მოთამაშეების რაოდენობა.</span>
                 </li>
-                <li className="flex gap-2">
-                  <span className="text-blue-400 font-bold">4.</span>
-                  <span>გამოიწერეთ საკუთარი მოთხოვნა სკრიმებზე</span>
+                <li className="flex gap-2 text-white/90">
+                  <span className="text-blue-400 font-black">4.</span>
+                  <span>წარმატებული რეგისტრაციის შემდეგ შეძლებთ სკრიმებზე მოთხოვნის გამოგზავნას.</span>
                 </li>
               </ol>
             </div>
