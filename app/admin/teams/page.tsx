@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label"
 import { 
   Check, X, Ban, Crown, Trash2, Users, 
   MapPin, ChevronLeft, Target, Shield, 
-  Search, Filter, Activity, Save, RefreshCcw
+  Search, Filter, Activity, Save, RefreshCcw, ArrowRight, Settings2, Loader2, CheckCircle2, AlertCircle, Zap
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
+import { LuxuryToast } from "@/components/ui/luxury-toast"
 
 type Team = {
   id: string
@@ -44,6 +45,8 @@ export default function AdminTeamsPage() {
     isOpen: false,
     teamId: null
   })
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null)
+
 
   useEffect(() => {
     checkAuth()
@@ -64,6 +67,31 @@ export default function AdminTeamsPage() {
 
     if (!profile?.is_admin) {
       router.push("/")
+    }
+  }
+
+  const [isSettingUp, setIsSettingUp] = useState(false)
+
+  const handleSystemSetup = async () => {
+    setIsSettingUp(true)
+    try {
+      // 1. Fix Storage
+      const storageRes = await fetch("/api/admin/setup-storage")
+      const storageData = await storageRes.json()
+      
+      // 2. Fix RLS
+      const rlsRes = await fetch("/api/admin/fix-rls", { method: 'POST' })
+      const rlsData = await rlsRes.json()
+
+      if (storageData.success && rlsData.success) {
+        setToast({ message: "სისტემა წარმატებით განახლდა და გასწორდა", type: 'success' })
+      } else {
+        setToast({ message: "ზოგიერთი კომპონენტი ვერ გასწორდა", type: 'error' })
+      }
+    } catch (error) {
+       setToast({ message: "შეცდომა სერვერთან კავშირისას", type: 'error' })
+    } finally {
+      setIsSettingUp(false)
     }
   }
 
@@ -203,6 +231,23 @@ export default function AdminTeamsPage() {
               ))}
             </div>
           </div>
+          <div className="flex flex-col md:flex-row md:items-center gap-4 mt-8">
+            <Button 
+              onClick={handleSystemSetup}
+              disabled={isSettingUp}
+              variant="outline"
+              className="h-16 px-8 rounded-2xl border-white/5 hover:bg-white/5 text-muted-foreground font-black uppercase tracking-widest italic flex items-center gap-3 active:scale-95 transition-all"
+            >
+              {isSettingUp ? <Loader2 className="w-5 h-5 animate-spin" /> : <Settings2 className="w-5 h-5" />}
+              {isSettingUp ? "Initializing..." : "System Setup"}
+            </Button>
+            <button 
+              onClick={fetchTeams}
+              className="w-16 h-16 rounded-2xl glass border border-white/5 flex items-center justify-center text-muted-foreground hover:text-primary transition-all active:scale-95"
+            >
+              <Activity className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -234,7 +279,7 @@ export default function AdminTeamsPage() {
                              <span className="text-xl font-black text-white/20 italic tracking-[0.2em]">[{team.team_tag}]</span>
                           </div>
                           <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
-                             <User className="w-3 h-3 text-primary" />
+                             <Users className="w-3 h-3 text-primary" />
                               ლიდერი: <span className="text-white">{
                                 team.leader?.username || 
                                 team.profiles?.username || 
@@ -379,26 +424,14 @@ export default function AdminTeamsPage() {
         confirmText="წაშლა"
         variant="danger"
       />
-    </div>
-  )
-}
 
-function User(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
+      {toast && (
+        <LuxuryToast 
+          message={toast.message} 
+          type={toast.type as any} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+    </div>
   )
 }
