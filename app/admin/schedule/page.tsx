@@ -90,7 +90,11 @@ export default function AdminSchedulePage() {
       is_active: true,
     })
 
-    if (!error) {
+    if (error) {
+       console.error("Schedule creation error:", error)
+       alert("შეცდომა განრიგის შექმნისას: " + error.message)
+    } else {
+      alert("განრიგი წარმატებით შეიქმნა")
       setIsAdding(false)
       setFormData({
         title: "",

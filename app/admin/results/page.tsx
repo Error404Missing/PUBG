@@ -110,7 +110,11 @@ export default function AdminResultsPage() {
       image_url: formData.imageUrl || null,
     })
 
-    if (!error) {
+    if (error) {
+       console.error("Result creation error:", error)
+       alert("შეცდომა შედეგის გამოქვეყნებისას: " + error.message)
+    } else {
+      alert("შედეგი წარმატებით გამოქვეყნდა")
       setIsAdding(false)
       setFormData({
         title: "",

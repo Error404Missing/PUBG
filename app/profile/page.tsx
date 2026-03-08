@@ -34,6 +34,7 @@ export default function ProfilePage() {
     avatar_url: "",
     banner_url: ""
   })
+  const [isUploading, setIsUploading] = useState<{type: 'avatar' | 'banner' | null}>({ type: null })
 
   useEffect(() => {
     fetchUserData()
@@ -121,6 +122,40 @@ export default function ProfilePage() {
     }
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setIsUploading({ type })
+    
+    // Create bucket if it doesn't exist (though usually it should be pre-created)
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${user.id}-${Math.random()}.${fileExt}`
+    const filePath = `${type}s/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('profiles')
+      .upload(filePath, file, { upsert: true })
+
+    if (uploadError) {
+      console.error(`Upload ${type} error:`, uploadError)
+      setMessage({ type: 'error', text: `${type === 'avatar' ? 'ფოტოს' : 'ბანერის'} ატვირთვა ვერ მოხერხდა` })
+      setIsUploading({ type: null })
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('profiles')
+      .getPublicUrl(filePath)
+
+    setEditData(prev => ({ ...prev, [type === 'avatar' ? 'avatar_url' : 'banner_url']: publicUrl }))
+    setIsUploading({ type: null })
+    setMessage({ type: 'success', text: `${type === 'avatar' ? 'ფოტო' : 'ბანერი'} დროებით აიტვირთა, შესანახად დააჭირეთ 'შენახვას'` })
+  }
+
   const handleDeleteTeam = async () => {
     setLoading(true)
     const { error } = await supabase
@@ -177,6 +212,24 @@ export default function ProfilePage() {
          />
          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
          
+          {isEditing && (
+             <div className="absolute top-8 right-8 z-20">
+                <label className="cursor-pointer">
+                   <div className="bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 p-3 rounded-xl transition-all flex items-center gap-2 group">
+                      <Camera className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white italic">ბანერის შეცვლა</span>
+                   </div>
+                   <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={(e) => handleFileUpload(e, 'banner')} 
+                      disabled={isUploading.type !== null}
+                   />
+                </label>
+             </div>
+          )}
+         
          {/* Profile Info Overlay */}
          <div className="absolute -bottom-1 left-0 w-full p-8 md:p-12">
             <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-end gap-6 md:gap-10">
@@ -184,13 +237,32 @@ export default function ProfilePage() {
                <div className="relative group overflow-hidden">
                   <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] glass border-4 border-background overflow-hidden relative z-10 transition-transform hover:scale-105 duration-500">
                      <img 
-                       src={profile?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + profile?.username} 
+                       src={isEditing ? (editData.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + profile?.username) : (profile?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + profile?.username)} 
                        alt="Avatar"
-                       className="w-full h-full object-cover"
+                       className={`w-full h-full object-cover ${isUploading.type === 'avatar' ? 'opacity-30 blur-sm' : ''} transition-all duration-300`}
                      />
-                  </div>
-                  <div className="absolute inset-0 rounded-[2.5rem] bg-primary/20 blur-xl -z-0 animate-pulse-soft" />
-               </div>
+                      
+                      {isEditing && (
+                         <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-20">
+                            <Camera className="w-8 h-8 text-white" />
+                            <input 
+                               type="file" 
+                               className="hidden" 
+                               accept="image/*"
+                               onChange={(e) => handleFileUpload(e, 'avatar')}
+                               disabled={isUploading.type !== null}
+                            />
+                         </label>
+                      )}
+
+                      {isUploading.type === 'avatar' && (
+                         <div className="absolute inset-0 flex items-center justify-center z-30">
+                            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                         </div>
+                      )}
+                   </div>
+                   <div className="absolute inset-0 rounded-[2.5rem] bg-primary/20 blur-xl -z-0 animate-pulse-soft" />
+                </div>
 
                {/* Text Info */}
                <div className="flex-1 pb-2">
