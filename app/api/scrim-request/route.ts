@@ -20,12 +20,17 @@ export async function POST(request: Request) {
     }
 
     // Verify that the user owns this team
-    const { data: team } = await supabase
+    const { data: team, error: teamError } = await supabase
       .from("teams")
       .select("id, status")
       .eq("id", team_id)
       .eq("leader_id", user.id)
-      .single()
+      .maybeSingle()
+
+    if (teamError) {
+      console.error("Team fetch error:", teamError)
+      return NextResponse.json({ error: "Team lookup failed: " + teamError.message }, { status: 500 })
+    }
 
     if (!team) {
       return NextResponse.json({ error: "Team not found or unauthorized" }, { status: 403 })
@@ -37,7 +42,7 @@ export async function POST(request: Request) {
       .select("id")
       .eq("team_id", team_id)
       .eq("schedule_id", schedule_id)
-      .single()
+      .maybeSingle()
 
     if (existingRequest) {
       return NextResponse.json(
@@ -46,34 +51,54 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if team leader has VIP status
-    let hasVip = false
+    // Create scrim request - minimal fields only to avoid column issues
+    const insertData: any = {
+      team_id,
+      schedule_id,
+      status: "pending",
+    }
+
+    // Try to add has_vip if possible
     try {
       const { data: vipStatus } = await supabase
         .from("user_vip_status")
         .select("vip_until")
         .eq("user_id", user.id)
         .maybeSingle()
-      hasVip = !!(vipStatus && new Date(vipStatus.vip_until) > new Date())
+      if (vipStatus && new Date(vipStatus.vip_until) > new Date()) {
+        insertData.has_vip = true
+      }
     } catch (e) {
-      // user_vip_status view might not exist yet, continue without VIP
-      console.warn("VIP status check failed:", e)
+      console.warn("VIP status check failed (non-critical):", e)
     }
 
-    // Create scrim request
-    const { data: scrimRequest, error } = await supabase
+    const { data: scrimRequest, error: insertError } = await supabase
       .from("scrim_requests")
-      .insert({
-        team_id,
-        schedule_id,
-        status: "pending",
-        has_vip: hasVip,
-        created_at: new Date().toISOString(),
-      })
+      .insert(insertData)
       .select()
       .single()
 
-    if (error) throw error
+    if (insertError) {
+      console.error("Scrim request insert error:", insertError)
+      // If has_vip column doesn't exist, retry without it
+      if (insertError.message?.includes("has_vip")) {
+        delete insertData.has_vip
+        const { data: retry, error: retryError } = await supabase
+          .from("scrim_requests")
+          .insert(insertData)
+          .select()
+          .single()
+        if (retryError) {
+          return NextResponse.json({ error: retryError.message }, { status: 500 })
+        }
+        // Update team status if draft
+        if (team.status === "draft") {
+          await supabase.from("teams").update({ status: "pending" }).eq("id", team_id)
+        }
+        return NextResponse.json({ success: true, message: "მოთხოვნა გაიგზავნა ადმინისტრაციისთვის", data: retry })
+      }
+      return NextResponse.json({ error: insertError.message }, { status: 500 })
+    }
 
     // Update team status if it's draft
     if (team.status === "draft") {
@@ -85,10 +110,10 @@ export async function POST(request: Request) {
       message: "მოთხოვნა გაიგზავნა ადმინისტრაციისთვის",
       data: scrimRequest,
     })
-  } catch (error) {
-    console.error("[v0] Scrim request error:", error)
+  } catch (error: any) {
+    console.error("[scrim-request] Unhandled error:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error?.message || "Internal server error" },
       { status: 500 }
     )
   }
