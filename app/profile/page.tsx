@@ -6,7 +6,7 @@ import {
   User, Mail, Shield, Edit3, Camera, 
   Award, Zap, Hash, MessageSquare, 
   ChevronRight, Save, LogOut, ExternalLink, X,
-  AlertTriangle, CheckCircle2
+  AlertTriangle, CheckCircle2, Trash2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -116,6 +116,26 @@ export default function ProfilePage() {
       setIsEditing(false)
       // Auto-hide message after 3 seconds
       setTimeout(() => setMessage(null), 3000)
+    }
+  }
+
+  const handleDeleteTeam = async () => {
+    if (!confirm("დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა? ეს ქმედება შეუქცევადია.")) return
+    
+    setLoading(true)
+    const { error } = await supabase
+      .from("teams")
+      .delete()
+      .eq("id", userTeam.id)
+
+    if (error) {
+       setMessage({ type: 'error', text: "შეცდომა წაშლისას: " + error.message })
+       setLoading(false)
+    } else {
+       setMessage({ type: 'success', text: "გუნდი წარმატებით წაიშალა" })
+       setUserTeam(null)
+       setLoading(false)
+       setTimeout(() => setMessage(null), 3000)
     }
   }
 
@@ -395,12 +415,21 @@ export default function ProfilePage() {
                                     </div>
                                  </div>
 
-                                 <Button asChild variant="outline" className="w-full h-14 rounded-2xl border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest group">
-                                    <Link href="/teams">
-                                       <ExternalLink className="w-4 h-4 mr-3 transition-transform group-hover:scale-110" />
-                                       სრული შემადგენლობის ნახვა
-                                    </Link>
-                                 </Button>
+                                 <div className="flex gap-4">
+                                    <Button asChild variant="outline" className="flex-1 h-14 rounded-2xl border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest group">
+                                       <Link href="/teams">
+                                          <ExternalLink className="w-4 h-4 mr-3 transition-transform group-hover:scale-110" />
+                                          ნახვა
+                                       </Link>
+                                    </Button>
+                                    <Button 
+                                      onClick={handleDeleteTeam}
+                                      variant="outline" 
+                                      className="h-14 w-14 rounded-2xl border-rose-500/20 text-rose-500 hover:bg-rose-500/10 transition-colors"
+                                    >
+                                       <Trash2 className="w-5 h-5" />
+                                    </Button>
+                                 </div>
                               </div>
                            ) : (
                               <div className="py-12 text-center space-y-8 glass border border-white/5 rounded-[3rem]">
