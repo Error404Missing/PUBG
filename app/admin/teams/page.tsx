@@ -68,10 +68,10 @@ export default function AdminTeamsPage() {
     setIsLoading(true)
     const supabase = createClient()
 
-    // Use an explicit join to ensure profile info is fetched correctly
+    // Simplified but robust query
     let query = supabase.from("teams").select(`
       *,
-      leader:profiles(username)
+      profiles(username)
     `).order("created_at", {
       ascending: false,
     })
@@ -80,7 +80,14 @@ export default function AdminTeamsPage() {
       query = query.eq("status", filter)
     }
 
-    const { data } = await query
+    const { data, error } = await query
+
+    if (error) {
+       console.error("Teams fetch error:", error)
+       setIsLoading(false)
+       return
+    }
+
     setTeams((data as Team[]) || [])
     setIsLoading(false)
   }
@@ -218,7 +225,11 @@ export default function AdminTeamsPage() {
                           <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
                              <User className="w-3 h-3 text-primary" />
                              ლიდერი: <span className="text-white">{
-                               team.leader?.username || "Anonymous"
+                               (() => {
+                                 const p = (team as any).profiles || (team as any).leader;
+                                 if (Array.isArray(p)) return p[0]?.username || "Anonymous";
+                                 return p?.username || "Anonymous";
+                               })()
                              }</span>
                           </div>
                         </div>

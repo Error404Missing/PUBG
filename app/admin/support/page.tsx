@@ -137,6 +137,7 @@ export default function AdminSupportPage() {
 
   const clearMessages = () => {
     setMessages([])
+    setActiveChat(null)
     localStorage.removeItem('support_admin_messages')
   }
 
@@ -216,9 +217,9 @@ export default function AdminSupportPage() {
                         <div className="w-12 h-12 rounded-2xl glass border border-primary/20 flex items-center justify-center">
                            <User className="w-6 h-6 text-primary" />
                         </div>
-                        <div>
-                           <h3 className="text-xl font-black text-white italic truncate max-w-[200px]">{chats[activeChat].username}</h3>
-                           <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+                         <div>
+                            <h3 className="text-xl font-black text-white italic truncate max-w-[200px]">{chats[activeChat]?.username || "Anonymous"}</h3>
+                            <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                               Encrypted Channel
                            </div>
@@ -232,7 +233,7 @@ export default function AdminSupportPage() {
                     ref={scrollRef}
                     className="flex-1 overflow-y-auto p-10 space-y-6 scrollbar-hide"
                   >
-                     {chats[activeChat].messages.map((msg: any) => (
+                     {chats[activeChat]?.messages?.map((msg: any) => (
                         <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
                            <div className={`max-w-[70%] space-y-2`}>
                               <div className={`p-5 rounded-3xl text-sm leading-relaxed ${

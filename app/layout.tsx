@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   title: "ARENA | Cyber-Luxury Scrims",
   description: "ელიტარული PUBG ტურნირები და სკრიმები. შექმენი შენი გუნდი და გახდი ჩემპიონი.",
   icons: {
-    icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-gaming-V5o8O2Z2qW6P3n7M1f9S8L7K5J4H3G.png",
-    apple: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-gaming-V5o8O2Z2qW6P3n7M1f9S8L7K5J4H3G.png",
+    icon: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-gaming-V5o8O2Z2qW6P3n7M1f9S8L7K5J4H3G.png?v=2",
+    apple: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-gaming-V5o8O2Z2qW6P3n7M1f9S8L7K5J4H3G.png?v=2",
   },
 }
 
