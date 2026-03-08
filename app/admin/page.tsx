@@ -10,6 +10,7 @@ import {
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { FixPermissionsButton } from "@/components/admin/fix-permissions-button"
 
 export const dynamic = "force-dynamic"
 
@@ -172,7 +173,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Quick Settings Footer */}
-        <div className="mt-16 flex flex-col md:flex-row items-center justify-between gap-8 p-8 md:p-12 rounded-[3.5rem] glass border border-white/5 animate-reveal" style={{ animationDelay: '0.3s' }}>
+        <div className="mt-16 flex flex-col md:grid md:grid-cols-2 lg:flex lg:flex-row items-center justify-between gap-8 p-8 md:p-12 rounded-[3.5rem] glass border border-white/5 animate-reveal" style={{ animationDelay: '0.3s' }}>
             <div className="flex items-center gap-6">
                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center">
                   <Settings className="w-8 h-8 text-white/50" />
@@ -182,9 +183,12 @@ export default async function AdminPage() {
                   <p className="text-xs text-secondary italic font-bold tracking-widest uppercase">Arena_Core_Settings_Lv3</p>
                </div>
             </div>
-            <Button asChild variant="premium" className="h-16 px-10 rounded-[2rem] font-black uppercase tracking-widest italic">
-               <Link href="/admin/settings">Config_Settings</Link>
-            </Button>
+            <div className="flex flex-wrap items-center gap-4">
+               <FixPermissionsButton />
+               <Button asChild variant="premium" className="h-16 px-10 rounded-[2rem] font-black uppercase tracking-widest italic">
+                  <Link href="/admin/settings">Config_Settings</Link>
+               </Button>
+            </div>
         </div>
       </div>
     </div>

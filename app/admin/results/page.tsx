@@ -210,33 +210,47 @@ export default function AdminResultsPage() {
 
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სურათის მართვა</Label>
-                    <div className="grid md:grid-cols-2 gap-4">
-                       <Input
-                         value={formData.imageUrl}
-                         onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                         placeholder="სურათის URL (https://...)"
-                         className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold"
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სურათის ატვირთვა / Upload Evidence</Label>
+                    <div className="relative group overflow-hidden rounded-[2rem] glass border-2 border-dashed border-white/10 hover:border-primary/50 transition-all">
+                       <input
+                         type="file"
+                         accept="image/*"
+                         onChange={handleImageUpload}
+                         className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                         disabled={isUploading}
                        />
-                       <div className="relative group overflow-hidden rounded-xl">
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="bg-black/40 border-white/10 text-white h-14 cursor-pointer file:h-14 file:bg-white/5 file:border-none file:text-white file:font-black file:text-[10px] file:uppercase file:px-6"
-                            disabled={isUploading}
-                          />
-                          {isUploading && (
-                             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                                <Activity className="w-5 h-5 text-primary animate-spin" />
-                             </div>
-                          )}
+                       <div className="p-12 flex flex-col items-center justify-center gap-4 text-center">
+                          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                             <Upload className="w-8 h-8" />
+                          </div>
+                          <div>
+                             <p className="text-white font-bold italic">აირჩიეთ ფოტო ან ჩააგდეთ აქ</p>
+                             <p className="text-muted-foreground text-xs mt-1">PNG, JPG, JPEG (Max 5MB)</p>
+                          </div>
                        </div>
+                       {isUploading && (
+                          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-30">
+                             <Activity className="w-10 h-10 text-primary animate-spin" />
+                             <p className="text-[10px] font-black text-primary uppercase tracking-widest italic animate-pulse">Uploading_Data...</p>
+                          </div>
+                       )}
                     </div>
                   </div>
 
                   {formData.imageUrl && (
-                    <div className="relative w-full h-64 rounded-[2rem] overflow-hidden border border-white/10 glass animate-reveal">
+                    <div className="relative w-full h-80 rounded-[2.5rem] overflow-hidden border border-white/10 glass animate-reveal group">
+                       <div className="absolute top-4 right-4 z-30">
+                          <Button 
+                            type="button" 
+                            size="sm" 
+                            variant="destructive" 
+                            onClick={() => setFormData({...formData, imageUrl: ""})}
+                            className="rounded-xl h-10 px-4"
+                          >
+                             <X className="w-4 h-4 mr-2" />
+                             წაშლა
+                          </Button>
+                       </div>
                       <Image
                         src={formData.imageUrl || "/placeholder.svg"}
                         alt="Preview"
