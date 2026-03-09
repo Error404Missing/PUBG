@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { MessageCircle, X, Send, Paperclip, Loader2, ShieldCheck, Users, CornerDownRight, Smile, Trash2, Reply } from "lucide-react"
+import { MessageCircle, X, Send, Paperclip, Loader2, ShieldCheck, Users, CornerDownRight, Smile, Trash2, Reply, Star } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -50,23 +50,23 @@ export function SupportChat() {
 
       // Fetch Global Chat history (visible to everyone)
       const { data: globalHistory } = await supabase
-        .from("global_messages")
-        .select(`
-          *,
-          profiles:user_id (username, avatar_url, is_admin, role)
-        `)
-        .order("created_at", { ascending: true })
+        .from("global_chat_v2")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(50)
 
       if (globalHistory) {
-        setGlobalMessages(globalHistory.map(m => ({
+        // Reverse to show oldest first at the top
+        const reversed = [...globalHistory].reverse()
+        setGlobalMessages(reversed.map(m => ({
           id: m.id,
-          text: m.message,
-          userId: m.user_id,
-          username: m.profiles?.username || 'Anonymous',
-          avatar: m.profiles?.avatar_url,
-          isAdmin: m.profiles?.is_admin || m.profiles?.role === 'admin',
-          replyTo: m.reply_to,
+          text: m.text,
+          userId: m.userId,
+          username: m.username || 'Anonymous',
+          avatar: m.avatar,
+          isAdmin: m.isAdmin,
+          isVip: m.isVip,
+          replyTo: m.replyTo,
           reactions: m.reactions || [],
           time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         })))
@@ -120,12 +120,15 @@ export function SupportChat() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'global_messages' },
         async (payload) => {
-           // Fetch profile for the sender
-           const { data: profile } = await supabase
-             .from("profiles")
-             .select("username, avatar_url, is_admin, role")
-             .eq("id", payload.new.user_id)
-             .single()
+           // Fetch profile and VIP for the sender
+           const [profileRes, vipRes] = await Promise.all([
+             supabase.from("profiles").select("username, avatar_url, is_admin, role").eq("id", payload.new.user_id).single(),
+             supabase.from("user_vip_status").select("vip_until").eq("user_id", payload.new.user_id).maybeSingle()
+           ])
+
+           const profile = profileRes.data
+           const vip = vipRes.data
+           const isVip = vip && new Date(vip.vip_until) > new Date()
 
            const newMessage = {
              id: payload.new.id,
@@ -134,6 +137,7 @@ export function SupportChat() {
              username: profile?.username || 'Anonymous',
              avatar: profile?.avatar_url,
              isAdmin: profile?.is_admin || profile?.role === 'admin',
+             isVip: !!isVip,
              replyTo: payload.new.reply_to,
              reactions: payload.new.reactions || [],
              time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -411,13 +415,16 @@ export function SupportChat() {
 
                                <div className={`p-3 rounded-2xl text-xs space-y-1 transition-all relative ${
                                  msg.isAdmin ? 'bg-black/60 border border-rose-500/30 text-rose-50 shadow-[0_0_20px_rgba(244,63,94,0.1)]' :
+                                 msg.isVip ? 'bg-zinc-900 border border-amber-500/40 text-amber-50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' :
                                  msg.userId === user?.id ? 'bg-primary/20 border border-primary/20 text-white rounded-tr-none' : 'glass border border-white/10 text-white/90 rounded-tl-none'
                                }`}>
                                    <div className="flex items-center justify-between gap-4">
-                                      <Link href={`/profile/${msg.userId}`} className={`text-[9px] font-black uppercase tracking-widest block hover:text-white transition-colors flex items-center gap-1.5 ${msg.isAdmin ? 'text-rose-500' : msg.userId === user?.id ? 'text-primary' : 'text-primary/70'}`}>
+                                      <Link href={`/profile/${msg.userId}`} className={`text-[9px] font-black uppercase tracking-widest block hover:text-white transition-colors flex items-center gap-1.5 ${msg.isAdmin ? 'text-rose-500' : msg.isVip ? 'text-amber-500' : msg.userId === user?.id ? 'text-primary' : 'text-primary/70'}`}>
                                           {msg.isAdmin && <ShieldCheck className="w-3 h-3" />}
+                                          {msg.isVip && <Star className="w-3 h-3 fill-amber-500" />}
                                           {msg.username}
                                           {msg.isAdmin && <span className="bg-rose-500/20 px-1 rounded text-[7px] italic border border-rose-500/30">Admin</span>}
+                                          {msg.isVip && <span className="bg-amber-500/20 px-1 rounded text-[7px] italic border border-amber-500/30">VIP</span>}
                                       </Link>
                                       <div className="text-[8px] opacity-30 font-bold">{msg.time}</div>
                                    </div>
