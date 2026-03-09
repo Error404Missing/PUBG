@@ -7,35 +7,37 @@ import { ScheduleClient } from "@/components/schedule-client"
 export default async function SchedulePage() {
   const supabase = await createClient()
   
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Start fetching user and schedules in parallel
+  const [userRes, schedulesRes] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from("schedules").select("*").eq("is_active", true).order("date", { ascending: true })
+  ])
 
-  const { data: schedules } = await supabase
-    .from("schedules")
-    .select("*")
-    .eq("is_active", true)
-    .order("date", { ascending: true })
+  const user = userRes.data.user
+  const schedules = schedulesRes.data
 
   let userTeam = null
   let userVipStatus = null
 
   if (user) {
-    const { data: team } = await supabase
-      .from("teams")
-      .select("*")
-      .eq("leader_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
+    // Fetch team and VIP status in parallel
+    const [teamRes, vipRes] = await Promise.all([
+      supabase
+        .from("teams")
+        .select("*")
+        .eq("leader_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single(),
+      supabase
+        .from("user_vip_status")
+        .select("vip_until")
+        .eq("user_id", user.id)
+        .single()
+    ])
 
-    userTeam = team
-
-    const { data: vipStatus } = await supabase
-      .from("user_vip_status")
-      .select("vip_until")
-      .eq("user_id", user.id)
-      .single()
+    userTeam = teamRes.data
+    const vipStatus = vipRes.data
 
     if (vipStatus && new Date(vipStatus.vip_until) > new Date()) {
       userVipStatus = vipStatus

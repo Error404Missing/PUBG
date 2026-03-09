@@ -22,41 +22,48 @@ export const metadata: Metadata = {
 }
 
 import { Toaster } from "sonner"
+import { Suspense } from "react"
+
+async function AuthShield({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return <>{children}</>
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_banned, ban_reason, ban_until")
+    .eq("id", user.id)
+    .single()
+
+  if (profile?.is_banned) {
+     // Check expiration
+     if (profile.ban_until && new Date(profile.ban_until) < new Date()) {
+       return <>{children}</>
+     } else {
+       return <BannedScreen reason={profile.ban_reason} until={profile.ban_until} />
+     }
+  }
+
+  return <>{children}</>
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  let isBanned = false
-  let banReason = null
-  let banUntil = null
-
-  if (user) {
-    const { data: profile } = await supabase.from("profiles").select("is_banned, ban_reason, ban_until").eq("id", user.id).single()
-    if (profile?.is_banned) {
-       // Check expiration
-       if (profile.ban_until && new Date(profile.ban_until) < new Date()) {
-         // Expired ban, act as normal (ideally an API unbans but we do it dynamically here)
-         isBanned = false
-       } else {
-         isBanned = true
-         banReason = profile.ban_reason
-         banUntil = profile.ban_until
-       }
-    }
-  }
-
   return (
     <html lang="ka" className="dark">
       <body className={`font-sans antialiased bg-background min-h-screen relative overflow-x-hidden`}>
         <div className="fixed inset-0 bg-mesh -z-20 opacity-50" />
-        {isBanned ? null : <Navigation />}
+        <Navigation />
         <main className="relative z-10">
-          {isBanned ? <BannedScreen reason={banReason} until={banUntil} /> : children}
+          <Suspense fallback={null}>
+            <AuthShield>
+              {children}
+            </AuthShield>
+          </Suspense>
         </main>
         <SupportChat />
         <Analytics />
