@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Bell } from "lucide-react"
+import { Bell, Star } from "lucide-react"
+import { toast } from "sonner"
 import {
   Users,
   Search,
@@ -23,7 +24,6 @@ import {
   User,
   ArrowRight,
   ShieldCheck,
-  Star,
   Trash2,
   Edit,
   Crown
@@ -64,6 +64,9 @@ export function AdminUsersClient({
   const [notifMessage, setNotifMessage] = useState("")
   const [notifType, setNotifType] = useState<"info" | "success" | "warning" | "error">("info")
   const [notifDialogUserId, setNotifDialogUserId] = useState<string | null>(null)
+  const [localVipMap, setLocalVipMap] = useState<Record<string, string>>(vipMap)
+  const [vipDuration, setVipDuration] = useState("30")
+  const [vipDialogUserId, setVipDialogUserId] = useState<string | null>(null)
 
   const filteredUsers = userList.filter(
     (u) =>
@@ -132,6 +135,50 @@ export function AdminUsersClient({
     setIsLoading(false)
   }
 
+  const handleGrantVip = async (userId: string, username: string) => {
+    setIsLoading(true)
+    const days = vipDuration === "permanent" ? 36500 : parseInt(vipDuration)
+    const expiry = new Date()
+    expiry.setDate(expiry.getDate() + days)
+    const expiryStr = expiry.toISOString()
+
+    try {
+      // 1. Update/Insert VIP Status
+      const { error: vipError } = await supabase
+        .from("user_vip_status")
+        .upsert({ 
+          user_id: userId, 
+          vip_until: expiryStr,
+          updated_at: new Date().toISOString()
+        })
+
+      if (vipError) throw vipError
+
+      // 2. Send Notification
+      const durationText = vipDuration === "1" ? "1 დღით" : 
+                          vipDuration === "14" ? "2 კვირით" :
+                          vipDuration === "30" ? "1 თვით" :
+                          vipDuration === "365" ? "1 წლით" : "სამუდამოდ"
+
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: "VIP სტატუსი გააქტიურდა! 🌟",
+        message: `გილოცავთ! თქვენ მოგენიჭათ VIP სტატუსი ${durationText}. ისიამოვნეთ პრივილეგიებით.`,
+        type: "success"
+      })
+
+      // 3. Update Local State
+      setLocalVipMap(prev => ({ ...prev, [userId]: expiryStr }))
+      setVipDialogUserId(null)
+      toast.success(`${username}-ს მიენიჭა VIP სტატუსი`)
+    } catch (err: any) {
+      console.error("VIP Error:", err)
+      toast.error("VIP-ის მინიჭება ვერ მოხერხდა")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleRemoveBadge = async (userId: string) => {
     setIsLoading(true)
     const { error } = await supabase.from("profiles").update({ badge: null }).eq("id", userId)
@@ -190,7 +237,7 @@ export function AdminUsersClient({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-reveal" style={{ animationDelay: '0.1s' }}>
           {[
             { label: "სულ", count: userList.length, color: "blue", icon: Users },
-            { label: "VIP", count: Object.keys(vipMap).length, color: "secondary", icon: Star },
+            { label: "VIP", count: Object.keys(localVipMap).length, color: "secondary", icon: Star },
             { label: "დაბანილი", count: userList.filter((u) => u.is_banned).length, color: "rose", icon: Ban },
             { label: "ადმინი", count: userList.filter((u) => u.is_admin).length, color: "emerald", icon: ShieldCheck }
           ].map((stat, i) => (
@@ -209,7 +256,7 @@ export function AdminUsersClient({
         {/* Users List */}
         <div className="space-y-6 animate-reveal" style={{ animationDelay: '0.2s' }}>
           {filteredUsers.map((u) => {
-            const hasVip = !!vipMap[u.id]
+            const hasVip = !!localVipMap[u.id]
 
             return (
               <div
@@ -387,13 +434,63 @@ export function AdminUsersClient({
                                         setNotifType("info")
                                         setNotifDialogUserId(null)
                                       } else {
-                                        alert("შეცდომა: " + error.message)
+                                        toast.error("შეცდომა: " + error.message)
                                       }
                                     }}
                                     disabled={isLoading || !notifTitle.trim() || !notifMessage.trim()}
                                     className="h-14 w-full bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-[11px] uppercase tracking-widest italic"
                                   >
                                     {isLoading ? "იგზავნება..." : "გაგზავნა / Broadcast"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          {/* VIP Dialog */}
+                          <Dialog open={vipDialogUserId === u.id} onOpenChange={(open) => {
+                            if (!open) setVipDialogUserId(null)
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="h-12 border-secondary/20 text-secondary hover:bg-secondary/5 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                                onClick={() => setVipDialogUserId(u.id)}
+                              >
+                                <Star className="w-4 h-4 mr-2" />
+                                VIP მინიჭება
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-black/95 backdrop-blur-3xl border border-white/10 p-1 rounded-3xl shadow-2xl overflow-hidden max-w-sm">
+                              <div className="p-8">
+                                <DialogHeader>
+                                  <DialogTitle className="text-2xl font-black text-secondary italic uppercase tracking-tighter">
+                                    GRANT_ELITE_STATUS: {u.username}
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-6 pt-8">
+                                  <div className="space-y-3">
+                                    <Label className="text-[10px] font-black text-secondary uppercase tracking-[0.2em] ml-2 italic">ხანგრძლივობა</Label>
+                                    <Select value={vipDuration} onValueChange={setVipDuration}>
+                                      <SelectTrigger className="w-full h-14 bg-black/40 border-secondary/20 rounded-xl font-bold">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-zinc-950 border-white/10">
+                                        <SelectItem value="1">1 დღე (24 საათი)</SelectItem>
+                                        <SelectItem value="14">2 კვირა</SelectItem>
+                                        <SelectItem value="30">1 თვე</SelectItem>
+                                        <SelectItem value="365">1 წელი</SelectItem>
+                                        <SelectItem value="permanent">სამუდამო (9999+)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <Button
+                                    onClick={() => handleGrantVip(u.id, u.username || "")}
+                                    disabled={isLoading}
+                                    variant="premium"
+                                    className="h-14 w-full rounded-2xl font-black text-[11px] uppercase tracking-widest italic"
+                                  >
+                                    {isLoading ? "პროცესშია..." : "VIP მინიჭება / Activate"}
                                   </Button>
                                 </div>
                               </div>
