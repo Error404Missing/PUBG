@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { MessageCircle, X, Send, Paperclip, Loader2, ShieldCheck, Users } from "lucide-react"
+import { MessageCircle, X, Send, Paperclip, Loader2, ShieldCheck, Users, CornerDownRight, Smile, Trash2, Reply } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -16,6 +16,9 @@ export function SupportChat() {
   const [isUploading, setIsUploading] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [replyTo, setReplyTo] = useState<any>(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -50,7 +53,7 @@ export function SupportChat() {
         .from("global_messages")
         .select(`
           *,
-          profiles:user_id (username, avatar_url)
+          profiles:user_id (username, avatar_url, is_admin, role)
         `)
         .order("created_at", { ascending: true })
         .limit(50)
@@ -62,8 +65,17 @@ export function SupportChat() {
           userId: m.user_id,
           username: m.profiles?.username || 'Anonymous',
           avatar: m.profiles?.avatar_url,
+          isAdmin: m.profiles?.is_admin || m.profiles?.role === 'admin',
+          replyTo: m.reply_to,
+          reactions: m.reactions || [],
           time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         })))
+      }
+
+      // Check if current user is admin
+      if (authUser) {
+        const { data: profile } = await supabase.from('profiles').select('is_admin, role').eq('id', authUser.id).single()
+        setIsAdmin(profile?.is_admin || profile?.role === 'admin')
       }
     }
 
@@ -111,7 +123,7 @@ export function SupportChat() {
            // Fetch profile for the sender
            const { data: profile } = await supabase
              .from("profiles")
-             .select("username, avatar_url")
+             .select("username, avatar_url, is_admin, role")
              .eq("id", payload.new.user_id)
              .single()
 
@@ -121,9 +133,28 @@ export function SupportChat() {
              userId: payload.new.user_id,
              username: profile?.username || 'Anonymous',
              avatar: profile?.avatar_url,
+             isAdmin: profile?.is_admin || profile?.role === 'admin',
+             replyTo: payload.new.reply_to,
+             reactions: payload.new.reactions || [],
              time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
            }
            setGlobalMessages((prev) => prev.some(m => m.id === newMessage.id) ? prev : [...prev, newMessage])
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'global_messages' },
+        (payload) => {
+          setGlobalMessages(prev => prev.map(m => 
+            m.id === payload.new.id ? { ...m, reactions: payload.new.reactions } : m
+          ))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'global_messages' },
+        (payload) => {
+          setGlobalMessages(prev => prev.filter(m => m.id !== payload.old.id))
         }
       )
       .subscribe()
@@ -176,9 +207,11 @@ export function SupportChat() {
           .from("global_messages")
           .insert({
             user_id: user.id,
-            message: msgText
+            message: msgText,
+            reply_to: replyTo?.id || null
           })
         if (error) throw error
+        setReplyTo(null)
       }
     } catch (err: any) {
       console.error("Failed to send message:", err)
@@ -229,6 +262,40 @@ export function SupportChat() {
         setIsUploading(false)
         if (fileInputRef.current) fileInputRef.current.value = ''
      }
+  }
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!isAdmin) return
+    try {
+      const { error } = await supabase.from('global_messages').delete().eq('id', msgId)
+      if (error) throw error
+      toast.success("შეტყობინება წაიშალა")
+    } catch (err) {
+      toast.error("წაშლა ვერ მოხერხდა")
+    }
+  }
+
+  const handleReaction = async (msgId: string, emoji: string) => {
+    if (!user) return
+    const msg = globalMessages.find(m => m.id === msgId)
+    if (!msg) return
+
+    let newReactions = [...(msg.reactions || [])]
+    const existingIndex = newReactions.findIndex(r => r.user_id === user.id && r.emoji === emoji)
+
+    if (existingIndex > -1) {
+      newReactions.splice(existingIndex, 1)
+    } else {
+      newReactions.push({ user_id: user.id, emoji })
+    }
+
+    try {
+      // Need to handle atomic update or optimistic UI
+      await supabase.from('global_messages').update({ reactions: newReactions }).eq('id', msgId)
+    } catch (err) {
+       console.error("Reaction error:", err)
+    }
+    setShowEmojiPicker(null)
   }
 
   return (
@@ -322,26 +389,80 @@ export function SupportChat() {
                 globalMessages.length === 0 ? (
                   <div className="text-center py-10 opacity-30 italic text-xs text-white">ჩათი ცარიელია...</div>
                 ) : (
-                  globalMessages.map((msg) => (
-                    <div key={msg.id} className={`flex ${msg.userId === user?.id ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] flex gap-2 ${msg.userId === user?.id ? 'flex-row-reverse' : 'flex-row'}`}>
-                         <Link href={`/profile/${msg.userId}`} className="shrink-0">
-                            <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50 transition-colors">
-                               <img src={msg.avatar || "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"} alt="" className="w-full h-full object-cover" />
-                            </div>
-                         </Link>
-                         <div className={`p-3 rounded-2xl text-xs space-y-1 ${
-                           msg.userId === user?.id ? 'bg-primary/20 border border-primary/20 text-white rounded-tr-none' : 'glass border border-white/10 text-white/90 rounded-tl-none'
-                         }`}>
-                             <Link href={`/profile/${msg.userId}`} className={`text-[9px] font-black uppercase tracking-widest block hover:text-white transition-colors ${msg.userId === user?.id ? 'text-primary' : 'text-primary/70'}`}>
-                                {msg.username}
-                             </Link>
-                             <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
-                             <div className="text-[8px] opacity-30 font-bold text-right pt-0.5">{msg.time}</div>
-                         </div>
+                  globalMessages.map((msg) => {
+                    const replyTarget = globalMessages.find(m => m.id === msg.replyTo)
+                    return (
+                      <div key={msg.id} className={`flex flex-col ${msg.userId === user?.id ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-[85%] flex gap-2 ${msg.userId === user?.id ? 'flex-row-reverse' : 'flex-row'}`}>
+                           <Link href={`/profile/${msg.userId}`} className="shrink-0">
+                              <div className={`w-8 h-8 rounded-lg overflow-hidden border ${msg.isAdmin ? 'border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]' : 'border-white/10'} hover:border-primary/50 transition-colors`}>
+                                 <img src={msg.avatar || "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"} alt="" className="w-full h-full object-cover" />
+                              </div>
+                           </Link>
+
+                           <div className="flex flex-col gap-1 w-full relative group">
+                               {/* Reply Preview */}
+                               {replyTarget && (
+                                 <div className={`flex items-center gap-2 mb-1 opacity-50 px-2 py-1 rounded-lg border border-white/5 bg-white/5 max-w-[150px] truncate ${msg.userId === user?.id ? 'self-end flex-row-reverse' : 'self-start'}`}>
+                                    <CornerDownRight className="w-2 h-2" />
+                                    <span className="text-[8px] font-black truncate">{replyTarget.username}</span>
+                                 </div>
+                               )}
+
+                               <div className={`p-3 rounded-2xl text-xs space-y-1 transition-all relative ${
+                                 msg.isAdmin ? 'bg-black/60 border border-rose-500/30 text-rose-50 shadow-[0_0_20px_rgba(244,63,94,0.1)]' :
+                                 msg.userId === user?.id ? 'bg-primary/20 border border-primary/20 text-white rounded-tr-none' : 'glass border border-white/10 text-white/90 rounded-tl-none'
+                               }`}>
+                                   <div className="flex items-center justify-between gap-4">
+                                      <Link href={`/profile/${msg.userId}`} className={`text-[9px] font-black uppercase tracking-widest block hover:text-white transition-colors flex items-center gap-1.5 ${msg.isAdmin ? 'text-rose-500' : msg.userId === user?.id ? 'text-primary' : 'text-primary/70'}`}>
+                                          {msg.isAdmin && <ShieldCheck className="w-3 h-3" />}
+                                          {msg.username}
+                                          {msg.isAdmin && <span className="bg-rose-500/20 px-1 rounded text-[7px] italic border border-rose-500/30">Admin</span>}
+                                      </Link>
+                                      <div className="text-[8px] opacity-30 font-bold">{msg.time}</div>
+                                   </div>
+                                   
+                                   <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+                                   
+                                   {/* Reactions Display */}
+                                   {msg.reactions.length > 0 && (
+                                     <div className="flex flex-wrap gap-1 mt-2">
+                                        {Array.from(new Set(msg.reactions.map((r: any) => r.emoji))).map((emoji: any) => {
+                                          const count = msg.reactions.filter((r: any) => r.emoji === emoji).length
+                                          const active = msg.reactions.some((r: any) => r.user_id === user?.id && r.emoji === emoji)
+                                          return (
+                                            <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className={`px-1.5 py-0.5 rounded-full text-[10px] flex items-center gap-1 border transition-all ${active ? 'bg-primary/30 border-primary text-white' : 'glass border-white/5 text-white/40 hover:border-white/20'}`}>
+                                               {emoji} <span className="text-[8px] font-black">{count}</span>
+                                            </button>
+                                          )
+                                        })}
+                                     </div>
+                                   )}
+                               </div>
+
+                               {/* Message Actions */}
+                               <div className={`absolute -top-3 ${msg.userId === user?.id ? 'right-full mr-2' : 'left-full ml-2'} hidden group-hover:flex items-center gap-1 bg-black/80 backdrop-blur-xl border border-white/10 p-1 rounded-xl shadow-2xl z-20`}>
+                                   <button onClick={() => setReplyTo(msg)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/50 hover:text-white transition-colors" title="Reply"><Reply className="w-3 h-3" /></button>
+                                   <button onClick={() => setShowEmojiPicker(msg.id)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/50 hover:text-white transition-colors" title="React"><Smile className="w-3 h-3" /></button>
+                                   {isAdmin && (
+                                     <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 hover:bg-rose-500/20 rounded-lg text-rose-500/50 hover:text-rose-500 transition-colors" title="Delete"><Trash2 className="w-3 h-3" /></button>
+                                   )}
+                               </div>
+
+                               {/* Emoji Picker Overlay */}
+                               {showEmojiPicker === msg.id && (
+                                 <div className={`absolute -top-12 ${msg.userId === user?.id ? 'right-0' : 'left-0'} flex gap-1 p-1.5 glass-darker border border-white/20 rounded-2xl shadow-2xl z-30 animate-reveal shrink-0`}>
+                                    {['🔥', '🎮', '❤️', '👑', '💪', '🧊'].map(e => (
+                                      <button key={e} onClick={() => handleReaction(msg.id, e)} className="hover:scale-125 transition-transform text-sm">{e}</button>
+                                    ))}
+                                    <button onClick={() => setShowEmojiPicker(null)} className="ml-1 text-[10px] text-white/20 hover:text-white transition-colors">×</button>
+                                 </div>
+                               )}
+                           </div>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )
               )}
            </div>
@@ -361,11 +482,24 @@ export function SupportChat() {
                     </button>
                   )}
                   <div className="relative flex-1">
+                      {/* Reply Bar */}
+                      {replyTo && (
+                        <div className="absolute -top-12 left-0 right-0 bg-primary/20 backdrop-blur-xl border border-primary/30 p-2 rounded-t-xl flex items-center justify-between animate-reveal">
+                           <div className="flex items-center gap-2 truncate pr-4">
+                              <Reply className="w-3 h-3 text-primary" />
+                              <span className="text-[9px] font-black uppercase text-white/50 truncate">Replying to <span className="text-white">{replyTo.username}</span></span>
+                           </div>
+                           <button onClick={() => setReplyTo(null)} className="w-6 h-6 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors">
+                              <X className="w-3 h-3 text-white" />
+                           </button>
+                        </div>
+                      )}
+
                       <Input 
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        placeholder={mode === 'support' ? "დაწერეთ..." : "Public Message..."}
-                        className={`h-12 bg-black/40 border-white/10 rounded-xl pl-4 pr-12 text-white placeholder:text-white/20 focus:border-primary/50 transition-all font-medium ${mode === 'global' ? 'italic' : ''}`}
+                        placeholder={mode === 'support' ? "დაწერეთ..." : "Tactical Comms..."}
+                        className={`h-12 bg-black/40 border-white/10 rounded-xl pl-4 pr-12 text-white placeholder:text-white/20 focus:border-primary/50 transition-all font-medium ${mode === 'global' ? 'italic' : ''} ${replyTo ? 'rounded-t-none' : ''}`}
                       />
                       <button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-all active:scale-95">
                           <Send className="w-4 h-4" />
