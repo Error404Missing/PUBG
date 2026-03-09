@@ -1,16 +1,19 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { MessageCircle, X, Send, ShieldCheck } from "lucide-react"
+import { MessageCircle, X, Send, ShieldCheck, Image as ImageIcon, Loader2, Paperclip } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 
 export function SupportChat() {
   const [isOpen, setIsOpen] = useState(false)
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState<any[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -18,27 +21,39 @@ export function SupportChat() {
   useEffect(() => {
     const initChat = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) return
-      setUser(authUser)
+      if (authUser) {
+        setUser(authUser)
+        
+        // Fetch message history
+        const { data: history } = await supabase
+          .from("support_messages")
+          .select("*")
+          .eq("user_id", authUser.id)
+          .order("created_at", { ascending: true })
 
-      // Fetch message history
-      const { data: history } = await supabase
-        .from("support_messages")
-        .select("*")
-        .eq("user_id", authUser.id)
-        .order("created_at", { ascending: true })
-
-      if (history) {
-        setMessages(history.map(m => ({
-          id: m.id,
-          text: m.message,
-          sender: m.sender_type,
-          time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        })))
+        if (history) {
+          setMessages(history.map(m => ({
+            id: m.id,
+            text: m.message,
+            image: m.image_url,
+            sender: m.sender_type,
+            time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          })))
+        }
       }
     }
 
     initChat()
+
+    // Listen for auth changes to update user state dynamically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user)
+      } else {
+        setUser(null)
+        setMessages([])
+      }
+    })
 
     // 2. Real-time Subscription: Listen for new messages
     const channel = supabase
@@ -56,6 +71,7 @@ export function SupportChat() {
             const newMessage = {
               id: payload.new.id,
               text: payload.new.message,
+              image: payload.new.image_url,
               sender: payload.new.sender_type,
               time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }
@@ -75,6 +91,7 @@ export function SupportChat() {
       .subscribe()
 
     return () => {
+      subscription.unsubscribe()
       supabase.removeChannel(channel)
     }
   }, [supabase, user?.id, isOpen])
@@ -93,9 +110,10 @@ export function SupportChat() {
     }
   }, [messages, isOpen])
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!message.trim() || !user) return
+  const handleSend = async (e: React.FormEvent, imgUrl?: string) => {
+    if (e) e.preventDefault()
+    if (!message.trim() && !imgUrl) return
+    if (!user) return
 
     const msgText = message.trim()
     setMessage("") // Clear input immediately
@@ -105,7 +123,8 @@ export function SupportChat() {
         .from("support_messages")
         .insert({
           user_id: user.id,
-          message: msgText,
+          message: msgText || "",
+          image_url: imgUrl || null,
           sender_type: 'user',
           sender_id: user.id
         })
@@ -113,10 +132,50 @@ export function SupportChat() {
       if (error) throw error
     } catch (err) {
       console.error("Failed to send message:", err)
+      toast.error("შეტყობინების გაგზავნა ვერ მოხერხდა")
     }
   }
 
-  if (!user) return null 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+     const file = e.target.files?.[0]
+     if (!file || !user) return
+
+     // Simple file validation
+     if (!file.type.startsWith('image/')) {
+        toast.error("გთხოვთ აირჩიოთ მხოლოდ ფოტო ფაილი")
+        return
+     }
+
+     if (file.size > 5 * 1024 * 1024) { // 5MB Limit
+        toast.error("ფოტოს ზომა არ უნდა აღემატებოდეს 5MB-ს")
+        return
+     }
+
+     try {
+        setIsUploading(true)
+        const fileExt = file.name.split('.').pop()
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('support')
+          .upload(filePath, file)
+
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('support')
+          .getPublicUrl(filePath)
+
+        await handleSend(null as any, publicUrl)
+        toast.success("ფოტო აიტვირთა")
+     } catch (err: any) {
+        console.error("Upload error:", err)
+        toast.error("ფოტოს ატვირთვა ვერ მოხერხდა")
+     } finally {
+        setIsUploading(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+     }
+  }
 
   return (
     <div className="fixed bottom-8 right-8 z-[1000]">
@@ -145,47 +204,88 @@ export function SupportChat() {
               </button>
            </div>
 
-           {/* Messages Section */}
+            {/* Messages Section */}
            <div 
              ref={scrollRef}
              className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide"
            >
-              {messages.length === 0 && (
+              {!user ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                    <MessageCircle className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold uppercase tracking-wider mb-2">ავტორიზაცია საჭიროა</h3>
+                    <p className="text-white/40 text-xs leading-relaxed">
+                      მხარდაჭერასთან დასაკავშირებლად გთხოვთ გაიაროთ ავტორიზაცია
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => window.location.href = '/auth/login'}
+                    className="px-6 py-2 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary/80 transition-all"
+                  >
+                    შესვლა
+                  </button>
+                </div>
+              ) : messages.length === 0 ? (
                 <div className="text-center py-10 opacity-30 italic text-xs text-white">
                   შეტყობინებები არ არის...
                 </div>
+              ) : (
+                messages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] p-4 rounded-2xl text-sm ${
+                      msg.sender === 'user' 
+                        ? 'bg-primary text-white rounded-tr-none' 
+                        : 'glass border border-white/10 text-white/90 rounded-tl-none'
+                    }`}>
+                        {msg.image && (
+                          <div className="mb-2 rounded-lg overflow-hidden border border-white/5 bg-black/20">
+                             <img src={msg.image} alt="Attachment" className="max-w-full h-auto object-cover hover:scale-105 transition-transform duration-500" />
+                          </div>
+                        )}
+                        {msg.text && <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>}
+                        <div className={`text-[9px] mt-2 font-bold uppercase tracking-widest ${msg.sender === 'user' ? 'text-white/50' : 'text-white/30'}`}>
+                            {msg.time}
+                        </div>
+                    </div>
+                  </div>
+                ))
               )}
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                   <div className={`max-w-[80%] p-4 rounded-2xl text-sm ${
-                     msg.sender === 'user' 
-                      ? 'bg-primary text-white rounded-tr-none' 
-                      : 'glass border border-white/10 text-white/90 rounded-tl-none'
-                   }`}>
-                      <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
-                      <div className={`text-[9px] mt-2 font-bold uppercase tracking-widest ${msg.sender === 'user' ? 'text-white/50' : 'text-white/30'}`}>
-                         {msg.time}
-                      </div>
-                   </div>
-                </div>
-              ))}
            </div>
 
            {/* Input Section */}
-           <div className="p-6 border-t border-white/10 bg-white/5">
-              <form onSubmit={handleSend} className="relative">
-                 <Input 
-                   value={message}
-                   onChange={(e) => setMessage(e.target.value)}
-                   placeholder="დაწერეთ შეტყობინება..."
-                   className="h-14 bg-black/40 border-white/10 rounded-2xl pl-4 pr-14 text-white placeholder:text-white/20 focus:border-primary/50 transition-all font-medium"
+           <div className={`p-6 border-t border-white/10 bg-white/5 ${!user ? 'opacity-20 pointer-events-none' : ''}`}>
+              <form onSubmit={handleSend} className="relative flex items-center gap-2">
+                 <input 
+                   type="file" 
+                   ref={fileInputRef}
+                   onChange={handleFileUpload}
+                   className="hidden"
+                   accept="image/*"
                  />
                  <button 
-                   type="submit"
-                   className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-all active:scale-95"
+                   type="button"
+                   disabled={isUploading}
+                   onClick={() => fileInputRef.current?.click()}
+                   className="w-12 h-12 rounded-xl glass hover:bg-white/10 flex items-center justify-center transition-all shrink-0 text-white/50 hover:text-white"
                  >
-                    <Send className="w-4 h-4" />
+                    {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
                  </button>
+                 <div className="relative flex-1">
+                    <Input 
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="დაწერეთ..."
+                      className="h-12 bg-black/40 border-white/10 rounded-xl pl-4 pr-12 text-white placeholder:text-white/20 focus:border-primary/50 transition-all font-medium"
+                    />
+                    <button 
+                      type="submit"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/80 transition-all active:scale-95"
+                    >
+                        <Send className="w-4 h-4" />
+                    </button>
+                 </div>
               </form>
               <div className="mt-4 text-[9px] text-center font-black text-white/20 uppercase tracking-[0.3em]">
                  PUBG Arena Secure Comms

@@ -54,6 +54,7 @@ export default function AdminSupportPage() {
         setMessages(allMessages.map(m => ({
           ...m,
           text: m.message,
+          image: m.image_url,
           sender: m.sender_type,
           username: m.profiles?.username || 'Anonymous',
           time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -86,6 +87,7 @@ export default function AdminSupportPage() {
             const newMessage = {
               ...payload.new,
               text: payload.new.message,
+              image: payload.new.image_url,
               sender: payload.new.sender_type,
               username: profile?.username || 'Anonymous',
               time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -264,7 +266,12 @@ export default function AdminSupportPage() {
                                    ? 'bg-secondary text-black font-bold rounded-tr-none'
                                    : 'glass border border-white/10 text-white rounded-tl-none'
                                }`}>
-                                  {msg.text}
+                                  {msg.image && (
+                                    <div className="mb-3 rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                                       <img src={msg.image} alt="Attachment" className="max-w-full h-auto object-contain max-h-[400px]" />
+                                    </div>
+                                  )}
+                                  {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
                                </div>
                                <div className={`text-[8px] font-black uppercase tracking-widest opacity-30 ${msg.sender === 'admin' ? 'text-right' : 'text-left'}`}>
                                   {msg.time} — {msg.sender === 'admin' ? 'COMMAND' : 'OPERATOR'}

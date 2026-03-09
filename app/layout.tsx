@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   },
 }
 
+import { Toaster } from "sonner"
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -58,6 +60,7 @@ export default async function RootLayout({
         </main>
         <SupportChat />
         <Analytics />
+        <Toaster position="top-right" theme="dark" richColors />
       </body>
     </html>
   )
