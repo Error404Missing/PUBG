@@ -302,7 +302,7 @@ export function SupportChat() {
     <div className="fixed bottom-8 right-8 z-[1000]">
       {/* Chat Window */}
       {isOpen && (
-        <div className="absolute bottom-20 right-0 w-[350px] sm:w-[400px] h-[500px] glass-darker border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-reveal">
+        <div className="absolute bottom-20 right-0 w-[350px] sm:w-[450px] h-[650px] glass-darker border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-reveal">
            {/* Header */}
            <div className="p-4 bg-gradient-to-r from-primary to-accent flex flex-col gap-4">
               <div className="flex items-center justify-between">

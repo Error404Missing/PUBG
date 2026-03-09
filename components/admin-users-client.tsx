@@ -139,22 +139,21 @@ export function AdminUsersClient({
     setIsLoading(true)
     const days = vipDuration === "permanent" ? 36500 : parseInt(vipDuration)
     const expiry = new Date()
+    expiry.setHours(23, 59, 59, 999)
     expiry.setDate(expiry.getDate() + days)
     const expiryStr = expiry.toISOString()
 
     try {
-      // 1. Update/Insert VIP Status
       const { error: vipError } = await supabase
         .from("user_vip_status")
         .upsert({ 
           user_id: userId, 
           vip_until: expiryStr,
           updated_at: new Date().toISOString()
-        })
+        }, { onConflict: 'user_id' })
 
       if (vipError) throw vipError
 
-      // 2. Send Notification
       const durationText = vipDuration === "1" ? "1 დღით" : 
                           vipDuration === "14" ? "2 კვირით" :
                           vipDuration === "30" ? "1 თვით" :
@@ -167,13 +166,44 @@ export function AdminUsersClient({
         type: "success"
       })
 
-      // 3. Update Local State
       setLocalVipMap(prev => ({ ...prev, [userId]: expiryStr }))
       setVipDialogUserId(null)
       toast.success(`${username}-ს მიენიჭა VIP სტატუსი`)
     } catch (err: any) {
       console.error("VIP Error:", err)
-      toast.error("VIP-ის მინიჭება ვერ მოხერხდა")
+      toast.error("VIP-ის მინიჭება ვერ მოხერხდა: " + (err.message || ""))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRemoveVip = async (userId: string, username: string) => {
+    setIsLoading(true)
+    try {
+      const { error } = await supabase
+        .from("user_vip_status")
+        .delete()
+        .eq("user_id", userId)
+
+      if (error) throw error
+
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: "VIP სტატუსი გაუქმდა",
+        message: "თქვენი VIP სტატუსი გაუქმდა ადმინისტრაციის მიერ.",
+        type: "warning"
+      })
+
+      setLocalVipMap(prev => {
+        const next = { ...prev }
+        delete next[userId]
+        return next
+      })
+      setVipDialogUserId(null)
+      toast.success(`${username}-ს ჩამოერთვა VIP სტატუსი`)
+    } catch (err: any) {
+      console.error("Remove VIP Error:", err)
+      toast.error("VIP-ის ჩამორთმევა ვერ მოხერხდა")
     } finally {
       setIsLoading(false)
     }
@@ -461,19 +491,42 @@ export function AdminUsersClient({
                                 VIP მინიჭება
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="bg-black/95 backdrop-blur-3xl border border-white/10 p-1 rounded-3xl shadow-2xl overflow-hidden max-w-sm">
+                            <DialogContent className="bg-black/95 backdrop-blur-3xl border border-white/10 p-1 rounded-3xl shadow-2xl overflow-hidden max-w-md">
                               <div className="p-8">
                                 <DialogHeader>
                                   <DialogTitle className="text-2xl font-black text-secondary italic uppercase tracking-tighter">
-                                    GRANT_ELITE_STATUS: {u.username}
+                                    VIP_STATUS_CONTROL: {u.username}
                                   </DialogTitle>
                                 </DialogHeader>
+                                
+                                <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                                   <div className="flex items-center gap-3">
+                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${hasVip ? 'bg-secondary/20 text-secondary' : 'bg-white/5 text-white/20'}`}>
+                                         <Star className="w-5 h-5" />
+                                      </div>
+                                      <div>
+                                         <div className="text-[10px] font-black uppercase text-white/40 tracking-widest leading-none">Status</div>
+                                         <div className={`text-sm font-black uppercase italic ${hasVip ? 'text-secondary' : 'text-white/20'}`}>
+                                            {hasVip ? 'ACTIVE_ELITE' : 'INACTIVE'}
+                                         </div>
+                                      </div>
+                                   </div>
+                                   {hasVip && (
+                                      <div className="text-right">
+                                         <div className="text-[10px] font-black uppercase text-white/40 tracking-widest leading-none">Expires</div>
+                                         <div className="text-[10px] font-bold text-white/60">
+                                            {new Date(localVipMap[u.id]).toLocaleDateString()}
+                                         </div>
+                                      </div>
+                                   )}
+                                </div>
+
                                 <div className="space-y-6 pt-8">
                                   <div className="space-y-3">
-                                    <Label className="text-[10px] font-black text-secondary uppercase tracking-[0.2em] ml-2 italic">ხანგრძლივობა</Label>
+                                    <Label className="text-[10px] font-black text-secondary uppercase tracking-[0.2em] ml-2 italic">ხანგრძლივობის მინიჭება</Label>
                                     <Select value={vipDuration} onValueChange={setVipDuration}>
                                       <SelectTrigger className="w-full h-14 bg-black/40 border-secondary/20 rounded-xl font-bold">
-                                        <SelectValue />
+                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent className="bg-zinc-950 border-white/10">
                                         <SelectItem value="1">1 დღე (24 საათი)</SelectItem>
@@ -484,14 +537,28 @@ export function AdminUsersClient({
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  <Button
-                                    onClick={() => handleGrantVip(u.id, u.username || "")}
-                                    disabled={isLoading}
-                                    variant="premium"
-                                    className="h-14 w-full rounded-2xl font-black text-[11px] uppercase tracking-widest italic"
-                                  >
-                                    {isLoading ? "პროცესშია..." : "VIP მინიჭება / Activate"}
-                                  </Button>
+                                  
+                                  <div className="flex gap-3">
+                                     <Button
+                                       onClick={() => handleGrantVip(u.id, u.username || "")}
+                                       disabled={isLoading}
+                                       variant="premium"
+                                       className="h-14 flex-1 rounded-2xl font-black text-[11px] uppercase tracking-widest italic"
+                                     >
+                                       {isLoading ? "..." : "Activate / Extend"}
+                                     </Button>
+                                     {hasVip && (
+                                       <Button
+                                         onClick={() => handleRemoveVip(u.id, u.username || "")}
+                                         disabled={isLoading}
+                                         variant="destructive"
+                                         className="h-14 w-14 rounded-2xl flex items-center justify-center p-0"
+                                         title="ჩამორთმევა"
+                                       >
+                                          <Trash2 className="w-5 h-5" />
+                                       </Button>
+                                     )}
+                                  </div>
                                 </div>
                               </div>
                             </DialogContent>
