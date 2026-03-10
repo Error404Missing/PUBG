@@ -24,7 +24,7 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
     }
 
     if (!userTeam) {
-      setShowTeamModal(true)
+      window.location.href = `/profile/register-team?schedule_id=${scheduleId}`
       return
     }
 

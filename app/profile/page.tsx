@@ -538,9 +538,9 @@ export default function ProfilePage() {
                               </div>
                            ) : (
                               <div className="py-12 text-center space-y-8 glass border border-white/5 rounded-[3rem]">
-                                 <p className="text-muted-foreground font-light italic">ამ ოპერატორისთვის რეგისტრირებული გუნდი არ მოიძებნა.</p>
+                                 <p className="text-muted-foreground font-light italic px-8">თამაშის დასაწყებად აირჩიეთ სასურველი მატჩი განრიგში. გუნდის რეგისტრაცია მოხდება თამაშის მოთხოვნისას.</p>
                                  <Button asChild variant="premium" className="h-16 px-10 rounded-2xl uppercase tracking-widest text-[10px] font-black italic transition-transform hover:scale-105 active:scale-95">
-                                    <Link href="/profile/register-team">ახალი გუნდის რეგისტრაცია</Link>
+                                    <Link href="/schedule">განრიგის ნახვა</Link>
                                  </Button>
                               </div>
                            )}

@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
-export default function RegisterTeamPage() {
+function RegisterTeamContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const scheduleId = searchParams.get("schedule_id")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
@@ -58,22 +60,37 @@ export default function RegisterTeamPage() {
     }
 
     try {
-      const { error } = await supabase.from("teams").insert({
+      const { data: newTeam, error } = await supabase.from("teams").insert({
         team_name: formData.teamName,
         team_tag: formData.teamTag,
         leader_id: user.id,
         players_count: Number.parseInt(formData.playersCount),
         maps_count: Number.parseInt(formData.mapsCount),
         status: "pending",
-      })
+      }).select().single()
 
       if (error) throw error
+
+      // If we have a scheduleId, automatically request the game
+      if (scheduleId && newTeam) {
+        try {
+          await fetch("/api/scrim-request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ team_id: newTeam.id, schedule_id: scheduleId }),
+          })
+        } catch (e) {
+          console.error("Auto request failed:", e)
+        }
+      }
 
       // Send notification
       await supabase.from("notifications").insert({
         user_id: user.id,
         title: "გუნდი რეგისტრირებულია 📝",
-        message: `თქვენი გუნდი "${formData.teamName}" წარმატებით დარეგისტრირდა და იმყოფება განხილვის პროცესში. გთხოვთ დაელოდოთ ადმინისტრაციის პასუხს.`,
+        message: scheduleId 
+          ? `თქვენი გუნდი "${formData.teamName}" წარმატებით დარეგისტრირდა და თამაშის მოთხოვნა გაიგზავნა. გთხოვთ დაელოდოთ ადმინისტრაციის პასუხს.`
+          : `თქვენი გუნდი "${formData.teamName}" წარმატებით დარეგისტრირდა და იმყოფება განხილვის პროცესში. გთხოვთ დაელოდოთ ადმინისტრაციის პასუხს.`,
         type: "info",
       })
 
@@ -106,8 +123,14 @@ export default function RegisterTeamPage() {
               <div className="absolute inset-0 rounded-[2rem] bg-primary/20 blur-xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <div>
-              <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">Unit <span className="text-primary tracking-normal">Enlistment</span></h1>
-              <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4">ახალი გუნდის რეგისტრაცია Arena-სთვის</p>
+              <h1 className="text-5xl lg:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">
+                Unit <span className="text-primary tracking-normal">{scheduleId ? "Deployment" : "Enlistment"}</span>
+              </h1>
+              <p className="text-muted-foreground font-light tracking-[0.3em] uppercase text-xs mt-4">
+                {scheduleId 
+                  ? "შეავსეთ მონაცემები თამაშში მონაწილეობის მისაღებად" 
+                  : "ახალი გუნდის რეგისტრაცია Arena-სთვის"}
+              </p>
             </div>
           </div>
         </div>
@@ -251,5 +274,13 @@ export default function RegisterTeamPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegisterTeamPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white italic font-black uppercase tracking-widest">იტვირთება...</div>}>
+      <RegisterTeamContent />
+    </Suspense>
   )
 }
