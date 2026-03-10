@@ -36,7 +36,6 @@ export default async function AdminPage() {
   const { count: blockedTeams } = await supabase.from("teams").select("*", { count: "exact", head: true }).eq("status", "blocked")
   const { count: totalSchedules } = await supabase.from("schedules").select("*", { count: "exact", head: true })
   const { count: totalUsers } = await supabase.from("profiles").select("*", { count: "exact", head: true })
-  const { count: pendingRequests } = await supabase.from("scrim_requests").select("*", { count: "exact", head: true }).eq("status", "pending")
 
   const stats = [
     { label: "განხილვაში", value: pendingTeams ?? 0, color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20", icon: Activity },
@@ -69,17 +68,9 @@ export default async function AdminPage() {
       color: "blue" 
     },
     { 
-      href: "/admin/requests", 
-      label: "თამაშის მოთხოვნები", 
-      desc: "სკრიმებზე რეგისტრაციის მოთხოვნები", 
-      icon: Gamepad2, 
-      color: "emerald",
-      stat: pendingRequests + " New"
-    },
-    { 
       href: "/admin/users", 
       label: "მომხმარებლები", 
-      desc: "როლების მართვა, ბანი, VIP ადმინისტრირება", 
+      desc: "роლების მართვა, ბანი, VIP ადმინისტრირება", 
       icon: UserCog, 
       color: "yellow",
       stat: totalUsers + " Total"

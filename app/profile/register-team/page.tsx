@@ -24,8 +24,9 @@ function RegisterTeamContent() {
     teamName: "",
     teamTag: "",
     playersCount: "4",
-    mapsCount: "1",
+    maps_count: "1",
   })
+  const [cooldown, setCooldown] = useState<{ active: boolean, timeLeft: string | null }>({ active: false, timeLeft: null })
 
   useEffect(() => {
     const supabase = createClient()
@@ -34,6 +35,25 @@ function RegisterTeamContent() {
         router.push("/auth/login")
       } else {
         setUserId(user.id)
+        // Check cooldown
+        supabase.from("profiles").select("last_team_request_at").eq("id", user.id).single().then(({ data }) => {
+          if (data?.last_team_request_at) {
+            const lastRequest = new Date(data.last_team_request_at).getTime()
+            const now = new Date().getTime()
+            const diff = now - lastRequest
+            const twelveHours = 12 * 60 * 60 * 1000
+            
+            if (diff < twelveHours) {
+              const remaining = twelveHours - diff
+              const hours = Math.floor(remaining / (60 * 60 * 1000))
+              const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
+              setCooldown({ 
+                active: true, 
+                timeLeft: `${hours} საათი და ${minutes} წუთი` 
+              })
+            }
+          }
+        })
       }
     })
   }, [router])
@@ -59,43 +79,38 @@ function RegisterTeamContent() {
       return
     }
 
+    if (cooldown.active) {
+      setError(`გთხოვთ დაელოდოთ. ახალი მოთხოვნის გაგზავნა შეგეძლებათ ${cooldown.timeLeft}-ში`)
+      setIsLoading(false)
+      return
+    }
+
     try {
       const { data: newTeam, error } = await supabase.from("teams").insert({
         team_name: formData.teamName,
         team_tag: formData.teamTag,
         leader_id: user.id,
         players_count: Number.parseInt(formData.playersCount),
-        maps_count: Number.parseInt(formData.mapsCount),
+        maps_count: Number.parseInt(formData.maps_count),
+        schedule_id: scheduleId,
         status: "pending",
       }).select().single()
 
-      if (error) throw error
-
-      // If we have a scheduleId, automatically request the game
-      if (scheduleId && newTeam) {
-        try {
-          await fetch("/api/scrim-request", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ team_id: newTeam.id, schedule_id: scheduleId }),
-          })
-        } catch (e) {
-          console.error("Auto request failed:", e)
-        }
+      if (error) {
+        if (error.code === '23505') throw new Error("ეს სახელი უკვე დაკავებულია")
+        throw error
       }
 
       // Send notification
       await supabase.from("notifications").insert({
         user_id: user.id,
-        title: "გუნდი რეგისტრირებულია 📝",
-        message: scheduleId 
-          ? `თქვენი გუნდი "${formData.teamName}" წარმატებით დარეგისტრირდა და თამაშის მოთხოვნა გაიგზავნა. გთხოვთ დაელოდოთ ადმინისტრაციის პასუხს.`
-          : `თქვენი გუნდი "${formData.teamName}" წარმატებით დარეგისტრირდა და იმყოფება განხილვის პროცესში. გთხოვთ დაელოდოთ ადმინისტრაციის პასუხს.`,
+        title: "მოთხოვნა გაგზავნილია ⚔️",
+        message: `თქვენი გუნდი "${formData.teamName}" რეგისტრირებულია და მოთხოვნა განხილვაშია. გაითვალისწინეთ, რომ გუნდი და მოთხოვნა წაიშლება 10 საათში.`,
         type: "info",
       })
 
       router.push("/profile")
-    } catch (error: unknown) {
+    } catch (error: any) {
       setError(error instanceof Error ? error.message : "შეცდომა მოხდა")
     } finally {
       setIsLoading(false)
@@ -203,12 +218,12 @@ function RegisterTeamContent() {
                   </div>
                   
                   <div className="space-y-3">
-                    <Label htmlFor="mapsCount" className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">
+                    <Label htmlFor="maps_count" className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">
                       მაპების რაოდენობა
                     </Label>
                     <Select
-                      value={formData.mapsCount}
-                      onValueChange={(value) => setFormData({ ...formData, mapsCount: value })}
+                      value={formData.maps_count}
+                      onValueChange={(value) => setFormData({ ...formData, maps_count: value })}
                     >
                       <SelectTrigger className="h-16 bg-black/40 border-white/10 rounded-2xl focus:ring-primary/50 font-bold px-6">
                         <SelectValue />
@@ -223,6 +238,15 @@ function RegisterTeamContent() {
                   </div>
                 </div>
 
+                {cooldown.active && (
+                  <div className="p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
+                    <p className="text-sm text-yellow-400 italic font-bold flex items-center gap-3">
+                       <Shield className="w-5 h-5" />
+                       ლიმიტი: ახალი მოთხოვნის გაგზავნა შეგეძლებათ {cooldown.timeLeft}-ში
+                    </p>
+                  </div>
+                )}
+
                 {error && (
                   <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl animate-shake">
                     <p className="text-sm text-red-400 italic font-bold flex items-center gap-3">
@@ -233,19 +257,19 @@ function RegisterTeamContent() {
                 )}
 
                 <div className="pt-8 flex flex-col items-center gap-6">
-                   <div className="flex items-center gap-3 text-muted-foreground italic text-xs font-light">
-                      <Shield className="w-4 h-4 text-primary" />
-                      გუნდის რეგისტრაციით თქვენ ეთანხმებით Arena-ს წესებსა და პირობებს.
+                   <div className="flex items-center gap-3 text-muted-foreground italic text-xs font-light text-center px-4">
+                      <Shield className="w-4 h-4 text-primary flex-shrink-0" />
+                      გაითვალისწინეთ, რომ გუნდი და სტატუსი დროებითია (10 საათი).
                    </div>
                    
                    <Button 
                      type="submit" 
                      className="w-full h-20 rounded-[2rem] text-xl font-black uppercase tracking-widest group relative overflow-hidden transition-transform active:scale-[0.98]" 
-                     disabled={isLoading}
+                     disabled={isLoading || cooldown.active}
                      variant="premium"
                    >
                      <span className="relative z-10 flex items-center gap-3">
-                        {isLoading ? "რეგისტრაცია..." : "გუნდის რეგისტრაცია"}
+                        {isLoading ? "იგზავნება..." : "მოთხოვნის გაგზავნა"}
                         {!isLoading && <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-500" />}
                      </span>
                    </Button>
