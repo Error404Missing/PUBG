@@ -337,9 +337,10 @@ export default function AdminTeamsPage() {
                         <Badge className={`px-4 py-1.5 uppercase italic font-black text-[9px] tracking-widest border ${
                           team.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                           team.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                          'bg-red-500/10 text-red-400 border-red-500/20'
+                          team.status === 'blocked' ? 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
+                          'bg-orange-500/10 text-orange-400 border-orange-500/20'
                         }`}>
-                          {team.status === 'approved' ? 'Auth_Verified' : team.status === 'pending' ? 'Pending_Review' : 'Denied'}
+                          {team.status === 'approved' ? 'Auth_Verified' : team.status === 'pending' ? 'Pending_Review' : team.status === 'blocked' ? 'Banned_Unit' : 'Denied_Request'}
                         </Badge>
                         {team.is_vip && <Badge variant="gold" className="px-4 py-1.5 font-black text-[9px] tracking-widest">Elite_Unit</Badge>}
                         {team.slot_number !== null && (
@@ -439,7 +440,7 @@ export default function AdminTeamsPage() {
                             className="bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-400 border border-zinc-500/20 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
                           >
                             <RefreshCcw className="w-4 h-4 mr-2" />
-                            აღდგენა
+                            სიიდან ამოშლა / აღდგენა
                           </Button>
                         )}
                       </div>
