@@ -158,19 +158,24 @@ export default function AdminTeamsPage() {
       // Send notification
       const isApproved = status === "approved"
       const isRejected = status === "rejected"
+      const isBlocked = status === "blocked"
       
-      if (isApproved || isRejected) {
+      if (isApproved || isRejected || isBlocked) {
         await supabase.from("notifications").insert({
           user_id: teamData.leader_id,
-          title: isApproved ? "გუნდი დადასტურდა! ✅" : "გუნდი უარყოფილია ❌",
+          title: isApproved ? "თამაში დადასტურდა! ✅" : isBlocked ? "თამაში დაიბლოკა 🚫" : "თამაში უარყოფილია ❌",
           message: isApproved 
-            ? `გილოცავთ! თქვენი გუნდი "${teamData.team_name}" დადასტურდა. ახლა შეგიძლიათ გადახვიდეთ განრიგის გვერდზე, აირჩიოთ სასურველი მატჩი და მოითხოვოთ თამაში.`
-            : `სამწუხაროდ, თქვენი გუნდის "${teamData.team_name}" რეგისტრაცია უარყოფილია ადმინისტრაციის მიერ.`,
+            ? `თქვენი მოთხოვნა პრეკზე თამაშზე დადასტურდა. დაელოდეთ Team List-ს, რომელსაც ნახავთ გუნდების სექციაში.`
+            : isBlocked ? `თქვენი გუნდის "${teamData.team_name}" მოთხოვნა დაბლოკილია ადმინისტრაციის მიერ.` 
+            : `სამწუხაროდ, თქვენი გუნდის "${teamData.team_name}" მოთხოვნა უარყოფილია ადმინისტრაციის მიერ.`,
           type: isApproved ? "success" : "error",
         })
       }
       
       fetchTeams()
+    } else if (error) {
+       console.error("Status update error:", error)
+       setToast({ message: "შეცდომა სტატუსის განახლებისას: " + error.message, type: 'error' })
     }
   }
 
@@ -200,7 +205,11 @@ export default function AdminTeamsPage() {
     const { error } = await supabase.from("teams").delete().eq("id", teamId)
 
     if (!error) {
+      setToast({ message: "გუნდი წარმატებით წაიშალა", type: 'success' })
       fetchTeams()
+    } else {
+       console.error("Delete team error:", error)
+       setToast({ message: "წაშლის შეცდომა: " + error.message, type: 'error' })
     }
   }
 

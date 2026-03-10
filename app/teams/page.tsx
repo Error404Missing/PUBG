@@ -56,16 +56,6 @@ export default function TeamsPage() {
       .order("date", { ascending: true })
 
     setSchedules(data || [])
-
-    const { data: approvedTeamsData } = await supabase
-      .from("teams")
-      .select("*, profiles!inner(id, username, avatar_url)")
-      .eq("status", "approved")
-      .order("is_vip", { ascending: false })
-      .order("created_at", { ascending: false })
-
-    setVerifiedTeams((approvedTeamsData as any[]) || [])
-
     setLoading(false)
   }
 
@@ -73,26 +63,15 @@ export default function TeamsPage() {
     setSelectedSchedule(schedule)
     setTeamsLoading(true)
 
-    const { data: requests } = await supabase
-      .from("scrim_requests")
-      .select("team_id")
+    const { data: teamsData } = await supabase
+      .from("teams")
+      .select("*, profiles!inner(id, username, avatar_url)")
       .eq("schedule_id", schedule.id)
       .eq("status", "approved")
+      .order("is_vip", { ascending: false })
+      .order("created_at", { ascending: false })
 
-    if (requests && requests.length > 0) {
-      const teamIds = requests.map((r) => r.team_id)
-      const { data: teamsData } = await supabase
-        .from("teams")
-        .select("*, profiles!inner(id, username, avatar_url)")
-        .in("id", teamIds)
-        .order("is_vip", { ascending: false })
-        .order("created_at", { ascending: false })
-
-      setTeams((teamsData as any[]) || [])
-    } else {
-      setTeams([])
-    }
-
+    setTeams((teamsData as any[]) || [])
     setTeamsLoading(false)
   }
 
@@ -287,31 +266,6 @@ export default function TeamsPage() {
             ) : (
               <div className="glass-card p-20 text-center italic text-muted-foreground">
                 ამჟამად აქტიური განრიგი არ არის
-              </div>
-            )}
-          </div>
-
-          <div className="mt-32 mb-12 text-center animate-reveal">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl glass border border-secondary/20 mb-6">
-              <Shield className="w-8 h-8 text-secondary" />
-            </div>
-            <h2 className="text-3xl md:text-5xl font-black mb-4 text-white tracking-tighter italic">
-              დადასტურებული <span className="text-secondary tracking-normal">გუნდები</span>
-            </h2>
-            <p className="text-muted-foreground font-light max-w-2xl mx-auto">
-              ოფიციალურად რეგისტრირებული და ვერიფიცირებული გუნდების სია
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
-            {verifiedTeams.length > 0 ? (
-              verifiedTeams.map((team, i) => (
-                <TeamCard key={team.id} team={team} i={i} />
-              ))
-            ) : (
-              <div className="glass-card p-20 text-center col-span-full border-dashed border-white/10 opacity-50">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground lowercase font-black tracking-widest">ვერიფიცირებული გუნდები ჯერ არ არის</p>
               </div>
             )}
           </div>
