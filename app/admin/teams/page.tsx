@@ -342,8 +342,8 @@ export default function AdminTeamsPage() {
                           {team.status === 'approved' ? 'Auth_Verified' : team.status === 'pending' ? 'Pending_Review' : 'Denied'}
                         </Badge>
                         {team.is_vip && <Badge variant="gold" className="px-4 py-1.5 font-black text-[9px] tracking-widest">Elite_Unit</Badge>}
-                        {team.slot_number && (
-                           <Badge variant="outline" className="border-blue-500/20 text-blue-400 italic font-black text-[9px] tracking-widest">
+                        {team.slot_number !== null && (
+                           <Badge variant="outline" className="border-blue-500/20 text-blue-400 italic font-black text-[9px] tracking-widest bg-blue-500/5">
                               Slot #{team.slot_number}
                            </Badge>
                         )}
@@ -383,16 +383,23 @@ export default function AdminTeamsPage() {
                                 </Button>
                              </div>
                           ) : (
-                             <Button
-                               onClick={() => {
-                                 setEditingSlot(team.id)
-                                 setSlotValue(team.slot_number?.toString() || "")
-                               }}
-                               variant="outline"
-                               className="h-full border-blue-500/20 text-blue-400 hover:bg-blue-500/5 font-black text-[10px] uppercase tracking-widest rounded-xl"
-                             >
-                               {team.slot_number ? "სლოტის შეცვლა" : "სლოტის მინიჭება"}
-                             </Button>
+                             <div className="flex flex-col gap-2 h-full">
+                                {team.slot_number !== null && (
+                                   <div className="text-center py-1 bg-blue-500/10 rounded-lg mb-1">
+                                      <span className="text-[10px] font-black text-blue-400 uppercase italic">Active Slot: #{team.slot_number}</span>
+                                   </div>
+                                )}
+                                <Button
+                                  onClick={() => {
+                                    setEditingSlot(team.id)
+                                    setSlotValue(team.slot_number?.toString() || "")
+                                  }}
+                                  variant="outline"
+                                  className="flex-1 border-blue-500/20 text-blue-400 hover:bg-blue-500/5 font-black text-[10px] uppercase tracking-widest rounded-xl"
+                                >
+                                  {team.slot_number !== null ? "სლოტის შეცვლა" : "სლოტის მინიჭება"}
+                                </Button>
+                             </div>
                           )}
                        </div>
                     </div>
@@ -424,6 +431,15 @@ export default function AdminTeamsPage() {
                           >
                             <Ban className="w-4 h-4 mr-2" />
                             დაბლოკვა
+                          </Button>
+                        )}
+                        {team.status !== "pending" && (
+                          <Button
+                            onClick={() => updateTeamStatus(team.id, "pending")}
+                            className="bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-400 border border-zinc-500/20 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                          >
+                            <RefreshCcw className="w-4 h-4 mr-2" />
+                            აღდგენა
                           </Button>
                         )}
                       </div>
