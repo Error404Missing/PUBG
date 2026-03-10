@@ -1,0 +1,1 @@
+ALTER TABLE schedules ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT true;

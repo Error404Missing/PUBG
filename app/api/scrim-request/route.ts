@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -17,6 +17,17 @@ export async function POST(request: Request) {
 
     if (!team_id || !schedule_id) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // Check if schedule permits registration
+    const { data: schedule } = await supabase
+      .from("schedules")
+      .select("registration_open")
+      .eq("id", schedule_id)
+      .single()
+
+    if (schedule && schedule.registration_open === false) {
+      return NextResponse.json({ error: "რეგისტრაცია დახურულია ამ მატჩზე" }, { status: 403 })
     }
 
     // Verify that the user owns this team

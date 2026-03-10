@@ -6,7 +6,7 @@ import { ScheduleClient } from "@/components/schedule-client"
 
 export default async function SchedulePage() {
   const supabase = await createClient()
-  
+
   // Start fetching user and schedules in parallel
   const [userRes, schedulesRes] = await Promise.all([
     supabase.auth.getUser(),
@@ -48,7 +48,7 @@ export default async function SchedulePage() {
     <div className="min-h-screen py-32 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-20 text-center animate-reveal">
-           <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] glass border border-primary/20 mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] glass border border-primary/20 mb-8">
             <Calendar className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-5xl md:text-7xl font-black mb-6 text-white tracking-tighter italic">
@@ -135,17 +135,18 @@ export default async function SchedulePage() {
 
                   <div className="mt-8 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex -space-x-3">
-                       {[...Array(5)].map((_, i) => (
-                         <div key={i} className="w-10 h-10 rounded-full border-2 border-background glass bg-gradient-to-br from-white/10 to-transparent" />
-                       ))}
-                       <div className="w-10 h-10 rounded-full border-2 border-background glass flex items-center justify-center text-[10px] font-black">
-                         +12
-                       </div>
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="w-10 h-10 rounded-full border-2 border-background glass bg-gradient-to-br from-white/10 to-transparent" />
+                      ))}
+                      <div className="w-10 h-10 rounded-full border-2 border-background glass flex items-center justify-center text-[10px] font-black">
+                        +12
+                      </div>
                     </div>
                     <ScheduleClient
                       scheduleId={schedule.id}
                       userTeam={userTeam}
                       user={user}
+                      registrationOpen={schedule.registration_open !== false}
                     />
                   </div>
                 </div>
@@ -153,8 +154,8 @@ export default async function SchedulePage() {
             ))
           ) : (
             <div className="glass-card p-20 text-center border-dashed border-white/10 opacity-50">
-               <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-               <p className="text-muted-foreground lowercase font-black tracking-widest">ამჟამად დაგეგმილი მატჩები არ არის</p>
+              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground lowercase font-black tracking-widest">ამჟამად დაგეგმილი მატჩები არ არის</p>
             </div>
           )}
         </div>

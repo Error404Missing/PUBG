@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { 
-  Calendar, Plus, Trash2, ChevronLeft, 
+import {
+  Calendar, Plus, Trash2, ChevronLeft,
   Clock, MapPin, Users, Target, Save, X,
   ArrowRight, Activity, Shield
 } from "lucide-react"
@@ -29,6 +29,7 @@ type Schedule = {
   map_name: string | null
   max_teams: number
   is_active: boolean
+  registration_open?: boolean
 }
 
 export default function AdminSchedulePage() {
@@ -93,8 +94,8 @@ export default function AdminSchedulePage() {
     })
 
     if (error) {
-       console.error("Schedule creation error:", error)
-       setToast({ message: "შეცდომა განრიგის შექმნისას: " + error.message, type: 'error' })
+      console.error("Schedule creation error:", error)
+      setToast({ message: "შეცდომა განრიგის შექმნისას: " + error.message, type: 'error' })
     } else {
       setToast({ message: "განრიგი წარმატებით შეიქმნა", type: 'success' })
       setIsAdding(false)
@@ -112,7 +113,7 @@ export default function AdminSchedulePage() {
 
   const deleteSchedule = async (id: string) => {
     const supabase = createClient()
-    
+
     // Use count: 'exact' to check if anything was actually deleted
     // If RLS prevents deletion, Supabase returns error: null but count: 0
     const { error, count } = await supabase
@@ -122,15 +123,15 @@ export default function AdminSchedulePage() {
 
     if (error) {
       console.error("Schedule deletion error:", error)
-      setToast({ 
-        message: "წაშლა ვერ მოხერხდა. შესაძლოა სისტემური შეცდომაა.", 
-        type: 'error' 
+      setToast({
+        message: "წაშლა ვერ მოხერხდა. შესაძლოა სისტემური შეცდომაა.",
+        type: 'error'
       })
     } else if (count === 0) {
       console.warn("No rows deleted. Likely RLS policy issue.")
-      setToast({ 
-        message: "წაშლა ვერ მოხერხდა. შესაძლოა არ გაქვთ საკმარისი უფლებები.", 
-        type: 'error' 
+      setToast({
+        message: "წაშლა ვერ მოხერხდა. შესაძლოა არ გაქვთ საკმარისი უფლებები.",
+        type: 'error'
       })
     } else {
       setToast({ message: "მატჩი წარმატებით წაიშალა", type: 'success' })
@@ -139,14 +140,33 @@ export default function AdminSchedulePage() {
     setDeleteConfirm({ isOpen: false, scheduleId: null })
   }
 
+  const toggleRegistration = async (id: string, currentStatus: boolean) => {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from("schedules")
+      .update({ registration_open: !currentStatus })
+      .eq("id", id)
+
+    if (error) {
+      console.error("Toggle registration error:", error)
+      setToast({ message: "სტატუსის შეცვლა ვერ მოხერხდა", type: 'error' })
+    } else {
+      setToast({
+        message: !currentStatus ? "რეგისტრაცია გაიხსნა" : "რეგისტრაცია დაიხურა",
+        type: 'success'
+      })
+      fetchSchedules()
+    }
+  }
+
   return (
     <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_100%_0%,rgba(0,180,255,0.03),transparent_70%)] -z-10" />
 
       <div className="container mx-auto max-w-5xl relative">
-        <Link 
-          href="/admin" 
+        <Link
+          href="/admin"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-12 group"
         >
           <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -168,8 +188,8 @@ export default function AdminSchedulePage() {
             </div>
 
             {!isAdding && (
-              <Button 
-                onClick={() => setIsAdding(true)} 
+              <Button
+                onClick={() => setIsAdding(true)}
                 variant="premium"
                 className="h-16 px-8 rounded-2xl font-black uppercase tracking-widest italic flex items-center gap-3 active:scale-95 transition-all"
               >
@@ -184,8 +204,8 @@ export default function AdminSchedulePage() {
           <div className="glass-card p-1 animate-reveal mb-12">
             <div className="p-8 lg:p-12 space-y-8">
               <div className="flex items-center justify-between">
-                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">ახალი ოპერაციის დამატება</h2>
-                 <Badge variant="outline" className="border-sky-500/20 text-sky-400">Tactical_Planning</Badge>
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">ახალი ოპერაციის დამატება</h2>
+                <Badge variant="outline" className="border-sky-500/20 text-sky-400">Tactical_Planning</Badge>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-8">
@@ -214,27 +234,27 @@ export default function AdminSchedulePage() {
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">თარიღი / Deployment Date</Label>
                     <div className="relative">
-                       <Input
-                         type="date"
-                         required
-                         value={formData.date}
-                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
-                       />
-                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      <Input
+                        type="date"
+                        required
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                      />
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                     </div>
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">დრო / Deployment Time</Label>
                     <div className="relative">
-                       <Input
-                         type="time"
-                         required
-                         value={formData.time}
-                         onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
-                       />
-                       <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      <Input
+                        type="time"
+                        required
+                        value={formData.time}
+                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                        className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                      />
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                     </div>
                   </div>
                 </div>
@@ -243,26 +263,26 @@ export default function AdminSchedulePage() {
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">რუკა / Sector (Map)</Label>
                     <div className="relative">
-                       <Input
-                         value={formData.mapName}
-                         onChange={(e) => setFormData({ ...formData, mapName: e.target.value })}
-                         placeholder="Erangel, Miramar..."
-                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
-                       />
-                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      <Input
+                        value={formData.mapName}
+                        onChange={(e) => setFormData({ ...formData, mapName: e.target.value })}
+                        placeholder="Erangel, Miramar..."
+                        className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                      />
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                     </div>
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">გუნდები / Max Units</Label>
                     <div className="relative">
-                       <Input
-                         type="number"
-                         required
-                         value={formData.maxTeams}
-                         onChange={(e) => setFormData({ ...formData, maxTeams: e.target.value })}
-                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
-                       />
-                       <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      <Input
+                        type="number"
+                        required
+                        value={formData.maxTeams}
+                        onChange={(e) => setFormData({ ...formData, maxTeams: e.target.value })}
+                        className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                      />
+                      <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                     </div>
                   </div>
                 </div>
@@ -290,66 +310,77 @@ export default function AdminSchedulePage() {
         <div className="space-y-6 animate-reveal" style={{ animationDelay: '0.1s' }}>
           {schedules.map((schedule, i) => (
             <div key={schedule.id} className="glass-card p-1 group">
-               <div className="p-8 lg:p-10">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                     <div className="flex-1 space-y-6">
-                        <div className="flex items-center gap-6">
-                           <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center relative">
-                              <Shield className="w-7 h-7 text-sky-400" />
-                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
-                           </div>
-                           <div>
-                              <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">{schedule.title}</h3>
-                              <div className="flex items-center gap-2">
-                                 <Badge variant="outline" className="border-white/5 text-muted-foreground bg-white/5 text-[9px] font-black uppercase tracking-widest italic italic">Match_ID: {schedule.id.slice(0, 8)}</Badge>
-                              </div>
-                           </div>
+              <div className="p-8 lg:p-10">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                  <div className="flex-1 space-y-6">
+                    <div className="flex items-center gap-6">
+                      <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center relative">
+                        <Shield className="w-7 h-7 text-sky-400" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                      </div>
+                      <div>
+                        <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">{schedule.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="border-white/5 text-muted-foreground bg-white/5 text-[9px] font-black uppercase tracking-widest italic italic">Match_ID: {schedule.id.slice(0, 8)}</Badge>
                         </div>
+                      </div>
+                    </div>
 
-                        {schedule.description && (
-                           <p className="text-muted-foreground font-light italic leading-relaxed border-l-2 border-sky-500/20 pl-6 py-2">
-                              {schedule.description}
-                           </p>
-                        )}
+                    {schedule.description && (
+                      <p className="text-muted-foreground font-light italic leading-relaxed border-l-2 border-sky-500/20 pl-6 py-2">
+                        {schedule.description}
+                      </p>
+                    )}
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Deployment</div>
-                              <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "PPP", { locale: ka })}</div>
-                           </div>
-                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Time_H-M</div>
-                              <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "p", { locale: ka })}</div>
-                           </div>
-                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Sector</div>
-                              <div className="text-sm font-bold text-secondary italic font-black uppercase">{schedule.map_name || "Unknown"}</div>
-                           </div>
-                           <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                              <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Max_Units</div>
-                              <div className="text-sm font-bold text-white italic">{schedule.max_teams} Teams</div>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div className="flex lg:flex-col gap-3">
-                        <Button
-                          onClick={() => setDeleteConfirm({ isOpen: true, scheduleId: schedule.id })}
-                          variant="outline"
-                          className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
-                        >
-                          <Trash2 className="w-6 h-6" />
-                        </Button>
-                     </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Deployment</div>
+                        <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "PPP", { locale: ka })}</div>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Time_H-M</div>
+                        <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "p", { locale: ka })}</div>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Sector</div>
+                        <div className="text-sm font-bold text-secondary italic font-black uppercase">{schedule.map_name || "Unknown"}</div>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Max_Units</div>
+                        <div className="text-sm font-bold text-white italic">{schedule.max_teams} Teams</div>
+                      </div>
+                    </div>
                   </div>
-               </div>
+
+                  <div className="flex lg:flex-col gap-3">
+                    <Button
+                      onClick={() => toggleRegistration(schedule.id, schedule.registration_open !== false)}
+                      variant="outline"
+                      className={`w-14 h-14 rounded-2xl border p-0 transition-all active:scale-95 ${schedule.registration_open !== false
+                          ? "border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+                          : "border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+                        }`}
+                      title={schedule.registration_open !== false ? "რეგისტრაციის დახურვა" : "რეგისტრაციის გახსნა"}
+                    >
+                      {schedule.registration_open !== false ? <Activity className="w-6 h-6" /> : <X className="w-6 h-6" />}
+                    </Button>
+                    <Button
+                      onClick={() => setDeleteConfirm({ isOpen: true, scheduleId: schedule.id })}
+                      variant="outline"
+                      className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
+                    >
+                      <Trash2 className="w-6 h-6" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
-          
+
           {schedules.length === 0 && (
             <div className="glass-card p-20 text-center">
-               <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
-               <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic">განრიგი ცარიელია</p>
+              <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
+              <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic">განრიგი ცარიელია</p>
             </div>
           )}
         </div>
@@ -366,10 +397,10 @@ export default function AdminSchedulePage() {
       />
 
       {toast && (
-        <LuxuryToast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
+        <LuxuryToast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </div>

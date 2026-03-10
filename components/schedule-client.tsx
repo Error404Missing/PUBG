@@ -10,9 +10,10 @@ interface ScheduleClientProps {
   scheduleId: string
   userTeam: any
   user: any
+  registrationOpen?: boolean
 }
 
-export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientProps) {
+export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = true }: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -72,11 +73,18 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
     <>
       <Button
         onClick={handleRequestGame}
-        disabled={isLoading}
-        className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
+        disabled={isLoading || !registrationOpen}
+        className={`whitespace-nowrap ${registrationOpen
+            ? "bg-blue-600 hover:bg-blue-700 text-white"
+            : "bg-neutral-800 text-neutral-400 cursor-not-allowed border border-white/5"
+          }`}
       >
         <Zap className="w-4 h-4 mr-2" />
-        {isLoading ? "იტვირთება..." : "მოითხოვე თამაში"}
+        {!registrationOpen
+          ? "რეგისტრაცია დახურულია"
+          : isLoading
+            ? "იტვირთება..."
+            : "მოითხოვე თამაში"}
       </Button>
 
       <Dialog open={showTeamModal} onOpenChange={setShowTeamModal}>
@@ -85,7 +93,7 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
             {/* Design Elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] -z-10" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 blur-[100px] -z-10" />
-            
+
             <div className="p-8 lg:p-12">
               <DialogHeader className="mb-10">
                 <div className="flex items-center gap-6 mb-6">
@@ -94,7 +102,7 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
                   </div>
                   <div>
                     <DialogTitle className="text-4xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
-                       Unit <span className="text-primary italic">Not Found</span>
+                      Unit <span className="text-primary italic">Not Found</span>
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-[10px]">
                       სკრიმებში მონაწილეობისთვის საჭიროა აქტიური გუნდი
@@ -111,7 +119,7 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
                     { step: "03", text: "შეიყვანეთ გუნდის სახელი და ტეგი", sub: "Operational Data" },
                     { step: "04", text: "გამოაგზავნეთ მოთხოვნა სკრიმზე", sub: "Final Deployment" }
                   ].map((item, idx) => (
-                    <div 
+                    <div
                       key={idx}
                       className="group glass p-5 rounded-2xl border border-white/5 hover:border-primary/30 transition-all duration-500 flex items-center gap-6"
                     >
@@ -127,8 +135,8 @@ export function ScheduleClient({ scheduleId, userTeam, user }: ScheduleClientPro
                 </div>
 
                 <div className="pt-8 flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    asChild 
+                  <Button
+                    asChild
                     className="h-16 flex-1 rounded-2xl text-md font-black uppercase tracking-widest italic animate-glow"
                     variant="premium"
                   >
