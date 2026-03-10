@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { Trophy } from "lucide-react"
 import Image from "next/image"
+import ResultImageModal from "@/components/result-image-modal"
 
 export default async function ResultsPage() {
   const supabase = await createClient()
@@ -57,20 +58,12 @@ export default async function ResultsPage() {
                      </div>
 
                      {result.image_url && (
-                        <div className="lg:w-1/2">
-                          <div className="relative aspect-video rounded-3xl overflow-hidden glass border border-white/10 group-hover:border-primary/30 transition-colors">
-                            <Image
-                              src={result.image_url || "/placeholder.svg"}
-                              alt={result.title}
-                              fill
-                              className="object-cover group-hover:scale-110 transition-transform duration-700"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                            <div className="absolute bottom-6 right-6 px-4 py-2 rounded-xl glass border border-white/20 backdrop-blur-xl">
-                               <div className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-0.5">Winner</div>
-                               <div className="text-lg font-black text-secondary italic tracking-tighter">TEAM ALPHA</div>
-                            </div>
-                          </div>
+                        <div className="lg:w-1/2 group">
+                          <ResultImageModal 
+                            imageUrl={result.image_url} 
+                            title={result.title} 
+                            winner="TEAM ALPHA" 
+                          />
                         </div>
                      )}
                   </div>
