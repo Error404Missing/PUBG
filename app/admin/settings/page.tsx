@@ -43,7 +43,7 @@ export default function AdminSettingsPage() {
     setSaving(true)
     try {
       for (const setting of settings) {
-        const { error } = await supabase.from("site_settings").update({ value: setting.value }).eq("id", setting.id)
+        const { error } = await supabase.from("site_settings").update({ value: setting.value }).eq("key", setting.key)
         if (error) throw error
       }
       alert("პარამეტრები წარმატებით შეინახა!")
