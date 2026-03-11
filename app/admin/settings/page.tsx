@@ -9,6 +9,7 @@ import { createBrowserClient } from "@/lib/supabase/client"
 import { Settings, Save, Loader2, Clock, Globe, Shield, MessageSquare, ChevronLeft, Zap, Target } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { LuxuryToast } from "@/components/ui/luxury-toast"
 
 interface Setting {
   id: string
@@ -21,6 +22,7 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null)
   const supabase = createBrowserClient()
 
   useEffect(() => {
@@ -46,10 +48,10 @@ export default function AdminSettingsPage() {
         const { error } = await supabase.from("site_settings").update({ value: setting.value }).eq("key", setting.key)
         if (error) throw error
       }
-      alert("პარამეტრები წარმატებით შეინახა!")
+      setToast({ message: "პარამეტრები წარმატებით შეინახა! ✅", type: 'success' })
     } catch (error: any) {
       console.error("Error saving settings:", error)
-      alert(`შეცდომა პარამეტრების შენახვისას: ${error?.message || "უცნობი შეცდომა"}`)
+      setToast({ message: `შეცდომა: ${error?.message || "უცნობი შეცდომა"}`, type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -220,6 +222,14 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </div>
+
+      {toast && (
+        <LuxuryToast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   )
 }
