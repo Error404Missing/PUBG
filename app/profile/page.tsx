@@ -58,7 +58,11 @@ export default function ProfilePage() {
          .from("profiles")
          .select("*")
          .eq("id", user.id)
-         .single()
+         .maybeSingle()
+
+      console.log("DEBUG: Current User ID:", user.id)
+      console.log("DEBUG: Profile Data:", profileData)
+      console.log("DEBUG: Profile Error:", profileError)
 
       if (profileData) {
          setProfile(profileData)
@@ -71,8 +75,8 @@ export default function ProfilePage() {
             avatar_url: profileData.avatar_url || "",
             banner_url: profileData.banner_url || ""
          })
-      } else if (profileError) {
-         console.error("Profile Fetch Error:", profileError)
+      } else {
+         console.warn("No profile found for this ID in 'profiles' table")
       }
 
       // Fetch Team
