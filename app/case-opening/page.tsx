@@ -201,40 +201,7 @@ export default function CaseOpeningPage() {
   }
 
   const handleOpenCase = async () => {
-    if (!user || isSpinning) return
-
-    try {
-      const { data: lastOpen, error } = await supabase
-        .from("case_openings")
-        .select("opened_at")
-        .eq("user_id", user.id)
-        .order("opened_at", { ascending: false })
-        .limit(1)
-        .single()
-
-      let canOpenNow = false
-
-      if (error && error.code === 'PGRST116') {
-        canOpenNow = true
-      } else if (lastOpen) {
-        const lastOpenDate = new Date(lastOpen.opened_at)
-        const twoWeeksLater = new Date(lastOpenDate.getTime() + 14 * 24 * 60 * 60 * 1000)
-        const now = new Date()
-        canOpenNow = now >= twoWeeksLater
-      }
-
-      if (!canOpenNow) {
-        if (lastOpen) {
-          const lastOpenDate = new Date(lastOpen.opened_at)
-          const twoWeeksLater = new Date(lastOpenDate.getTime() + 14 * 24 * 60 * 60 * 1000)
-          setCanOpen(false)
-          setNextOpenTime(twoWeeksLater)
-        }
-        return
-      }
-    } catch (err) {
-      return
-    }
+    if (!user || isSpinning || !canOpen) return
 
     setIsSpinning(true)
     setShowResult(false)
@@ -242,66 +209,92 @@ export default function CaseOpeningPage() {
 
     const finalReward = getRandomReward()
 
-    let spinCount = 0
-    const maxSpins = 30
-    const spinInterval = setInterval(() => {
-      setSpinningIndex((prev) => (prev + 1) % rewards.length)
-      spinCount++
+    try {
+      // 1. Save the opening record immediately to start the cooldown
+      const { error: saveError } = await supabase.from("case_openings").insert({
+        user_id: user.id,
+        reward: finalReward.id,
+      })
 
-      if (spinCount >= maxSpins) {
-        clearInterval(spinInterval)
-
-        let slowCount = 0
-        const slowInterval = setInterval(() => {
-          setSpinningIndex((prev) => (prev + 1) % rewards.length)
-          slowCount++
-
-          if (slowCount >= 10) {
-            clearInterval(slowInterval)
-            setSpinningIndex(rewards.findIndex((r) => r.id === finalReward.id))
-            setWonReward(finalReward)
-            setShowResult(true)
-            setIsSpinning(false)
-            saveReward(finalReward)
-          }
-        }, 100 + slowCount * 50)
+      if (saveError) {
+        console.error("Error saving case opening:", saveError)
+        setIsSpinning(false)
+        alert("შეცდომაა: ვერ მოხერხდა Case-ის შენახვა. სცადეთ მოგვიანებით.")
+        return
       }
-    }, 50)
+
+      // 2. Set cooldown on frontend immediately
+      setCanOpen(false)
+      const nextDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+      setNextOpenTime(nextDate)
+
+      // 3. Start the animation
+      let spinCount = 0
+      const maxSpins = 30
+      const spinInterval = setInterval(() => {
+        setSpinningIndex((prev) => (prev + 1) % rewards.length)
+        spinCount++
+
+        if (spinCount >= maxSpins) {
+          clearInterval(spinInterval)
+
+          let slowCount = 0
+          const slowInterval = setInterval(() => {
+            setSpinningIndex((prev) => (prev + 1) % rewards.length)
+            slowCount++
+
+            if (slowCount >= 10) {
+              clearInterval(slowInterval)
+              setSpinningIndex(rewards.findIndex((r) => r.id === finalReward.id))
+              setWonReward(finalReward)
+              setShowResult(true)
+              setIsSpinning(false)
+              
+              // 4. Finally update VIP status if applicable
+              if (finalReward.days > 0) {
+                updateVipStatus(finalReward)
+              }
+            }
+          }, 100 + slowCount * 50)
+        }
+      }, 50)
+    } catch (err) {
+      console.error("Unexpected error:", err)
+      setIsSpinning(false)
+    }
   }
 
-  const saveReward = async (reward: Reward) => {
+  const updateVipStatus = async (reward: Reward) => {
     if (!user) return
 
-    await supabase.from("case_openings").insert({
-      user_id: user.id,
-      reward: reward.id,
-    })
-
-    if (reward.days > 0) {
+    try {
       const { data: existingVip } = await supabase
         .from("user_vip_status")
         .select("vip_until")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       let newVipUntil: Date
-      if (existingVip && new Date(existingVip.vip_until) > new Date()) {
+      if (existingVip && existingVip.vip_until && new Date(existingVip.vip_until) > new Date()) {
         newVipUntil = new Date(new Date(existingVip.vip_until).getTime() + reward.days * 24 * 60 * 60 * 1000)
       } else {
         newVipUntil = new Date(Date.now() + reward.days * 24 * 60 * 60 * 1000)
       }
 
-      await supabase.from("user_vip_status").upsert({
+      const { error: upsertError } = await supabase.from("user_vip_status").upsert({
         user_id: user.id,
         vip_until: newVipUntil.toISOString(),
         updated_at: new Date().toISOString(),
       })
 
-      setVipStatus({ vip_until: newVipUntil.toISOString() })
+      if (upsertError) {
+        console.error("Error updating VIP status:", upsertError)
+      } else {
+        setVipStatus({ vip_until: newVipUntil.toISOString() })
+      }
+    } catch (err) {
+      console.error("Error in updateVipStatus:", err)
     }
-
-    setCanOpen(false)
-    setNextOpenTime(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000))
   }
 
   if (loading) {

@@ -219,10 +219,11 @@ export function SupportChat() {
       }
     } catch (err: any) {
       console.error("Failed to send message:", err)
-      if (err.message?.includes('RLS')) {
-        toast.error("შეტყობინების გაგზავნა ვერ მოხერხდა (შესაძლოა ბანი გადევთ)")
+      const errMsg = err?.message || ""
+      if (errMsg.toLowerCase().includes('rls') || errMsg.toLowerCase().includes('row-level security') || errMsg.toLowerCase().includes('permission denied')) {
+        toast.error("შეტყობინების გაგზავნა ვერ მოხერხდა (შესაძლოა ბანი გადევთ ან პროფილი არაა დასრულებული)")
       } else {
-        toast.error("მოხდა შეცდომა")
+        toast.error(`მოხდა შეცდომა: ${errMsg.substring(0, 50)}`)
       }
     }
   }
