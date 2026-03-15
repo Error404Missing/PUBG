@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Users, Shield, Zap, Target, Star, ChevronLeft, ArrowRight, Hash } from "lucide-react"
+import { Users, Shield, Zap, Target, Star, ChevronLeft, ArrowRight, Hash, ImagePlus, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -19,6 +19,11 @@ function RegisterTeamContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+
+  // Logo state
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     teamName: "",
@@ -35,7 +40,6 @@ function RegisterTeamContent() {
         router.push("/auth/login")
       } else {
         setUserId(user.id)
-        // Check cooldown
         supabase.from("profiles").select("last_team_request_at").eq("id", user.id).single().then(({ data }) => {
           if (data?.last_team_request_at) {
             const lastRequest = new Date(data.last_team_request_at).getTime()
@@ -65,6 +69,37 @@ function RegisterTeamContent() {
     })
   }
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("გთხოვთ ატვირთოთ მხოლოდ სურათის ფაილი")
+      return
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError("ლოგოს ზომა არ უნდა აღემატებოდეს 2MB-ს")
+      return
+    }
+
+    setError(null)
+    setLogoFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setLogoPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeLogo = () => {
+    setLogoFile(null)
+    setLogoPreview(null)
+    if (logoInputRef.current) logoInputRef.current.value = ""
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -86,6 +121,28 @@ function RegisterTeamContent() {
     }
 
     try {
+      // 1. Upload logo if provided
+      let logoUrl: string | null = null
+      if (logoFile) {
+        const fileExt = logoFile.name.split(".").pop()
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from("team-logos")
+          .upload(filePath, logoFile, { upsert: true })
+
+        if (uploadError) {
+          console.error("[v0] Logo upload error:", uploadError)
+          // Don't block registration if logo upload fails, just skip
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from("team-logos")
+            .getPublicUrl(filePath)
+          logoUrl = publicUrlData.publicUrl
+        }
+      }
+
+      // 2. Create team
       const { data: newTeam, error } = await supabase.from("teams").insert({
         team_name: formData.teamName,
         team_tag: formData.teamTag,
@@ -94,6 +151,7 @@ function RegisterTeamContent() {
         maps_count: Number.parseInt(formData.maps_count),
         schedule_id: scheduleId,
         status: "pending",
+        logo_url: logoUrl,
       }).select().single()
 
       if (error) {
@@ -101,7 +159,7 @@ function RegisterTeamContent() {
         throw error
       }
 
-      // Send notification
+      // 3. Send notification
       await supabase.from("notifications").insert({
         user_id: user.id,
         title: "მოთხოვნა გაგზავნილია ⚔️",
@@ -153,11 +211,89 @@ function RegisterTeamContent() {
         <div className="glass-card p-1 animate-reveal" style={{ animationDelay: '0.1s' }}>
            <div className="p-8 lg:p-12">
               <div className="flex items-center justify-between mb-12">
-                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">გუნდის ინფორმაცია</h2>
+                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">გუნდის ინფორმაცია</h2>
                  <Badge variant="outline" className="border-primary/20 text-primary animate-pulse">Required_Data</Badge>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-10">
+                {/* Team Logo Upload */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">
+                      გუნდის ლოგო
+                    </Label>
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic px-2 py-0.5 rounded-full border border-white/10 bg-white/5">
+                      არასავალდებულო
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    {logoPreview ? (
+                      /* Preview Mode */
+                      <div className="flex items-center gap-6 p-5 rounded-2xl bg-black/40 border border-primary/30">
+                        <div className="relative flex-shrink-0">
+                          <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_-5px_rgba(255,180,0,0.3)]">
+                            <img
+                              src={logoPreview}
+                              alt="Team Logo Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={removeLogo}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors shadow-lg"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white italic">{logoFile?.name}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
+                            {logoFile ? (logoFile.size / 1024).toFixed(0) + " KB" : ""}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => logoInputRef.current?.click()}
+                            className="mt-3 text-[10px] font-black text-primary uppercase tracking-widest italic hover:text-primary/80 transition-colors"
+                          >
+                            შეცვლა
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Upload Button */
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        className="w-full h-28 rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/40 bg-black/20 hover:bg-primary/5 transition-all duration-300 flex flex-col items-center justify-center gap-3 group"
+                      >
+                        <div className="w-12 h-12 rounded-xl glass border border-white/10 group-hover:border-primary/30 flex items-center justify-center transition-all group-hover:scale-110 duration-300">
+                          <ImagePlus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-bold text-muted-foreground group-hover:text-white transition-colors italic">
+                            ლოგოს ასატვირთად დააჭირეთ
+                          </p>
+                          <p className="text-[9px] text-muted-foreground/60 uppercase tracking-widest mt-0.5">
+                            PNG, JPG, WEBP — Max 2MB
+                          </p>
+                        </div>
+                      </button>
+                    )}
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-white/5" />
+
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <Label htmlFor="teamName" className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">

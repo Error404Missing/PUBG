@@ -27,6 +27,7 @@ interface Team {
   players_count: number
   maps_count: number
   created_at: string
+  logo_url?: string | null
   profiles: { 
     id: string
     username: string 
@@ -73,31 +74,51 @@ export default function TeamsPage() {
 
     setTeams((teamsData as any[]) || [])
     setTeamsLoading(false)
+    setVerifiedTeams((teamsData as any[])?.filter((t: any) => t.status === 'approved') || [])
   }
 
   const TeamCard = ({ team, i }: { team: Team, i: number }) => (
     <Dialog key={team.id}>
       <DialogTrigger asChild>
         <div
-          className={`glass-card p-8 group animate-reveal cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] ${
+          className={`glass-card p-8 group animate-reveal cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] relative ${
             team.is_vip ? "border-secondary/30 ring-1 ring-secondary/20 shadow-[0_0_40px_-10px_rgba(255,180,0,0.1)]" : ""
           }`}
           style={{ animationDelay: `${i * 0.05}s` }}
         >
           <div className="flex items-start justify-between mb-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                {team.is_vip && <Crown className="w-5 h-5 text-secondary animate-pulse-soft" />}
-                <h3 className="text-2xl font-black text-white italic tracking-tight group-hover:text-primary transition-colors">
-                  {team.team_name}
-                </h3>
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              {/* Team Logo or Default Icon */}
+              {team.logo_url ? (
+                <div className={`w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border-2 ${
+                  team.is_vip ? 'border-secondary/40 shadow-[0_0_20px_-5px_rgba(255,180,0,0.4)]' : 'border-white/10'
+                }`}>
+                  <img src={team.logo_url} alt={team.team_name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border ${
+                  team.is_vip ? 'bg-secondary/10 border-secondary/20' : 'bg-primary/10 border-primary/10'
+                }`}>
+                  {team.is_vip
+                    ? <Crown className="w-7 h-7 text-secondary" />
+                    : <Shield className="w-7 h-7 text-primary/60" />
+                  }
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  {team.is_vip && <Crown className="w-4 h-4 text-secondary animate-pulse-soft flex-shrink-0" />}
+                  <h3 className="text-xl font-black text-white italic tracking-tight group-hover:text-primary transition-colors truncate">
+                    {team.team_name}
+                  </h3>
+                </div>
+                <Badge variant="outline" className="border-white/10 tracking-[0.2em] font-mono text-[10px] py-1">
+                  {team.team_tag}
+                </Badge>
               </div>
-              <Badge variant="outline" className="border-white/10 tracking-[0.2em] font-mono text-[10px] py-1">
-                {team.team_tag}
-              </Badge>
             </div>
             {team.slot_number && (
-              <div className="text-right">
+              <div className="text-right flex-shrink-0 ml-2">
                 <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 leading-none">Slot</div>
                 <div className="text-2xl font-black text-primary italic leading-none">#{team.slot_number}</div>
               </div>
@@ -139,9 +160,22 @@ export default function TeamsPage() {
         <div className="p-8 space-y-8">
            <DialogHeader>
               <div className="flex items-center gap-6 mb-2">
-                 <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center border ${team.is_vip ? 'bg-secondary/10 border-secondary/20' : 'bg-primary/10 border-primary/20'}`}>
-                    {team.is_vip ? <Crown className="w-10 h-10 text-secondary" /> : <Shield className="w-10 h-10 text-primary" />}
-                 </div>
+                 {/* Dialog Logo / Icon */}
+                 {team.logo_url ? (
+                   <div className={`w-20 h-20 rounded-[2rem] overflow-hidden flex-shrink-0 border-2 ${
+                     team.is_vip
+                       ? 'border-secondary/40 shadow-[0_0_30px_-5px_rgba(255,180,0,0.5)]'
+                       : 'border-primary/30 shadow-[0_0_30px_-5px_rgba(255,180,0,0.2)]'
+                   }`}>
+                     <img src={team.logo_url} alt={team.team_name} className="w-full h-full object-cover" />
+                   </div>
+                 ) : (
+                   <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center border flex-shrink-0 ${
+                     team.is_vip ? 'bg-secondary/10 border-secondary/20' : 'bg-primary/10 border-primary/20'
+                   }`}>
+                      {team.is_vip ? <Crown className="w-10 h-10 text-secondary" /> : <Shield className="w-10 h-10 text-primary" />}
+                   </div>
+                 )}
                  <div>
                     <DialogTitle className="text-4xl font-black text-white italic tracking-tighter uppercase mb-1">
                        {team.team_name}
@@ -177,7 +211,7 @@ export default function TeamsPage() {
                        <img src={team.profiles?.avatar_url || "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"} alt="" className="w-full h-full object-cover" />
                     </div>
                     <div>
-                       <div className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1 italic leading-none">Unit Leader</div>
+                       <div className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1 italic">Unit Leader</div>
                        <h4 className="text-xl font-black text-white italic uppercase tracking-tight leading-none">{team.profiles?.username}</h4>
                     </div>
                  </div>
