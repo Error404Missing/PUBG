@@ -76,7 +76,12 @@ export default async function RulesPage() {
           ) : (
             <div className="glass-card p-20 text-center border-dashed border-white/10 opacity-50">
                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-               <p className="text-muted-foreground lowercase font-black tracking-widest">წესები ჯერ არ არის დამატებული</p>
+               <p className="text-muted-foreground lowercase font-black tracking-widest">
+                 {rules === null ? "Error loading rules from database" : "წესები ჯერ არ არის დამატებული"}
+               </p>
+               {rules === null && (
+                 <p className="text-xs text-red-500 mt-2">Check Supabase connection or RLS policies</p>
+               )}
             </div>
           )}
         </div>
