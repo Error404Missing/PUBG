@@ -335,7 +335,7 @@ export function AdminUsersClient({
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{u.username || "უცნობი"}</h3>
                             <div className={`w-2 h-2 rounded-full ${
-                               u.last_seen_at && new Date().getTime() - new Date(u.last_seen_at).getTime() < 1000 * 60 * 5
+                               u.last_seen_at && new Date().getTime() - new Date(u.last_seen_at).getTime() < 1000 * 60 * 3
                                   ? 'bg-emerald-500 animate-pulse'
                                   : 'bg-zinc-600'
                             }`} title={u.last_seen_at ? `ბოლოს ნანახია: ${new Date(u.last_seen_at).toLocaleString('ka-GE')}` : 'უცნობია'} />

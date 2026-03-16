@@ -303,12 +303,12 @@ export default function ProfilePage() {
                         </p>
                         <div className="flex items-center gap-2">
                            <span className={`w-2 h-2 rounded-full ${
-                              profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5
+                              profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
                                  ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]'
                                  : 'bg-zinc-600'
                            }`} />
                            <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
-                              {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5
+                              {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
                                  ? 'ხაზზეა'
                                  : profile?.last_seen_at 
                                     ? `ბოლოს ნანახია: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true, locale: ka })}`
