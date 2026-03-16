@@ -36,26 +36,6 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = async () => {
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-  }
-
-  const handleBiometricLogin = async () => {
-    // For now, we'll show a toast that this is coming soon or use WebAuthn if it was configured
-    // Supabase supports WebAuthn, but it requires prior registration.
-    // I will add a placeholder for future implementation or basic detection.
-    if (!window.PublicKeyCredential) {
-      setError("თქვენს მოწყობილობას არ აქვს ბიომეტრიული ავტორიზაციის მხარდაჭერა")
-      return
-    }
-    setError("ბიომეტრიული ავტორიზაცია (Passkey) დაემატება შემდეგ განახლებაში. გამოიყენეთ Google შესვლა სწრაფი წვდომისთვის.")
-  }
 
   const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "")
   const msgFromUrl = searchParams.get("message")
@@ -72,40 +52,11 @@ export default function LoginPage() {
                <ShieldCheck className="w-10 h-10 text-primary" />
             </div>
             <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase mb-4">Secure <span className="text-primary tracking-normal">Access</span></h1>
-            <p className="text-muted-foreground font-light tracking-widest uppercase text-xs">აირჩიეთ ავტორიზაციის სასურველი მეთოდი</p>
+            <p className="text-muted-foreground font-light tracking-widest uppercase text-xs">შეიყვანეთ თქვენი მონაცემები ანგარიშში შესასვლელად</p>
         </div>
 
         <div className="glass-card p-1 shadow-[0_0_100px_rgba(255,200,0,0.05)]">
            <div className="p-10 lg:p-14">
-              {/* Social Login Options */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-                 <Button 
-                    onClick={handleGoogleLogin} 
-                    variant="outline" 
-                    className="h-16 rounded-2xl border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 transition-all group"
-                 >
-                    <img src="https://www.google.com/favicon.ico" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Google" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Google Login</span>
-                 </Button>
-                 <Button 
-                    onClick={handleBiometricLogin} 
-                    variant="outline" 
-                    className="h-16 rounded-2xl border-white/5 bg-white/5 hover:bg-white/10 flex items-center gap-3 transition-all group border-dashed"
-                 >
-                    <Lock className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-white transition-colors">FaceID / TouchID</span>
-                 </Button>
-              </div>
-
-              <div className="relative mb-10">
-                 <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/5"></div>
-                 </div>
-                 <div className="relative flex justify-center text-[8px] font-black uppercase tracking-[0.5em] text-muted-foreground">
-                    <span className="bg-[#0A0A0A] px-4">OR_USE_TRADITIONAL_PROTOCOL</span>
-                 </div>
-              </div>
-
               <form onSubmit={handleLogin} className="space-y-8">
                  <div className="space-y-6">
                     <div className="group relative">
