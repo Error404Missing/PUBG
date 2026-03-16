@@ -101,7 +101,14 @@ export default async function SchedulePage() {
                           </div>
                           <div>
                             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Time</div>
-                            <div className="text-sm font-bold">{format(new Date(schedule.date), "HH:mm", { locale: ka })}</div>
+                            <div className="text-sm font-bold">
+                              {new Intl.DateTimeFormat('ka-GE', { 
+                                timeZone: 'Asia/Tbilisi', 
+                                hour: '2-digit', 
+                                minute: '2-digit', 
+                                hour12: false 
+                              }).format(new Date(schedule.date))}
+                            </div>
                           </div>
                         </div>
                       </div>

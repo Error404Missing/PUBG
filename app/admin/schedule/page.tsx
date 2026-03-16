@@ -88,11 +88,8 @@ export default function AdminSchedulePage() {
       return
     }
 
-    // Construct date in local time to handle timezone offsets correctly
-    const [year, month, day] = formData.date.split("-").map(Number)
-    const [hours, minutes] = formData.time.split(":").map(Number)
-    const localDate = new Date(year, month - 1, day, hours, minutes)
-    const dateTime = localDate.toISOString()
+    // Construct date string with explicit Georgia timezone (+04:00)
+    const dateTime = `${formData.date}T${formData.time}:00+04:00`
 
     const { error } = await supabase.from("schedules").insert({
       title: formData.title,
@@ -362,7 +359,14 @@ export default function AdminSchedulePage() {
                       </div>
                       <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
                         <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Time_H-M</div>
-                        <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "HH:mm", { locale: ka })}</div>
+                        <div className="text-sm font-bold text-white italic">
+                          {new Intl.DateTimeFormat('ka-GE', { 
+                            timeZone: 'Asia/Tbilisi', 
+                            hour: '2-digit', 
+                            minute: '2-digit', 
+                            hour12: false 
+                          }).format(new Date(schedule.date))}
+                        </div>
                       </div>
                       <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
                         <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Sector</div>
