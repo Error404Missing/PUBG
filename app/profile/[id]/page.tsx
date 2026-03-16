@@ -142,7 +142,7 @@ export default function PublicProfilePage() {
                            </div>
                            <div className="flex items-center gap-2">
                               <Calendar className="w-3.5 h-3.5 text-primary" />
-                              Joined: {format(new Date(profile.created_at), "MMM yyyy")}
+                              შემოუერთდა: {format(new Date(profile.created_at), "MMMM yyyy", { locale: ka })}
                            </div>
                            <div className="flex items-center gap-2">
                               <span className={`w-2 h-2 rounded-full ${
@@ -152,10 +152,10 @@ export default function PublicProfilePage() {
                               }`} />
                               <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
                                  {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
-                                    ? 'Online'
+                                    ? 'ხაზზეა'
                                     : (profile?.last_seen_at && new Date(profile.last_seen_at).getFullYear() > 2024)
-                                       ? `Last seen: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true })}`
-                                       : 'Offline'}
+                                       ? `ბოლოს ნანახია: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true, locale: ka })}`
+                                       : 'ხაზგარეშე'}
                               </span>
                            </div>
                         </div>
