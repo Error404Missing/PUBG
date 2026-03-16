@@ -358,7 +358,7 @@ export default function AdminSchedulePage() {
                       </div>
                       <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
                         <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Time_H-M</div>
-                        <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "p", { locale: ka })}</div>
+                        <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "HH:mm", { locale: ka })}</div>
                       </div>
                       <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
                         <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Sector</div>

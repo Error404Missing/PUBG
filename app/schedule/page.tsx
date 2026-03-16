@@ -101,7 +101,7 @@ export default async function SchedulePage() {
                           </div>
                           <div>
                             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Time</div>
-                            <div className="text-sm font-bold">{format(new Date(schedule.date), "p", { locale: ka })}</div>
+                            <div className="text-sm font-bold">{format(new Date(schedule.date), "HH:mm", { locale: ka })}</div>
                           </div>
                         </div>
                       </div>
