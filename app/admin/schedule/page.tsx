@@ -82,6 +82,12 @@ export default function AdminSchedulePage() {
     e.preventDefault()
     const supabase = createClient()
 
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
+    if (!timeRegex.test(formData.time)) {
+      setToast({ message: "გთხოვთ შეიყვანოთ დრო სწორი ფორმატით (მაგ: 22:00)", type: 'error' })
+      return
+    }
+
     const dateTime = `${formData.date}T${formData.time}:00`
 
     const { error } = await supabase.from("schedules").insert({
@@ -248,10 +254,23 @@ export default function AdminSchedulePage() {
                     <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">დრო / Deployment Time</Label>
                     <div className="relative">
                       <Input
-                        type="time"
+                        type="text"
                         required
+                        placeholder="22:00"
+                        maxLength={5}
                         value={formData.time}
-                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/[^0-9:]/g, "")
+                          // Auto-add colon after 2 digits
+                          if (val.length === 2 && !val.includes(":") && formData.time.length < 2) {
+                            val += ":"
+                          }
+                          // Prevent multiple colons
+                          if ((val.match(/:/g) || []).length > 1) {
+                            val = val.slice(0, -1)
+                          }
+                          setFormData({ ...formData, time: val })
+                        }}
                         className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
                       />
                       <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
