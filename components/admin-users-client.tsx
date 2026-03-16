@@ -338,7 +338,7 @@ export function AdminUsersClient({
                                u.last_seen_at && new Date().getTime() - new Date(u.last_seen_at).getTime() < 1000 * 60 * 3
                                   ? 'bg-emerald-500 animate-pulse'
                                   : 'bg-zinc-600'
-                            }`} title={u.last_seen_at ? `ბოლოს ნანახია: ${new Date(u.last_seen_at).toLocaleString('ka-GE')}` : 'უცნობია'} />
+                            }`} title={u.last_seen_at && new Date(u.last_seen_at).getFullYear() > 2024 ? `ბოლოს ნანახია: ${new Date(u.last_seen_at).toLocaleString('ka-GE')}` : 'ხაზგარეშე'} />
                             <Badge variant="outline" className="border-white/5 text-white/20 px-2 py-0 text-[8px] font-black italic tracking-widest uppercase">ID: {u.id.slice(0, 8)}</Badge>
                           </div>
                           <div className="flex flex-wrap gap-2">

@@ -153,9 +153,9 @@ export default function PublicProfilePage() {
                               <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
                                  {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
                                     ? 'Online'
-                                    : profile?.last_seen_at 
+                                    : (profile?.last_seen_at && new Date(profile.last_seen_at).getFullYear() > 2024)
                                        ? `Last seen: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true })}`
-                                       : 'Status Unknown'}
+                                       : 'Offline'}
                               </span>
                            </div>
                         </div>
