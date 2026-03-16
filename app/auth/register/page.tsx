@@ -75,6 +75,7 @@ export default function RegisterPage() {
                             required
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
+                            autoComplete="username"
                             className="bg-white/5 border-white/5 h-16 pl-14 text-white placeholder:text-white/10 focus:border-primary/50 focus:bg-white/10 transition-all rounded-2xl font-bold tracking-tight"
                           />
                        </div>
@@ -91,6 +92,7 @@ export default function RegisterPage() {
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            autoComplete="email"
                             className="bg-white/5 border-white/5 h-16 pl-14 text-white placeholder:text-white/10 focus:border-primary/50 focus:bg-white/10 transition-all rounded-2xl font-bold tracking-tight"
                           />
                        </div>
@@ -107,6 +109,7 @@ export default function RegisterPage() {
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            autoComplete="new-password"
                             className="bg-white/5 border-white/5 h-16 pl-14 text-white placeholder:text-white/10 focus:border-primary/50 focus:bg-white/10 transition-all rounded-2xl font-bold tracking-tight"
                           />
                        </div>
