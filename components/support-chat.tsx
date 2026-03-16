@@ -21,6 +21,7 @@ export function SupportChat() {
   const [isAdmin, setIsAdmin] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
+  const [currentUsername, setCurrentUsername] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // 1. Initial Load: Fetch user and existing messages
@@ -72,10 +73,16 @@ export function SupportChat() {
         })))
       }
 
-      // Check if current user is admin
+      // Check if current user is admin and get username
       if (authUser) {
-        const { data: profile } = await supabase.from('profiles').select('is_admin, role').eq('id', authUser.id).single()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin, role, username')
+          .eq('id', authUser.id)
+          .single()
+        
         setIsAdmin(profile?.is_admin || profile?.role === 'admin')
+        setCurrentUsername(profile?.username || authUser.user_metadata?.username || "მომხმარებელი")
       }
     }
 
@@ -204,6 +211,25 @@ export function SupportChat() {
             sender_id: user.id
           })
         if (error) throw error
+
+        // Notify admins if the sender is not an admin
+        if (!isAdmin) {
+          const { data: admins } = await supabase
+            .from('profiles')
+            .select('id')
+            .or('is_admin.eq.true,role.eq.admin')
+
+          if (admins && admins.length > 0) {
+            const notifications = admins.map(admin => ({
+              user_id: admin.id,
+              title: "დახმარება საჭიროა ⚠️",
+              message: `${currentUsername}-ს დახმარება სჭირდება მხარდაჭერის ჩატში`,
+              type: "info",
+              is_read: false
+            }))
+            await supabase.from('notifications').insert(notifications)
+          }
+        }
       } else {
         // Global Chat (Explicitly NO images)
         if (imgUrl) return 
