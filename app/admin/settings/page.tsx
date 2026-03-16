@@ -130,12 +130,10 @@ export default function AdminSettingsPage() {
                       <div className="relative">
                         <Input
                           id={setting.key}
-                          type="datetime-local"
-                          value={setting.value ? new Date(setting.value).toISOString().slice(0, 16) : ""}
-                          onChange={(e) =>
-                            updateSetting(setting.key, e.target.value ? new Date(e.target.value).toISOString() : "")
-                          }
+                          value={setting.value || ""}
+                          onChange={(e) => updateSetting(setting.key, e.target.value)}
                           className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold pl-12"
+                          placeholder="მაგ: 22:00"
                         />
                         <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
                       </div>

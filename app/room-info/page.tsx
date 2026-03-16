@@ -113,10 +113,7 @@ export default async function RoomInfoPage() {
              { 
                icon: Calendar, 
                title: "Start Time", 
-               value: roomInfo.start_time ? new Date(roomInfo.start_time).toLocaleString("ka-GE", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }) : "", 
+               value: roomInfo.start_time, 
                color: "text-orange-400",
                label: "T-Minus"
              }
