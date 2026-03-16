@@ -88,7 +88,11 @@ export default function AdminSchedulePage() {
       return
     }
 
-    const dateTime = `${formData.date}T${formData.time}:00`
+    // Construct date in local time to handle timezone offsets correctly
+    const [year, month, day] = formData.date.split("-").map(Number)
+    const [hours, minutes] = formData.time.split(":").map(Number)
+    const localDate = new Date(year, month - 1, day, hours, minutes)
+    const dateTime = localDate.toISOString()
 
     const { error } = await supabase.from("schedules").insert({
       title: formData.title,
