@@ -6,10 +6,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { Trophy, Users, Calendar, Shield, Zap, Target, Award, Crown, Gift, ChevronRight, ArrowRight } from "lucide-react"
 import { createBrowserClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export default function HomePage() {
   const [discordLink, setDiscordLink] = useState("https://discord.gg/your-invite-link")
+  const [user, setUser] = useState<any>(null)
   const supabase = createBrowserClient()
+  const router = useRouter()
 
   useEffect(() => {
     async function fetchDiscordLink() {
@@ -22,8 +26,29 @@ export default function HomePage() {
         console.log("[v0] Failed to fetch discord link, using default")
       }
     }
+
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+
     fetchDiscordLink()
+    checkUser()
   }, [])
+
+  const handleGetStarted = () => {
+    if (user) {
+      toast.info("თქვენ უკვე გაქვთ გავლილი რეგისტრაცია და იმყოფებით საკუთარ ანგარიშზე. თუ გსურს პრეკზე (Scrim) თამაში, გადადი განრიგში და მონახე შენთვის სასურველი პრეკი.", {
+        duration: 5000,
+        action: {
+          label: "განრიგში გადასვლა",
+          onClick: () => router.push("/schedule")
+        },
+      })
+    } else {
+      router.push("/auth/register")
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -59,13 +84,11 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Button
-                asChild
+                onClick={handleGetStarted}
                 className="btn-premium h-16 px-10 text-lg group"
               >
-                <Link href="/auth/register" className="flex items-center gap-2">
-                  დაიწყე ახლავე
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                დაიწყე ახლავე
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
                 asChild
