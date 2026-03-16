@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { format } from "date-fns"
+import { format, formatDistanceToNow } from "date-fns"
 import { ka } from "date-fns/locale"
 
 export default function PublicProfilePage() {
@@ -135,7 +135,7 @@ export default function PublicProfilePage() {
                               {profile.badge && <Badge className="bg-primary/20 text-primary border border-primary/20 px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">{profile.badge}</Badge>}
                            </div>
                         </div>
-                        <div className="flex items-center gap-6 text-muted-foreground italic text-xs tracking-widest font-bold uppercase">
+                        <div className="flex flex-wrap items-center gap-6 text-muted-foreground italic text-xs tracking-widest font-bold uppercase">
                            <div className="flex items-center gap-2">
                               <User className="w-3.5 h-3.5 text-primary" />
                               ID: {profile.id.slice(0, 8)}
@@ -143,6 +143,20 @@ export default function PublicProfilePage() {
                            <div className="flex items-center gap-2">
                               <Calendar className="w-3.5 h-3.5 text-primary" />
                               Joined: {format(new Date(profile.created_at), "MMM yyyy")}
+                           </div>
+                           <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${
+                                 profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5
+                                    ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]'
+                                    : 'bg-zinc-600'
+                              }`} />
+                              <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
+                                 {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5
+                                    ? 'Online'
+                                    : profile?.last_seen_at 
+                                       ? `Last seen: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true })}`
+                                       : 'Status Unknown'}
+                              </span>
                            </div>
                         </div>
                      </div>

@@ -15,6 +15,8 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
 import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
+import { formatDistanceToNow } from "date-fns"
+import { ka } from "date-fns/locale"
 
 export default function ProfilePage() {
    const supabase = createBrowserClient()
@@ -294,10 +296,26 @@ export default function ProfilePage() {
                            </div>
                         )}
                      </div>
-                     <p className="text-muted-foreground text-xs font-bold tracking-[0.3em] uppercase flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        {profile?.role === 'admin' ? 'კომენდანტი' : profile?.role === 'manager' ? 'სექტორის მენეჯერი' : 'ოპერატორი'} // აქტიური სტატუსი
-                     </p>
+                     <div className="flex flex-col gap-2">
+                        <p className="text-muted-foreground text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2 italic">
+                           <Shield className="w-3 h-3 text-primary" />
+                           {profile?.role === 'admin' ? 'კომენდანტი' : profile?.role === 'manager' ? 'სექტორის მენეჯერი' : 'ოპერატორი'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                           <span className={`w-2 h-2 rounded-full ${
+                              profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5
+                                 ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]'
+                                 : 'bg-zinc-600'
+                           }`} />
+                           <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
+                              {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5
+                                 ? 'ხაზზეა'
+                                 : profile?.last_seen_at 
+                                    ? `ბოლოს ნანახია: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true, locale: ka })}`
+                                    : 'სტატუსი უცნობია'}
+                           </span>
+                        </div>
+                     </div>
                   </div>
 
                   {/* Actions */}

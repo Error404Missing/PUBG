@@ -42,6 +42,7 @@ interface UserProfile {
   badge?: string | null
   role?: string | null
   created_at: string
+  last_seen_at?: string | null
 }
 
 export function AdminUsersClient({
@@ -333,6 +334,11 @@ export function AdminUsersClient({
                         <div>
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{u.username || "უცნობი"}</h3>
+                            <div className={`w-2 h-2 rounded-full ${
+                               u.last_seen_at && new Date().getTime() - new Date(u.last_seen_at).getTime() < 1000 * 60 * 5
+                                  ? 'bg-emerald-500 animate-pulse'
+                                  : 'bg-zinc-600'
+                            }`} title={u.last_seen_at ? `ბოლოს ნანახია: ${new Date(u.last_seen_at).toLocaleString('ka-GE')}` : 'უცნობია'} />
                             <Badge variant="outline" className="border-white/5 text-white/20 px-2 py-0 text-[8px] font-black italic tracking-widest uppercase">ID: {u.id.slice(0, 8)}</Badge>
                           </div>
                           <div className="flex flex-wrap gap-2">

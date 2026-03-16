@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { SupportChat } from "@/components/support-chat"
+import { UserActivity } from "@/components/user-activity"
 import { BannedScreen } from "@/components/banned-screen"
 import { createClient } from "@/lib/supabase/server"
 
@@ -57,6 +58,7 @@ export default async function RootLayout({
     <html lang="ka" className="dark">
       <body className={`font-sans antialiased bg-background min-h-screen relative overflow-x-hidden`}>
         <div className="fixed inset-0 bg-mesh -z-20 opacity-50" />
+        <UserActivity />
         <Navigation />
         <main className="relative z-10">
           <Suspense fallback={null}>
