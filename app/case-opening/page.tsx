@@ -53,8 +53,8 @@ const casesData: CaseConfig[] = [
     description: "3 ₾ • უკეთესი შანსები",
     icon: Box,
     rewards: [
-      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 40 },
-      { id: "vip_3_days", name: "3 დღიანი VIP", description: "VIP სტატუსი 3 დღით", color: "text-blue-400", bgColor: "bg-blue-900/30", borderColor: "border-blue-500", icon: Sparkles, days: 3, probability: 40 },
+      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 45 },
+      { id: "vip_3_days", name: "3 დღიანი VIP", description: "VIP სტატუსი 3 დღით", color: "text-blue-400", bgColor: "bg-blue-900/30", borderColor: "border-blue-500", icon: Sparkles, days: 3, probability: 35 },
       { id: "vip_1_week", name: "1 კვირიანი VIP", description: "VIP სტატუსი 7 დღით", color: "text-yellow-400", bgColor: "bg-yellow-900/30", borderColor: "border-yellow-500", icon: Crown, days: 7, probability: 15 },
       { id: "vip_2_weeks", name: "2 კვირიანი VIP", description: "VIP სტატუსი 14 დღით", color: "text-orange-400", bgColor: "bg-orange-900/30", borderColor: "border-orange-500", icon: Crown, days: 14, probability: 5 },
     ]
@@ -67,8 +67,8 @@ const casesData: CaseConfig[] = [
     description: "5 ₾ • მაღალი მოგება",
     icon: Package,
     rewards: [
-      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 20 },
-      { id: "vip_1_week", name: "1 კვირიანი VIP", description: "VIP სტატუსი 7 დღით", color: "text-yellow-400", bgColor: "bg-yellow-900/30", borderColor: "border-yellow-500", icon: Crown, days: 7, probability: 50 },
+      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 45 },
+      { id: "vip_1_week", name: "1 კვირიანი VIP", description: "VIP სტატუსი 7 დღით", color: "text-yellow-400", bgColor: "bg-yellow-900/30", borderColor: "border-yellow-500", icon: Crown, days: 7, probability: 25 },
       { id: "vip_2_weeks", name: "2 კვირიანი VIP", description: "VIP სტატუსი 14 დღით", color: "text-orange-400", bgColor: "bg-orange-900/30", borderColor: "border-orange-500", icon: Crown, days: 14, probability: 20 },
       { id: "vip_1_month", name: "1 თვიანი VIP", description: "VIP სტატუსი 30 დღით", color: "text-red-400", bgColor: "bg-red-900/30", borderColor: "border-red-500", icon: Crown, days: 30, probability: 10 },
     ]
@@ -81,8 +81,8 @@ const casesData: CaseConfig[] = [
     description: "7 ₾ • ლეგენდარული",
     icon: Crown,
     rewards: [
-      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 5 },
-      { id: "vip_2_weeks", name: "2 კვირიანი VIP", description: "VIP სტატუსი 14 დღით", color: "text-orange-400", bgColor: "bg-orange-900/30", borderColor: "border-orange-500", icon: Crown, days: 14, probability: 50 },
+      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 45 },
+      { id: "vip_2_weeks", name: "2 კვირიანი VIP", description: "VIP სტატუსი 14 დღით", color: "text-orange-400", bgColor: "bg-orange-900/30", borderColor: "border-orange-500", icon: Crown, days: 14, probability: 10 },
       { id: "vip_1_month", name: "1 თვიანი VIP", description: "VIP სტატუსი 30 დღით", color: "text-red-400", bgColor: "bg-red-900/30", borderColor: "border-red-500", icon: Crown, days: 30, probability: 35 },
       { id: "vip_1_year", name: "1 წლიანი VIP", description: "VIP სტატუსი 365 დღით", color: "text-rose-400", bgColor: "bg-rose-900/30", borderColor: "border-rose-500", icon: Crown, days: 365, probability: 10 },
     ]
@@ -508,7 +508,7 @@ export default function CaseOpeningPage() {
                 <Button
                   onClick={handleOpenCase}
                   disabled={isSpinning || (selectedCase.price > 0 && (!userProfile || (userProfile?.balance || 0) < selectedCase.price))}
-                  className={`h-20 px-16 text-2xl group relative overflow-hidden font-black italic uppercase tracking-widest bg-${selectedCase.themeColor} hover:bg-${selectedCase.themeColor}/80 text-white shadow-[0_0_40px_rgba(var(--${selectedCase.themeColor}-rgb),0.4)] ${selectedCase.themeColor === 'amber-400' ? 'text-black hover:text-black' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`h-20 px-16 text-2xl group relative overflow-hidden font-black italic uppercase tracking-widest bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_0_40px_rgba(16,185,129,0.4)] disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isSpinning ? 'იხსნება...' : `გახსენი (${selectedCase.price === 0 ? 'FREE' : `${selectedCase.price} ₾`})`}
                   <div className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[100%] transition-all duration-1000" />
