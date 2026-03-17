@@ -21,7 +21,7 @@ export default async function AdminUsersPage() {
 
   const { data: users } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, username, email, is_admin, is_banned, ban_reason, ban_until, badge, role, created_at, last_seen_at, balance")
     .order("created_at", { ascending: false })
 
   const userIds = users?.map((u) => u.id) || []

@@ -24,9 +24,10 @@ import {
   User,
   ArrowRight,
   ShieldCheck,
-  Trash2,
   Edit,
-  Crown
+  Crown,
+  Wallet,
+  Trash2
 } from "lucide-react"
 import Link from "next/link"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -43,6 +44,7 @@ interface UserProfile {
   role?: string | null
   created_at: string
   last_seen_at?: string | null
+  balance?: number
 }
 
 export function AdminUsersClient({
@@ -69,6 +71,8 @@ export function AdminUsersClient({
   const [localVipMap, setLocalVipMap] = useState<Record<string, string>>(vipMap)
   const [vipDuration, setVipDuration] = useState("30")
   const [vipDialogUserId, setVipDialogUserId] = useState<string | null>(null)
+  const [balanceDialogUserId, setBalanceDialogUserId] = useState<string | null>(null)
+  const [topupAmount, setTopupAmount] = useState("")
   const [toastContent, setToastContent] = useState<{ message: string, type: ToastType } | null>(null)
 
   const filteredUsers = userList.filter(
@@ -258,6 +262,40 @@ export function AdminUsersClient({
     setIsLoading(false)
   }
 
+  const handleUpdateBalance = async (userId: string, currentBalance: number = 0) => {
+    const amount = Number(topupAmount)
+    if (isNaN(amount) || amount === 0) return
+
+    setIsLoading(true)
+    const newBalance = Math.max(0, currentBalance + amount)
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ balance: newBalance })
+      .eq("id", userId)
+
+    if (!error) {
+      setUserList((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, balance: newBalance } : u))
+      )
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: amount > 0 ? "ბალანსი შეივსო 💰" : "ბალანსი შემცირდა 💸",
+        message: amount > 0 
+          ? `თქვენს ბალანსს დაერიცხა ${amount} ლარი. მიმდინარე ბალანსი: ${newBalance}₾`
+          : `თქვენი ბალანსიდან ჩამოიჭრა ${Math.abs(amount)} ლარი. მიმდინარე ბალანსი: ${newBalance}₾`,
+        type: amount > 0 ? "success" : "warning",
+      })
+      
+      setToastContent({ message: `ბალანსი წარმატებით განახლდა. ახალი ბალანსი: ${newBalance}`, type: 'success' })
+      setBalanceDialogUserId(null)
+      setTopupAmount("")
+    } else {
+      setToastContent({ message: "ბალანსის განახლება ვერ მოხერხდა: " + error.message, type: 'error' })
+    }
+    setIsLoading(false)
+  }
+
   return (
     <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
       {/* Background Decor */}
@@ -354,6 +392,9 @@ export function AdminUsersClient({
                             {u.is_banned && <Badge variant="destructive" className="px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase">Operator_Terminated</Badge>}
                             {hasVip && <Badge variant="gold" className="px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase">Elite_Unit</Badge>}
                             {u.badge && <Badge className="bg-primary/20 text-primary border border-primary/20 px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase">{u.badge}</Badge>}
+                            <Badge variant="outline" className="border-green-500/20 text-green-400 px-2 py-0.5 text-[9px] font-black italic tracking-widest uppercase bg-green-500/5">
+                              {u.balance || 0} GEL
+                            </Badge>
                           </div>
                         </div>
                       </div>
@@ -506,7 +547,7 @@ export function AdminUsersClient({
                                     setNotifType("info")
                                     setNotifDialogUserId(null)
                                   } else {
-                                    toast.error("შეცდომა: " + error.message)
+                                    setToastContent({ message: "შეცდომა: " + error.message, type: 'error' })
                                   }
                                 }}
                                 disabled={isLoading || !notifTitle.trim() || !notifMessage.trim()}
@@ -601,6 +642,57 @@ export function AdminUsersClient({
                                   </Button>
                                 )}
                               </div>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* Balance Dialog */}
+                      <Dialog open={balanceDialogUserId === u.id} onOpenChange={(open) => {
+                        if (!open) {
+                          setBalanceDialogUserId(null)
+                          setTopupAmount("")
+                        }
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="h-12 border-green-500/20 text-green-400 hover:bg-green-500/5 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
+                            onClick={() => setBalanceDialogUserId(u.id)}
+                          >
+                            <Wallet className="w-4 h-4 mr-2" />
+                            ბალანსი
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-black/95 backdrop-blur-3xl border border-white/10 p-1 rounded-3xl shadow-2xl max-w-sm">
+                          <div className="p-8">
+                            <DialogHeader>
+                              <DialogTitle className="text-2xl font-black text-green-400 italic uppercase tracking-tighter">
+                                ბალანსის მართვა
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-6 pt-6">
+                              <div className="text-center">
+                                <span className="text-sm font-black text-muted-foreground uppercase tracking-widest">მიმდინარე ბალანსი</span>
+                                <div className="text-4xl font-black text-white italic mt-1">{u.balance || 0} <span className="text-lg text-green-400">GEL</span></div>
+                              </div>
+                              <div className="space-y-3">
+                                <Label className="text-[10px] font-black text-green-400 uppercase tracking-[0.2em] ml-2 italic">თანხა (დასამატებლად + / ჩამოსაჭრელად -)</Label>
+                                <Input
+                                  type="number"
+                                  value={topupAmount}
+                                  onChange={(e) => setTopupAmount(e.target.value)}
+                                  placeholder="მაგ: 15 ან -5"
+                                  className="h-14 bg-black/40 border-green-500/20 rounded-xl focus:border-green-500/50 text-xl font-bold text-center"
+                                />
+                              </div>
+                              <Button
+                                onClick={() => handleUpdateBalance(u.id, u.balance)}
+                                disabled={isLoading || !topupAmount || isNaN(Number(topupAmount)) || Number(topupAmount) === 0}
+                                className="h-14 w-full bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest italic"
+                              >
+                                {isLoading ? "..." : "ბალანსის განახლება"}
+                              </Button>
                             </div>
                           </div>
                         </DialogContent>

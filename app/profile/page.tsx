@@ -6,7 +6,7 @@ import {
    User, Mail, Shield, Edit3, Camera,
    Award, Zap, Hash, MessageSquare,
    ChevronRight, Save, LogOut, ExternalLink, X,
-   AlertTriangle, CheckCircle2, Trash2, Instagram, Music2
+   AlertTriangle, CheckCircle2, Trash2, Instagram, Music2, Wallet
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -283,13 +283,17 @@ export default function ProfilePage() {
                   <div className="flex-1 pb-2">
                      <div className="flex flex-wrap items-center gap-3 mb-3">
                         <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">{profile?.username || 'ოპერატორი'}</h1>
-                        {vipStatus && (
-                           <div className="flex items-center gap-1.5 bg-secondary/20 px-3 py-1 rounded-full text-secondary text-[10px] font-black tracking-widest border border-secondary/30">
-                              <Zap className="w-3 h-3" />
-                              VIP_ELITE
-                           </div>
-                        )}
-                        {profile?.badge && (
+                         {vipStatus && (
+                            <div className="flex items-center gap-1.5 bg-secondary/20 px-3 py-1 rounded-full text-secondary text-[10px] font-black tracking-widest border border-secondary/30">
+                               <Zap className="w-3 h-3" />
+                               VIP_ELITE
+                            </div>
+                         )}
+                         <div className="flex items-center gap-1.5 bg-green-500/10 px-3 py-1 rounded-full text-green-400 text-[10px] font-black tracking-widest border border-green-500/20">
+                            <Wallet className="w-3 h-3" />
+                            {profile?.balance || 0} GEL
+                         </div>
+                         {profile?.badge && (
                            <div className="flex items-center gap-1.5 bg-primary/20 px-3 py-1 rounded-full text-primary text-[10px] font-black tracking-widest border border-primary/30">
                               <Award className="w-3 h-3" />
                               {profile.badge}
