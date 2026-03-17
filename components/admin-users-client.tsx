@@ -115,7 +115,7 @@ export function AdminUsersClient({
       .from("profiles")
       .update({ is_banned: false, ban_reason: null, ban_until: null })
       .eq("id", userId)
-
+    if (!error) {
       setUserList((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_banned: false, ban_reason: null, ban_until: null } : u))
       )
@@ -174,10 +174,10 @@ export function AdminUsersClient({
 
       setLocalVipMap(prev => ({ ...prev, [userId]: expiryStr }))
       setVipDialogUserId(null)
-      toast.success(`${username}-ს მიენიჭა VIP სტატუსი`)
+      setToastContent({ message: `${username}-ს მიენიჭა VIP სტატუსი`, type: 'success' })
     } catch (err: any) {
       console.error("VIP Error:", err)
-      toast.error("VIP-ის მინიჭება ვერ მოხერხდა: " + (err.message || ""))
+      setToastContent({ message: "VIP-ის მინიჭება ვერ მოხერხდა: " + (err.message || ""), type: 'error' })
     } finally {
       setIsLoading(false)
     }
@@ -206,10 +206,10 @@ export function AdminUsersClient({
         return next
       })
       setVipDialogUserId(null)
-      toast.success(`${username}-ს ჩამოერთვა VIP სტატუსი`)
+      setToastContent({ message: `${username}-ს ჩამოერთვა VIP სტატუსი`, type: 'success' })
     } catch (err: any) {
       console.error("Remove VIP Error:", err)
-      toast.error("VIP-ის ჩამორთმევა ვერ მოხერხდა")
+      setToastContent({ message: "VIP-ის ჩამორთმევა ვერ მოხერხდა", type: 'error' })
     } finally {
       setIsLoading(false)
     }
@@ -248,9 +248,12 @@ export function AdminUsersClient({
           : "ადმინისტრაციამ ჩამოართა თქვენს მენეჯერის როლი და Room Info-ზე წვდომა.",
         type: newRole === 'manager' ? "success" : "warning",
       })
-      toast.success(newRole === 'manager' ? `${userList.find(u => u.id === userId)?.username}-ს მიენიჯა მენეჯერის როლი` : `მენეჯერის როლი ჩამოართვა`)
+      setToastContent({ 
+        message: newRole === 'manager' ? `${userList.find(u => u.id === userId)?.username}-ს მიენიჯა მენეჯერის როლი` : `მენეჯერის როლი ჩამოართვა`, 
+        type: newRole === 'manager' ? 'success' : 'warning' as any 
+      })
     } else {
-      toast.error("როლის შეცვლა ვერ მოხერხდა: " + error.message)
+      setToastContent({ message: "როლის შეცვლა ვერ მოხერხდა: " + error.message, type: 'error' })
     }
     setIsLoading(false)
   }
