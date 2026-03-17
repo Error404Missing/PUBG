@@ -173,6 +173,22 @@ export default function AdminTeamsPage() {
         })
       }
 
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `გუნდის სტატუსის განახლება: ${status}`,
+          entity_type: "team",
+          entity_id: teamId,
+          details: {
+            team_name: teamData.team_name,
+            new_status: status,
+            previous_status: teams.find(t => t.id === teamId)?.status
+          }
+        })
+      }
+
       setToast({ message: "სტატუსი წარმატებით განახლდა", type: 'success' })
       fetchTeams()
     } else if (error) {
@@ -186,6 +202,21 @@ export default function AdminTeamsPage() {
     const { error } = await supabase.from("teams").update({ is_vip: !currentVipStatus }).eq("id", teamId)
 
     if (!error) {
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      const team = teams.find(t => t.id === teamId)
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `VIP სტატუსის შეცვლა: ${!currentVipStatus}`,
+          entity_type: "team",
+          entity_id: teamId,
+          details: {
+            team_name: team?.team_name,
+            is_vip: !currentVipStatus
+          }
+        })
+      }
       fetchTeams()
     }
   }
@@ -220,6 +251,22 @@ export default function AdminTeamsPage() {
     const { error } = await supabase.from("teams").update({ slot_number: slot }).eq("id", teamId)
 
     if (!error) {
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      const team = teams.find(t => t.id === teamId)
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `სლოტის განახლება: #${slot}`,
+          entity_type: "team",
+          entity_id: teamId,
+          details: {
+            team_name: team?.team_name,
+            slot_number: slot
+          }
+        })
+      }
+
       setToast({ message: "სლოტი წარმატებით განახლდა", type: 'success' })
       setEditingSlot(null)
       setSlotValue("")
@@ -260,6 +307,22 @@ export default function AdminTeamsPage() {
       }
 
       setToast({ message: "გუნდი წარმატებით წაიშალა", type: 'success' })
+
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `გუნდის წაშლა (Admin)`,
+          entity_type: "team",
+          entity_id: teamId,
+          details: {
+            team_name: teamData?.team_name,
+            leader_id: teamData?.leader_id
+          }
+        })
+      }
+
       fetchTeams()
     } else {
       console.error("Delete team error:", error)

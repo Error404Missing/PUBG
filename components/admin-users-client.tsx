@@ -105,6 +105,22 @@ export function AdminUsersClient({
           u.id === userId ? { ...u, is_banned: true, ban_reason: banReason || "წესების დარღვევა", ban_until: banUntilDate } : u
         )
       )
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `მომხმარებლის დაბლოკვა`,
+          entity_type: "user",
+          entity_id: userId,
+          details: {
+            reason: banReason || "წესების დარღვევა",
+            duration: banDuration,
+            target_user: userList.find(u => u.id === userId)?.username
+          }
+        })
+      }
+
       setBanReason("")
       setBanDuration("permanent")
       setBanDialogUserId(null) // close dialog
@@ -123,6 +139,20 @@ export function AdminUsersClient({
       setUserList((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_banned: false, ban_reason: null, ban_until: null } : u))
       )
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `მომხმარებლის განბლოკვა`,
+          entity_type: "user",
+          entity_id: userId,
+          details: {
+            target_user: userList.find(u => u.id === userId)?.username
+          }
+        })
+      }
+
       setToastContent({ message: "მომხმარებელი განიბლოკა", type: 'success' })
     } else {
       setToastContent({ message: "განბლოკვა ვერ მოხერხდა", type: 'error' })
@@ -139,6 +169,22 @@ export function AdminUsersClient({
       setUserList((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, badge: badgeValue } : u))
       )
+      
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: badgeValue ? `ბეჯის მინიჭება: ${badgeValue}` : `ბეჯის წაშლა`,
+          entity_type: "user",
+          entity_id: userId,
+          details: {
+            target_user: userList.find(u => u.id === userId)?.username,
+            badge: badgeValue
+          }
+        })
+      }
+
       setDialogOpen(false)
       setBadgeText("")
     }
@@ -177,6 +223,22 @@ export function AdminUsersClient({
       })
 
       setLocalVipMap(prev => ({ ...prev, [userId]: expiryStr }))
+      
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `VIP სტატუსის მინიჭება`,
+          entity_type: "user",
+          entity_id: userId,
+          details: {
+            duration: durationText,
+            target_user: username
+          }
+        })
+      }
+
       setVipDialogUserId(null)
       setToastContent({ message: `${username}-ს მიენიჭა VIP სტატუსი`, type: 'success' })
     } catch (err: any) {
@@ -209,6 +271,21 @@ export function AdminUsersClient({
         delete next[userId]
         return next
       })
+
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `VIP სტატუსის ჩამორთმევა`,
+          entity_type: "user",
+          entity_id: userId,
+          details: {
+            target_user: username
+          }
+        })
+      }
+
       setVipDialogUserId(null)
       setToastContent({ message: `${username}-ს ჩამოერთვა VIP სტატუსი`, type: 'success' })
     } catch (err: any) {
@@ -260,6 +337,20 @@ export function AdminUsersClient({
       setToastContent({ message: "როლის შეცვლა ვერ მოხერხდა: " + error.message, type: 'error' })
     }
     setIsLoading(false)
+    
+    // 📝 Log Action
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user && !error) { // Log only on success
+      await supabase.from("logs").insert({
+        user_id: user.id,
+        action: newRole === 'manager' ? `მენეჯერის როლის მინიჭება` : `მენეჯერის როლის ჩამორთმევა`,
+        entity_type: "user",
+        entity_id: userId,
+        details: {
+          target_user: userList.find(u => u.id === userId)?.username
+        }
+      })
+    }
   }
 
   const handleUpdateBalance = async (userId: string, currentBalance: number = 0) => {
@@ -294,6 +385,22 @@ export function AdminUsersClient({
       setToastContent({ message: "ბალანსის განახლება ვერ მოხერხდა: " + error.message, type: 'error' })
     }
     setIsLoading(false)
+
+    // 📝 Log Action
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user && !error) {
+      await supabase.from("logs").insert({
+        user_id: user.id,
+        action: `ბალანსის ${amount > 0 ? 'შევსება' : 'შემცირება'}`,
+        entity_type: "user",
+        entity_id: userId,
+        details: {
+          amount: amount,
+          new_balance: newBalance,
+          target_user: userList.find(u => u.id === userId)?.username
+        }
+      })
+    }
   }
 
   return (

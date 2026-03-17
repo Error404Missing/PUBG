@@ -5,7 +5,7 @@ import {
   Users, Calendar, Trophy, Ban, Gamepad2, 
   UserCog, Shield, Zap, Target, Activity,
   ChevronRight, LayoutDashboard, Settings, Layers,
-  CheckCircle2, MessageSquare
+  CheckCircle2, MessageSquare, Terminal
 } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -88,6 +88,13 @@ export default async function AdminPage() {
       desc: "მომხმარებლებთან პირდაპირი ჩატი და დახმარება", 
       icon: MessageSquare, 
       color: "sky" 
+    },
+    { 
+      href: "/admin/logs", 
+      label: "სისტემური ლოგები", 
+      desc: "ნახეთ ყველა მომხმარებლისა და ადმინის აქტივობა", 
+      icon: Terminal, 
+      color: "zinc" 
     },
   ]
 

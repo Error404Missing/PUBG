@@ -104,6 +104,22 @@ export default function AdminSchedulePage() {
       console.error("Schedule creation error:", error)
       setToast({ message: "შეცდომა განრიგის შექმნისას: " + error.message, type: 'error' })
     } else {
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `ახალი მატჩის შექმნა: ${formData.title}`,
+          entity_type: "schedule",
+          details: {
+            title: formData.title,
+            date: dateTime,
+            map: formData.mapName,
+            max_teams: formData.maxTeams
+          }
+        })
+      }
+
       setToast({ message: "განრიგი წარმატებით შეიქმნა", type: 'success' })
       setIsAdding(false)
       setFormData({
@@ -141,6 +157,21 @@ export default function AdminSchedulePage() {
         type: 'error'
       })
     } else {
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      const schedule = schedules.find(s => s.id === id)
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `მატჩის წაშლა: ${schedule?.title || id}`,
+          entity_type: "schedule",
+          entity_id: id,
+          details: {
+            title: schedule?.title
+          }
+        })
+      }
+
       setToast({ message: "მატჩი წარმატებით წაიშალა", type: 'success' })
       fetchSchedules()
     }
@@ -158,6 +189,22 @@ export default function AdminSchedulePage() {
       console.error("Toggle registration error:", error)
       setToast({ message: "სტატუსის შეცვლა ვერ მოხერხდა", type: 'error' })
     } else {
+      // 📝 Log Action
+      const { data: { user } } = await supabase.auth.getUser()
+      const schedule = schedules.find(s => s.id === id)
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `რეგისტრაციის სტატუსის შეცვლა: ${!currentStatus ? 'გაიხსნა' : 'დაიხურა'}`,
+          entity_type: "schedule",
+          entity_id: id,
+          details: {
+            title: schedule?.title,
+            registration_open: !currentStatus
+          }
+        })
+      }
+
       setToast({
         message: !currentStatus ? "რეგისტრაცია გაიხსნა" : "რეგისტრაცია დაიხურა",
         type: 'success'
