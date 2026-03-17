@@ -57,10 +57,25 @@ export default function AdminSupportPage() {
 
       if (fetchError) {
         console.error("Error fetching support messages:", fetchError)
-        setToast({ message: "მონაცემების წამოღება ვერ მოხერხდა", type: 'error' })
-      }
-
-      if (allMessages) {
+        // Try a fallback fetch without join if the primary one fails
+        const { data: fallbackMessages, error: fallbackError } = await supabase
+          .from("support_messages")
+          .select("*")
+          .order("created_at", { ascending: true })
+        
+        if (fallbackError) {
+          setToast({ message: `შეცდომა: ${fallbackError.message}`, type: 'error' })
+        } else if (fallbackMessages) {
+          setMessages(fallbackMessages.map(m => ({
+            ...m,
+            text: m.message,
+            image: m.image_url,
+            sender: m.sender_type,
+            username: 'User_' + m.user_id?.slice(0, 5), // Fallback name
+            time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          })))
+        }
+      } else if (allMessages) {
         setMessages(allMessages.map(m => ({
           ...m,
           text: m.message,
