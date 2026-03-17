@@ -274,6 +274,21 @@ export default function CaseOpeningPage() {
         return
       }
 
+      // 📝 Log Action
+      if (user) {
+        await supabase.from("logs").insert({
+          user_id: user.id,
+          action: `ქეისის გახსნა: ${selectedCase.name}`,
+          entity_type: "case",
+          details: {
+            case_name: selectedCase.name,
+            price: selectedCase.price,
+            reward: finalReward.name,
+            reward_days: finalReward.days
+          }
+        })
+      }
+
       // 3. Set cooldown on frontend immediately for free case
       if (selectedCase.price === 0) {
         setCanOpenFreeCase(false)
