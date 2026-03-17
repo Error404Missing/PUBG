@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X, KeyRound, Users, Shield, LogOut } from "lucide-react"
+import { Menu, X, KeyRound, Users, Shield, LogOut, Wallet } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { NotificationBell } from "@/components/notification-bell"
@@ -15,6 +15,7 @@ export function Navigation() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [balance, setBalance] = useState<number>(0)
   const [hasApprovedTeam, setHasApprovedTeam] = useState(false)
   const [roomInfo, setRoomInfo] = useState<{
     room_id: string | null
@@ -32,9 +33,10 @@ export function Navigation() {
     setUser(user)
     if (user) {
       setUserId(user.id)
-      const { data } = await supabase.from("profiles").select("is_admin, role").eq("id", user.id).single()
+      const { data } = await supabase.from("profiles").select("is_admin, role, balance").eq("id", user.id).single()
       setIsAdmin(data?.is_admin || false)
       setUserRole(data?.role || null)
+      setBalance(data?.balance || 0)
 
       const { data: teamData } = await supabase
         .from("teams")
@@ -80,6 +82,7 @@ export function Navigation() {
       } else {
         setIsAdmin(false)
         setUserRole(null)
+        setBalance(0)
         setHasApprovedTeam(false)
         setRoomInfo(null)
       }
@@ -173,6 +176,12 @@ export function Navigation() {
 
              {user ? (
                <div className="hidden lg:flex items-center gap-2">
+                 {/* Balance Display */}
+                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-500/20 bg-green-500/10 text-green-400 text-xs font-black italic mr-2 cursor-default hover:bg-green-500/20 transition-colors">
+                    <Wallet className="w-3.5 h-3.5" />
+                    {balance} ₾
+                 </div>
+
                  <Link href="/profile" className="w-10 h-10 rounded-full border border-white/10 glass flex items-center justify-center hover:border-primary/50 transition-all group overflow-hidden">
                     <Users className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                  </Link>
@@ -239,6 +248,10 @@ export function Navigation() {
               )}
               {user ? (
                  <>
+                   <div className="px-4 py-3 rounded-xl glass border border-green-500/20 text-green-400 text-xs font-black uppercase tracking-widest text-center flex justify-center items-center gap-2 bg-green-500/5">
+                     <Wallet className="w-4 h-4" />
+                     ბალანსი: {balance} ₾
+                   </div>
                    <Link
                      href="/profile"
                      onClick={() => setIsOpen(false)}
