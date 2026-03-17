@@ -196,40 +196,42 @@ export default function AdminSupportPage() {
   if (isLoading) return null
 
   return (
-    <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
+    <div className="min-h-screen pt-24 pb-8 md:py-32 px-4 relative overflow-hidden bg-background">
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(0,180,255,0.03),transparent_70%)] -z-10" />
 
-      <div className="container mx-auto max-w-7xl relative h-[700px] flex flex-col">
-        <div className="flex items-center justify-between mb-8">
+      <div className="container mx-auto max-w-7xl relative h-[calc(100vh-120px)] md:h-[700px] flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
           <Link 
             href="/admin" 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group"
           >
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] italic">მართვის პანელი</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] italic hidden sm:inline">მართვის პანელი</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] italic sm:hidden">უკან</span>
           </Link>
 
-          <div className="flex items-center gap-4">
-            <div className={`px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest flex items-center gap-2 ${
+          <div className="flex items-center gap-2 md:gap-4 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+            <div className={`shrink-0 px-2 md:px-3 py-1 rounded-full border text-[7px] md:text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 md:gap-2 ${
               channelStatus === 'SUBSCRIBED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${channelStatus === 'SUBSCRIBED' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-              Live: {channelStatus}
+              <span className={`w-1 md:w-1.5 h-1 md:h-1.5 rounded-full ${channelStatus === 'SUBSCRIBED' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+              <span className="whitespace-nowrap">Live: {channelStatus}</span>
             </div>
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setIsClearConfirmOpen(true)}
-              className="h-8 border-rose-500/20 text-rose-500 hover:bg-rose-500/10 text-[10px] font-black uppercase tracking-widest px-4"
+              className="h-7 md:h-8 border-rose-500/20 text-rose-500 hover:bg-rose-500/10 text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 md:px-4 shrink-0"
             >
-              <RefreshCcw className="w-3 h-3 mr-2" /> Live Clear
+              <RefreshCcw className="w-2.5 h-2.5 md:w-3 h-3 mr-1 md:mr-2" /> 
+              <span className="whitespace-nowrap">Live Clear</span>
             </Button>
           </div>
         </div>
 
-        <div className="flex-1 flex gap-8 min-h-0">
+        <div className="flex-1 flex flex-col md:flex-row gap-4 md:gap-8 min-h-0">
           {/* Chat List */}
-          <div className="w-80 flex flex-col gap-6">
+          <div className={`w-full md:w-80 flex flex-col gap-6 ${activeChat ? 'hidden md:flex' : 'flex'}`}>
              <div className="glass-card p-6 flex flex-col h-full">
                 <h2 className="text-xl font-black text-white italic tracking-tighter uppercase mb-6 flex items-center gap-3 shrink-0">
                    <Activity className="w-5 h-5 text-primary" />
@@ -260,20 +262,28 @@ export default function AdminSupportPage() {
           </div>
 
           {/* Chat Window */}
-          <div className="flex-1 flex flex-col glass-card p-1 min-h-0">
+          <div className={`flex-1 flex flex-col glass-card p-1 min-h-0 ${activeChat ? 'flex' : 'hidden md:flex'}`}>
              {activeChat ? (
                 <div className="flex flex-col h-full">
                    {/* Chat Header */}
-                   <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                         <div className="w-12 h-12 rounded-2xl glass border border-primary/20 flex items-center justify-center">
-                            <User className="w-6 h-6 text-primary" />
+                   <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between">
+                      <div className="flex items-center gap-3 md:gap-4 font-bold">
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           onClick={() => setActiveChat(null)}
+                           className="md:hidden -ml-2 hover:bg-white/5"
+                         >
+                            <ChevronLeft className="w-5 h-5" />
+                         </Button>
+                         <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl glass border border-primary/20 flex items-center justify-center shrink-0">
+                            <User className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                          </div>
-                          <div>
-                             <h3 className="text-xl font-black text-white italic truncate max-w-[200px]">{chats[activeChat]?.username || "Anonymous"}</h3>
+                          <div className="min-w-0">
+                             <h3 className="text-lg md:text-xl font-black text-white italic truncate max-w-[150px] md:max-w-[200px]">{chats[activeChat]?.username || "Anonymous"}</h3>
                              <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                               Encrypted Channel
+                               <span className="truncate">Encrypted Channel</span>
                             </div>
                          </div>
                       </div>
@@ -283,50 +293,50 @@ export default function AdminSupportPage() {
                    {/* Messages Area */}
                    <div 
                      ref={scrollRef}
-                     className="flex-1 overflow-y-auto p-10 space-y-6 scrollbar-hide"
+                     className="flex-1 overflow-y-auto p-4 md:p-10 space-y-4 md:space-y-6 scrollbar-hide"
                    >
                       {chats[activeChat]?.messages?.map((msg: any) => (
                          <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[70%] space-y-2`}>
-                               <div className={`p-5 rounded-3xl text-sm leading-relaxed ${
+                            <div className={`${msg.sender === 'admin' ? 'max-w-[90%] md:max-w-[70%]' : 'max-w-[90%] md:max-w-[70%]'} space-y-1 md:space-y-2`}>
+                               <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl text-sm leading-relaxed ${
                                  msg.sender === 'admin'
                                    ? 'bg-secondary text-black font-bold rounded-tr-none'
                                    : 'glass border border-white/10 text-white rounded-tl-none'
                                }`}>
                                   {msg.image && (
-                                    <div className="mb-3 rounded-2xl overflow-hidden border border-white/10 bg-black/40">
-                                       <img src={msg.image} alt="Attachment" className="max-w-full h-auto object-contain max-h-[400px]" />
+                                    <div className="mb-3 rounded-xl md:rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                                       <img src={msg.image} alt="Attachment" className="max-w-full h-auto object-contain max-h-[300px] md:max-h-[400px]" />
                                     </div>
                                   )}
                                   {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
                                </div>
                                <div className={`text-[8px] font-black uppercase tracking-widest opacity-30 ${msg.sender === 'admin' ? 'text-right' : 'text-left'}`}>
                                   {msg.time} — {msg.sender === 'admin' ? 'COMMAND' : 'OPERATOR'}
-                               </div>
+                                </div>
                             </div>
                          </div>
                       ))}
                    </div>
 
                    {/* Input Area */}
-                   <div className="p-8 border-t border-white/5 bg-white/2">
-                      <form onSubmit={handleReply} className="flex gap-4">
+                   <div className="p-4 md:p-8 border-t border-white/5 bg-white/2">
+                      <form onSubmit={handleReply} className="flex gap-2 md:gap-4">
                          <Input 
                            value={reply}
                            onChange={(e) => setReply(e.target.value)}
                            placeholder="შეიყვანეთ პასუხი..."
-                           className="h-16 bg-black/40 border-white/10 rounded-2xl px-6 text-white focus:border-secondary/50 transition-all font-bold placeholder:italic"
+                           className="h-12 md:h-16 bg-black/40 border-white/10 rounded-xl md:rounded-2xl px-4 md:px-6 text-white focus:border-secondary/50 transition-all font-bold placeholder:italic text-sm md:text-base"
                          />
-                         <Button type="submit" className="h-16 px-8 rounded-2xl bg-secondary text-black hover:bg-secondary/80 font-black uppercase tracking-widest transition-transform active:scale-95">
-                            <Send className="w-5 h-5" />
+                         <Button type="submit" className="h-12 md:h-16 px-4 md:px-8 rounded-xl md:rounded-2xl bg-secondary text-black hover:bg-secondary/80 font-black uppercase tracking-widest transition-transform active:scale-95 shrink-0">
+                            <Send className="w-4 h-4 md:w-5 md:h-5" />
                          </Button>
                       </form>
                    </div>
                 </div>
              ) : (
                 <div className="flex-1 flex flex-col items-center justify-center opacity-20 select-none">
-                   <MessageSquare className="w-32 h-32 mb-8" />
-                   <div className="text-2xl font-black italic uppercase tracking-[0.5em]">Select Operative</div>
+                   <MessageSquare className="w-24 md:w-32 h-24 md:h-32 mb-4 md:mb-8" />
+                   <div className="text-xl md:text-2xl font-black italic uppercase tracking-[0.3em] md:tracking-[0.5em]">Select Operative</div>
                 </div>
              )}
           </div>
