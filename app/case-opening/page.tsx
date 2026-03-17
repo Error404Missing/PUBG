@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { createBrowserClient } from "@/lib/supabase/client"
-import { Gift, Crown, Star, Sparkles, Clock, X } from "lucide-react"
+import { Gift, Crown, Star, Sparkles, Clock, X, Package, Box, Wallet } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 type Reward = {
   id: string
@@ -15,73 +15,101 @@ type Reward = {
   color: string
   bgColor: string
   borderColor: string
-  icon: typeof Crown
+  icon: any
   days: number
   probability: number
 }
 
-const rewards: Reward[] = [
+type CaseConfig = {
+  id: string
+  name: string
+  price: number
+  description: string
+  themeColor: string
+  icon: any
+  rewards: Reward[]
+}
+
+const casesData: CaseConfig[] = [
   {
-    id: "nothing",
-    name: "ცარიელი",
-    description: "იღბალი შემდეგ ჯერზე!",
-    color: "text-gray-400",
-    bgColor: "bg-gray-800/50",
-    borderColor: "border-gray-600",
-    icon: X,
-    days: 0,
-    probability: 80, // High chance of nothing
+    id: "free",
+    name: "Mystery Case",
+    price: 0,
+    themeColor: "primary",
+    description: "უფასო 2 კვირაში ერთხელ",
+    icon: Gift,
+    rewards: [
+      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 70 },
+      { id: "vip_1_day", name: "1 დღიანი VIP", description: "VIP სტატუსი 24 საათით", color: "text-green-400", bgColor: "bg-green-900/30", borderColor: "border-green-500", icon: Star, days: 1, probability: 20 },
+      { id: "vip_3_days", name: "3 დღიანი VIP", description: "VIP სტატუსი 3 დღით", color: "text-blue-400", bgColor: "bg-blue-900/30", borderColor: "border-blue-500", icon: Sparkles, days: 3, probability: 8 },
+      { id: "vip_1_week", name: "1 კვირიანი VIP", description: "VIP სტატუსი 7 დღით", color: "text-yellow-400", bgColor: "bg-yellow-900/30", borderColor: "border-yellow-500", icon: Crown, days: 7, probability: 2 },
+    ]
   },
   {
-    id: "vip_1_day",
-    name: "1 დღიანი VIP",
-    description: "VIP სტატუსი 24 საათით",
-    color: "text-green-400",
-    bgColor: "bg-green-900/30",
-    borderColor: "border-green-500",
-    icon: Star,
-    days: 1,
-    probability: 15, // Medium chance
+    id: "starter",
+    name: "Starter Case",
+    price: 3,
+    themeColor: "emerald-400", 
+    description: "3 ₾ • უკეთესი შანსები",
+    icon: Box,
+    rewards: [
+      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 40 },
+      { id: "vip_3_days", name: "3 დღიანი VIP", description: "VIP სტატუსი 3 დღით", color: "text-blue-400", bgColor: "bg-blue-900/30", borderColor: "border-blue-500", icon: Sparkles, days: 3, probability: 40 },
+      { id: "vip_1_week", name: "1 კვირიანი VIP", description: "VIP სტატუსი 7 დღით", color: "text-yellow-400", bgColor: "bg-yellow-900/30", borderColor: "border-yellow-500", icon: Crown, days: 7, probability: 15 },
+      { id: "vip_2_weeks", name: "2 კვირიანი VIP", description: "VIP სტატუსი 14 დღით", color: "text-orange-400", bgColor: "bg-orange-900/30", borderColor: "border-orange-500", icon: Crown, days: 14, probability: 5 },
+    ]
   },
   {
-    id: "vip_3_days",
-    name: "3 დღიანი VIP",
-    description: "VIP სტატუსი 3 დღით",
-    color: "text-blue-400",
-    bgColor: "bg-blue-900/30",
-    borderColor: "border-blue-500",
-    icon: Sparkles,
-    days: 3,
-    probability: 4, // Low chance
+    id: "pro",
+    name: "Pro Case",
+    price: 5,
+    themeColor: "purple-400", 
+    description: "5 ₾ • მაღალი მოგება",
+    icon: Package,
+    rewards: [
+      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 20 },
+      { id: "vip_1_week", name: "1 კვირიანი VIP", description: "VIP სტატუსი 7 დღით", color: "text-yellow-400", bgColor: "bg-yellow-900/30", borderColor: "border-yellow-500", icon: Crown, days: 7, probability: 50 },
+      { id: "vip_2_weeks", name: "2 კვირიანი VIP", description: "VIP სტატუსი 14 დღით", color: "text-orange-400", bgColor: "bg-orange-900/30", borderColor: "border-orange-500", icon: Crown, days: 14, probability: 20 },
+      { id: "vip_1_month", name: "1 თვიანი VIP", description: "VIP სტატუსი 30 დღით", color: "text-red-400", bgColor: "bg-red-900/30", borderColor: "border-red-500", icon: Crown, days: 30, probability: 10 },
+    ]
   },
   {
-    id: "vip_1_week",
-    name: "1 კვირიანი VIP",
-    description: "VIP სტატუსი 7 დღით",
-    color: "text-yellow-400",
-    bgColor: "bg-yellow-900/30",
-    borderColor: "border-yellow-500",
+    id: "elite",
+    name: "Elite Case",
+    price: 7,
+    themeColor: "amber-400", 
+    description: "7 ₾ • ლეგენდარული",
     icon: Crown,
-    days: 7,
-    probability: 1, // Very low chance
-  },
+    rewards: [
+      { id: "nothing", name: "ცარიელი", description: "იღბალი შემდეგ ჯერზე!", color: "text-gray-400", bgColor: "bg-gray-800/50", borderColor: "border-gray-600", icon: X, days: 0, probability: 5 },
+      { id: "vip_2_weeks", name: "2 კვირიანი VIP", description: "VIP სტატუსი 14 დღით", color: "text-orange-400", bgColor: "bg-orange-900/30", borderColor: "border-orange-500", icon: Crown, days: 14, probability: 50 },
+      { id: "vip_1_month", name: "1 თვიანი VIP", description: "VIP სტატუსი 30 დღით", color: "text-red-400", bgColor: "bg-red-900/30", borderColor: "border-red-500", icon: Crown, days: 30, probability: 35 },
+      { id: "vip_1_year", name: "1 წლიანი VIP", description: "VIP სტატუსი 365 დღით", color: "text-rose-400", bgColor: "bg-rose-900/30", borderColor: "border-rose-500", icon: Crown, days: 365, probability: 10 },
+    ]
+  }
 ]
 
 export default function CaseOpeningPage() {
   const [user, setUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [canOpen, setCanOpen] = useState(false)
+  const [canOpenFreeCase, setCanOpenFreeCase] = useState(false)
   const [nextOpenTime, setNextOpenTime] = useState<Date | null>(null)
+  
+  const [selectedCaseId, setSelectedCaseId] = useState<string>("free")
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinningIndex, setSpinningIndex] = useState(0)
   const [wonReward, setWonReward] = useState<Reward | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [vipStatus, setVipStatus] = useState<{ vip_until: string } | null>(null)
   const [countdown, setCountdown] = useState("")
+  const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
 
   const supabase = createBrowserClient()
 
-  const checkCanOpen = useCallback(async (userId: string) => {
+  const selectedCase = casesData.find(c => c.id === selectedCaseId) || casesData[0]
+
+  const checkCanOpenFreeCase = useCallback(async (userId: string) => {
     try {
       const { data: lastOpen, error } = await supabase
         .from("case_openings")
@@ -92,13 +120,13 @@ export default function CaseOpeningPage() {
         .single()
 
       if (error && error.code === 'PGRST116') {
-        setCanOpen(true)
+        setCanOpenFreeCase(true)
         setNextOpenTime(null)
         return
       }
 
       if (!lastOpen) {
-        setCanOpen(true)
+        setCanOpenFreeCase(true)
         setNextOpenTime(null)
         return
       }
@@ -108,14 +136,14 @@ export default function CaseOpeningPage() {
       const now = new Date()
 
       if (now >= twoWeeksLater) {
-        setCanOpen(true)
+        setCanOpenFreeCase(true)
         setNextOpenTime(null)
       } else {
-        setCanOpen(false)
+        setCanOpenFreeCase(false)
         setNextOpenTime(twoWeeksLater)
       }
     } catch (err) {
-      setCanOpen(true)
+      setCanOpenFreeCase(true)
       setNextOpenTime(null)
     }
   }, [supabase])
@@ -130,6 +158,11 @@ export default function CaseOpeningPage() {
     }
   }, [supabase])
 
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single()
+    setUserProfile(data)
+  }, [supabase])
+
   useEffect(() => {
     async function checkUser() {
       const {
@@ -138,28 +171,16 @@ export default function CaseOpeningPage() {
       setUser(user)
 
       if (user) {
-        await checkCanOpen(user.id)
+        await checkCanOpenFreeCase(user.id)
         await fetchVipStatus(user.id)
+        await fetchUserProfile(user.id)
       }
 
       setLoading(false)
     }
 
     checkUser()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await checkCanOpen(session.user.id)
-        await fetchVipStatus(session.user.id)
-      }
-    })
-
-    return () => {
-      subscription?.unsubscribe()
-    }
-  }, [supabase, checkCanOpen, fetchVipStatus])
+  }, [supabase, checkCanOpenFreeCase, fetchVipStatus, fetchUserProfile])
 
   useEffect(() => {
     if (!nextOpenTime) return
@@ -169,7 +190,7 @@ export default function CaseOpeningPage() {
       const diff = nextOpenTime.getTime() - now.getTime()
 
       if (diff <= 0) {
-        setCanOpen(true)
+        setCanOpenFreeCase(true)
         setNextOpenTime(null)
         setCountdown("")
         return
@@ -186,31 +207,61 @@ export default function CaseOpeningPage() {
     return () => clearInterval(interval)
   }, [nextOpenTime])
 
-  const getRandomReward = (): Reward => {
+  const getRandomReward = (rewardsPool: Reward[]): Reward => {
     const random = Math.random() * 100
     let cumulative = 0
 
-    for (const reward of rewards) {
+    for (const reward of rewardsPool) {
       cumulative += reward.probability
       if (random <= cumulative) {
         return reward
       }
     }
 
-    return rewards[0]
+    return rewardsPool[0]
   }
 
   const handleOpenCase = async () => {
-    if (!user || isSpinning || !canOpen) return
+    if (!user || isSpinning) return
+
+    // Case validation
+    if (selectedCase.price > 0) {
+       if (!userProfile || (userProfile.balance || 0) < selectedCase.price) {
+          setToast({ message: "არასაკმარისი ბალანსი!", type: 'error' })
+          return
+       }
+    } else {
+       if (!canOpenFreeCase) {
+          setToast({ message: "უფასო ქეისი ჯერ არ არის ხელმისაწვდომი", type: 'error' })
+          return
+       }
+    }
 
     setIsSpinning(true)
     setShowResult(false)
     setWonReward(null)
 
-    const finalReward = getRandomReward()
+    const finalReward = getRandomReward(selectedCase.rewards)
 
     try {
-      // 1. Save the opening record immediately to start the cooldown
+      // 1. Handle Balance Deduction for paid
+      if (selectedCase.price > 0) {
+        const { error: deductError } = await supabase.rpc('deduct_balance', {
+          user_id: user.id,
+          amount: selectedCase.price
+        })
+
+        if (deductError) {
+          setToast({ message: "ბალანსის ჩამოჭრა ვერ მოხერხდა", type: 'error' })
+          setIsSpinning(false)
+          return
+        }
+        
+        // optimistic update
+        setUserProfile((prev: any) => ({ ...prev, balance: (prev.balance || 0) - selectedCase.price }))
+      }
+
+      // 2. Save the opening record
       const { error: saveError } = await supabase.from("case_openings").insert({
         user_id: user.id,
         reward: finalReward.id,
@@ -219,20 +270,22 @@ export default function CaseOpeningPage() {
       if (saveError) {
         console.error("Error saving case opening:", saveError)
         setIsSpinning(false)
-        alert("შეცდომაა: ვერ მოხერხდა Case-ის შენახვა. სცადეთ მოგვიანებით.")
+        setToast({ message: "შეცდომა ქეისის შენახვისას", type: 'error' })
         return
       }
 
-      // 2. Set cooldown on frontend immediately
-      setCanOpen(false)
-      const nextDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-      setNextOpenTime(nextDate)
+      // 3. Set cooldown on frontend immediately for free case
+      if (selectedCase.price === 0) {
+        setCanOpenFreeCase(false)
+        const nextDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+        setNextOpenTime(nextDate)
+      }
 
-      // 3. Start the animation
+      // 4. Start the animation
       let spinCount = 0
       const maxSpins = 30
       const spinInterval = setInterval(() => {
-        setSpinningIndex((prev) => (prev + 1) % rewards.length)
+        setSpinningIndex((prev) => (prev + 1) % selectedCase.rewards.length)
         spinCount++
 
         if (spinCount >= maxSpins) {
@@ -240,17 +293,17 @@ export default function CaseOpeningPage() {
 
           let slowCount = 0
           const slowInterval = setInterval(() => {
-            setSpinningIndex((prev) => (prev + 1) % rewards.length)
+            setSpinningIndex((prev) => (prev + 1) % selectedCase.rewards.length)
             slowCount++
 
             if (slowCount >= 10) {
               clearInterval(slowInterval)
-              setSpinningIndex(rewards.findIndex((r) => r.id === finalReward.id))
+              setSpinningIndex(selectedCase.rewards.findIndex((r) => r.id === finalReward.id))
               setWonReward(finalReward)
               setShowResult(true)
               setIsSpinning(false)
               
-              // 4. Finally update VIP status if applicable
+              // 5. Finally update VIP status if applicable
               if (finalReward.days > 0) {
                 updateVipStatus(finalReward)
               }
@@ -311,7 +364,7 @@ export default function CaseOpeningPage() {
         <div className="glass-card p-12 max-w-md w-full text-center animate-reveal">
             <Gift className="w-20 h-20 text-primary mx-auto mb-8 animate-float-subtle" />
             <h2 className="text-3xl font-black text-white italic mb-6 uppercase tracking-tighter">Case Opening</h2>
-            <p className="text-muted-foreground font-light mb-10 text-lg">გთხოვთ გაიაროთ ავტორიზაცია Case-ის გასახსნელად</p>
+            <p className="text-muted-foreground font-light mb-10 text-lg">გთხოვთ გაიაროთ ავტორიზაცია ქეისების გასახსნელად</p>
             <Button asChild variant="premium" className="w-full py-6 text-lg">
               <Link href="/auth/login">შესვლა</Link>
             </Button>
@@ -321,48 +374,95 @@ export default function CaseOpeningPage() {
   }
 
   return (
-    <div className="min-h-screen py-32 px-4 overflow-hidden">
+    <div className="min-h-screen py-32 px-4 overflow-hidden relative">
+      {toast && <LuxuryToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      
       {/* Background Decorative Circles */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 bg-mesh opacity-20" />
       
-      <div className="container mx-auto max-w-5xl">
-        <div className="text-center mb-20 animate-reveal">
-           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-8">
-              <Sparkles className="w-3 h-3" /> Exclusive Rewards
-           </div>
-          <h1 className="text-6xl md:text-8xl font-black mb-6 text-white tracking-tighter italic">
-            MYSTERY <span className="text-primary tracking-normal">CASE</span>
-          </h1>
-          <p className="text-xl text-muted-foreground font-light max-w-3xl mx-auto">
-            გახსენი Case და მოიგე <span className="text-secondary font-bold">VIP სტატუსი</span> სრულიად უფასოდ!
-          </p>
+      <div className="container mx-auto max-w-6xl">
+        <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-6 animate-reveal">
+          <div>
+            <h1 className="text-5xl md:text-7xl font-black mb-2 text-white tracking-tighter italic uppercase">
+              Mystery <span className="text-primary tracking-normal">Cases</span>
+            </h1>
+            <p className="text-muted-foreground font-bold tracking-widest uppercase text-xs italic">გახსენი ქეისები და მიიღე VIP სტატუსები</p>
+          </div>
+          
+          {userProfile && (
+             <div className="glass-card px-8 py-4 flex items-center gap-4 border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.1)] group hover:scale-105 transition-all">
+                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-400 group-hover:bg-green-500/20 transition-colors">
+                   <Wallet className="w-6 h-6" />
+                </div>
+                <div>
+                   <div className="text-[10px] font-black uppercase text-green-400/50 tracking-widest italic">ბალანსი</div>
+                   <div className="text-2xl font-black text-white italic">{userProfile.balance || 0} ₾</div>
+                </div>
+             </div>
+          )}
+        </div>
+
+        {/* Case Selector Tabs */}
+        <div className="flex flex-wrap gap-4 mb-16 justify-center animate-reveal" style={{ animationDelay: '0s' }}>
+           {casesData.map(c => {
+             const Icon = c.icon
+             const isSelected = selectedCaseId === c.id
+             
+             return (
+               <button
+                  key={c.id}
+                  onClick={() => {
+                     setSelectedCaseId(c.id)
+                     setShowResult(false)
+                     setWonReward(null)
+                     setIsSpinning(false)
+                     setSpinningIndex(0)
+                  }}
+                  className={`relative p-5 rounded-3xl border-2 transition-all duration-300 flex flex-col items-center gap-2 group overflow-hidden ${
+                     isSelected 
+                     ? `border-${c.themeColor} bg-${c.themeColor}/10 scale-105 shadow-[0_0_30px_rgba(var(--${c.themeColor}-rgb),0.2)]` 
+                     : `border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10`
+                  }`}
+               >
+                  <div className={`p-3 rounded-2xl bg-white/5 border border-white/5 group-hover:scale-110 transition-transform ${isSelected ? `text-${c.themeColor}` : 'text-muted-foreground'}`}>
+                     <Icon className="w-8 h-8" />
+                  </div>
+                  <div className="text-center mt-2">
+                     <h3 className={`font-black uppercase tracking-tighter italic text-lg ${isSelected ? `text-${c.themeColor}` : 'text-white'}`}>{c.name}</h3>
+                     <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'text-white/70' : 'text-white/40'}`}>
+                        {c.price === 0 ? 'FREE' : `${c.price} GEL`}
+                     </span>
+                  </div>
+               </button>
+             )
+           })}
         </div>
 
         <div className="relative mb-24 lg:mb-32">
           <div className="max-w-xl mx-auto">
              <div className="relative group">
-                <div className={`absolute -inset-1 bg-gradient-to-r from-primary via-secondary to-primary rounded-[3rem] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000 ${isSpinning ? 'animate-pulse' : ''}`} />
+                <div className={`absolute -inset-1 bg-gradient-to-r from-primary via-${selectedCase.themeColor} to-primary rounded-[3rem] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000 ${isSpinning ? 'animate-pulse' : ''}`} />
                 
                 <div className={`glass-card p-4 relative overflow-hidden transition-all duration-700 ${
-                  showResult && wonReward ? 'ring-2 ring-primary shadow-[0_0_50px_rgba(255,170,0,0.2)]' : ''
+                  showResult && wonReward ? `ring-2 ring-${selectedCase.themeColor} shadow-[0_0_50px_rgba(var(--${selectedCase.themeColor}-rgb),0.3)]` : ''
                 }`}>
                    <div className="aspect-square flex items-center justify-center p-8 lg:p-16">
                       {isSpinning && !showResult ? (
                          <div className="text-center animate-bounce">
-                             <div className={`w-36 h-36 mx-auto mb-8 rounded-[2.5rem] glass border border-white/10 flex items-center justify-center shadow-2xl transition-all duration-300`}>
+                             <div className={`w-36 h-36 mx-auto mb-8 rounded-[2.5rem] glass border border-white/10 flex items-center justify-center shadow-2xl transition-all duration-300 bg-${selectedCase.themeColor}/5`}>
                                 {(() => {
-                                  const Icon = rewards[spinningIndex].icon
-                                  return <Icon className={`w-16 h-16 ${rewards[spinningIndex].color}`} />
+                                  const Icon = selectedCase.rewards[spinningIndex].icon
+                                  return <Icon className={`w-16 h-16 ${selectedCase.rewards[spinningIndex].color}`} />
                                 })()}
                              </div>
-                             <p className={`text-3xl font-black uppercase italic tracking-widest ${rewards[spinningIndex].color}`}>
-                                {rewards[spinningIndex].name}
+                             <p className={`text-3xl font-black uppercase italic tracking-widest ${selectedCase.rewards[spinningIndex].color}`}>
+                                {selectedCase.rewards[spinningIndex].name}
                              </p>
                          </div>
                       ) : showResult && wonReward ? (
                          <div className="text-center animate-reveal">
-                             <div className="absolute inset-0 bg-primary/5 animate-pulse" />
-                             <div className={`w-44 h-44 mx-auto mb-10 rounded-[3rem] glass border-4 ${wonReward.borderColor} flex items-center justify-center shadow-[0_0_80px_rgba(255,170,0,0.3)] animate-float-subtle`}>
+                             <div className={`absolute inset-0 bg-${selectedCase.themeColor}/5 animate-pulse`} />
+                             <div className={`w-44 h-44 mx-auto mb-10 rounded-[3rem] glass border-4 ${wonReward.borderColor} flex items-center justify-center shadow-[0_0_80px_rgba(255,255,255,0.1)] animate-float-subtle`}>
                                 {(() => {
                                   const Icon = wonReward.icon
                                   return <Icon className={`w-24 h-24 ${wonReward.color}`} />
@@ -373,13 +473,16 @@ export default function CaseOpeningPage() {
                          </div>
                       ) : (
                          <div className="text-center group">
-                            <div className="w-52 h-52 mx-auto mb-12 rounded-[3.5rem] glass border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-700 group-hover:border-primary/50 relative">
-                               <Gift className="w-24 h-24 text-primary animate-float-subtle" />
+                            <div className={`w-52 h-52 mx-auto mb-12 rounded-[3.5rem] glass border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-700 group-hover:border-${selectedCase.themeColor}/50 relative`}>
+                               {(() => {
+                                  const Icon = selectedCase.icon
+                                  return <Icon className={`w-24 h-24 text-${selectedCase.themeColor} animate-float-subtle`} />
+                               })()}
                                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 rounded-full blur-3xl transition-opacity" />
                             </div>
-                            <div className="space-y-2">
-                               <p className="text-3xl font-black text-white italic tracking-tighter uppercase">Mystery Case</p>
-                               <p className="text-muted-foreground text-sm font-light tracking-[0.4em] uppercase">Ready to Unveil</p>
+                            <div className="space-y-2 relative z-10">
+                               <p className={`text-3xl font-black italic tracking-tighter uppercase text-${selectedCase.themeColor}`}>{selectedCase.name}</p>
+                               <p className="text-muted-foreground text-sm font-bold tracking-[0.4em] uppercase">{selectedCase.description}</p>
                             </div>
                          </div>
                       )}
@@ -388,54 +491,62 @@ export default function CaseOpeningPage() {
              </div>
           </div>
 
-          <div className="text-center mt-12">
-             {canOpen ? (
-                <Button
-                  onClick={handleOpenCase}
-                  disabled={isSpinning}
-                  variant="premium"
-                  className="h-20 px-16 text-2xl group relative overflow-hidden"
-                >
-                  {isSpinning ? 'იხსნება...' : 'გახსენი Case'}
-                  <div className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[100%] transition-all duration-1000" />
-                </Button>
-             ) : (
-                <div className="glass-card p-8 inline-block">
+          <div className="text-center mt-12 flex flex-col items-center">
+             {selectedCase.price === 0 && !canOpenFreeCase ? (
+                <div className="glass-card p-8 inline-block animate-reveal">
                    <div className="flex flex-col md:flex-row items-center gap-6">
                       <div className="w-12 h-12 rounded-2xl glass border border-white/10 flex items-center justify-center">
                          <Clock className="w-6 h-6 text-primary" />
                       </div>
                       <div className="text-left">
-                         <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">Next Opening Hand In</div>
+                         <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1.5">შემდეგი გახსნა</div>
                          <div className="text-3xl font-black text-white italic tracking-tight">{countdown}</div>
                       </div>
                    </div>
+                </div>
+             ) : (
+                <Button
+                  onClick={handleOpenCase}
+                  disabled={isSpinning || (selectedCase.price > 0 && (!userProfile || (userProfile?.balance || 0) < selectedCase.price))}
+                  className={`h-20 px-16 text-2xl group relative overflow-hidden font-black italic uppercase tracking-widest bg-${selectedCase.themeColor} hover:bg-${selectedCase.themeColor}/80 text-white shadow-[0_0_40px_rgba(var(--${selectedCase.themeColor}-rgb),0.4)] ${selectedCase.themeColor === 'amber-400' ? 'text-black hover:text-black' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isSpinning ? 'იხსნება...' : `გახსენი (${selectedCase.price === 0 ? 'FREE' : `${selectedCase.price} ₾`})`}
+                  <div className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:left-[100%] transition-all duration-1000" />
+                </Button>
+             )}
+
+             {selectedCase.price > 0 && userProfile && (userProfile?.balance || 0) < selectedCase.price && !isSpinning && (
+                <div className="mt-6 text-red-400 font-bold uppercase tracking-widest text-xs italic animate-pulse">
+                   არასაკმარისი ბალანსი. (მიმდინარე: {userProfile.balance || 0} ₾)
                 </div>
              )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-24">
-            {rewards.map((reward, idx) => (
-              <div
-                key={reward.id}
-                className={`glass-card p-8 text-center group animate-reveal hover:scale-105 transition-all`}
-                style={{ animationDelay: `${idx * 0.1}s` }}
-              >
-                <div className={`w-16 h-16 mx-auto mb-6 rounded-2xl glass border border-white/5 flex items-center justify-center group-hover:border-primary/50 transition-colors`}>
-                   {(() => {
-                      const Icon = reward.icon
-                      return <Icon className={`w-8 h-8 ${reward.color}`} />
-                   })()}
-                </div>
-                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">{reward.probability}% Chance</div>
-                <div className={`text-lg font-black italic tracking-tighter ${reward.color}`}>{reward.name}</div>
-              </div>
-            ))}
+        <div className="mt-20">
+           <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-8 text-center">ალბათობები / Rewards</h3>
+           <div className={`grid grid-cols-2 md:grid-cols-4 gap-6`}>
+               {selectedCase.rewards.map((reward, idx) => (
+                 <div
+                   key={reward.id}
+                   className={`glass-card p-8 text-center group animate-reveal hover:scale-105 transition-all`}
+                   style={{ animationDelay: `${idx * 0.1}s` }}
+                 >
+                   <div className={`w-16 h-16 mx-auto mb-6 rounded-2xl glass border border-white/5 flex items-center justify-center group-hover:border-${selectedCase.themeColor}/50 transition-colors`}>
+                      {(() => {
+                         const Icon = reward.icon
+                         return <Icon className={`w-8 h-8 ${reward.color}`} />
+                      })()}
+                   </div>
+                   <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">{reward.probability}% Chance</div>
+                   <div className={`text-lg font-black italic tracking-tighter ${reward.color}`}>{reward.name}</div>
+                 </div>
+               ))}
+           </div>
         </div>
 
         {vipStatus && (
-           <div className="mb-12 animate-reveal">
+           <div className="mt-24 mb-12 animate-reveal">
               <div className="glass p-8 rounded-3xl border border-secondary/30 bg-secondary/5 flex items-center gap-6 justify-between flex-wrap">
                  <div className="flex items-center gap-6">
                     <div className="w-16 h-16 rounded-2xl glass border border-secondary/20 flex items-center justify-center shadow-[0_0_30px_rgba(255,200,0,0.1)]">
@@ -450,36 +561,6 @@ export default function CaseOpeningPage() {
               </div>
            </div>
         )}
-
-        <div className="grid lg:grid-cols-2 gap-12 animate-reveal">
-           <div className="glass-card p-12">
-              <h3 className="text-3xl font-black text-white italic tracking-tighter mb-8 uppercase">Rules & Guidelines</h3>
-              <ul className="space-y-6">
-                {[
-                  "Case-ის გახსნა შესაძლებელია 2 კვირაში ერთხელ",
-                  "მოგებული VIP სტატუსი ავტომატურად აქტიურდება",
-                  "თუ უკვე გაქვთ VIP, ახალი მოგება დაემატება არსებულ დროს",
-                  "VIP სტატუსი გაძლევთ პრიორიტეტულ მონაწილეობას სკრიმებში"
-                ].map((rule, i) => (
-                   <li key={i} className="flex items-center gap-4 text-muted-foreground">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      <span className="text-lg font-light">{rule}</span>
-                   </li>
-                ))}
-              </ul>
-           </div>
-           
-           <div className="glass-card p-12 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 rounded-full glass border border-white/5 flex items-center justify-center mb-6">
-                 <Sparkles className="w-10 h-10 text-primary" />
-              </div>
-              <h3 className="text-3xl font-black text-white italic tracking-tighter mb-4">WANT MORE?</h3>
-              <p className="text-muted-foreground font-light mb-8 max-w-sm">Join our elite community for higher chances and exclusive rewards.</p>
-              <Button asChild variant="outline" className="rounded-2xl px-12 h-14 border-white/10 hover:bg-white/5 font-bold uppercase tracking-widest text-[10px]">
-                 <Link href="/help">Learn More</Link>
-              </Button>
-           </div>
-        </div>
       </div>
     </div>
   )

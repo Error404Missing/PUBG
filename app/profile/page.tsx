@@ -183,6 +183,16 @@ export default function ProfilePage() {
          setToast({ message: errorMsg, type: 'error' })
          setLoading(false)
       } else {
+         // Revoke manager role if they had it
+         const { data: { user } } = await supabase.auth.getUser()
+         if (user) {
+            await supabase
+               .from("profiles")
+               .update({ role: "guest" })
+               .eq("id", user.id)
+               .eq("role", "manager")
+         }
+         
          setToast({ message: "გუნდი წარმატებით წაიშალა", type: 'success' })
          setUserTeam(null)
          setLoading(false)
