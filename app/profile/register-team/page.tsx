@@ -167,7 +167,7 @@ function RegisterTeamContent() {
         type: "info",
       })
 
-      router.push(scheduleId ? "/schedule" : "/profile")
+      router.push("/profile")
     } catch (error: any) {
       setError(error instanceof Error ? error.message : "შეცდომა მოხდა")
     } finally {
