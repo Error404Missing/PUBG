@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CheckCircle2, Zap, ArrowRight, AlertCircle } from "lucide-react"
+import { CheckCircle2, Zap, ArrowRight, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 interface ScheduleClientProps {
   scheduleId: string
@@ -16,7 +17,7 @@ interface ScheduleClientProps {
 export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = true }: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
 
   const handleRequestGame = async () => {
     if (!user) {
@@ -25,7 +26,7 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
     }
 
     if (!userTeam) {
-      window.location.href = `/profile/register-team?schedule_id=${scheduleId}`
+      setShowTeamModal(true)
       return
     }
 
@@ -43,30 +44,19 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
       if (!res.ok) {
         if (res.status === 409) {
           // Already requested
-          setShowSuccess(true)
-          setTimeout(() => setShowSuccess(false), 5000)
+          setToast({ message: "მოთხოვნა უკვე გამოგზავნილია", type: 'info' })
           return
         }
         throw new Error(data.error || "შეცდომა")
       }
 
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 5000)
+      setToast({ message: "მოთხოვნა წარმატებით გაიგზავნა ადმინისტრაციისთვის", type: 'success' })
     } catch (error: any) {
       console.error("[v0] Error requesting game:", error)
-      alert("შეცდომა: " + (error.message || "მოთხოვნა ვერ გაიგზავნა"))
+      setToast({ message: "შეცდომა: " + (error.message || "მოთხოვნა ვერ გაიგზავნა"), type: 'error' })
     } finally {
       setIsLoading(false)
     }
-  }
-
-  if (showSuccess) {
-    return (
-      <div className="flex items-center gap-2 bg-green-500/20 px-4 py-2 rounded border border-green-500/30 text-green-400 text-sm">
-        <CheckCircle2 className="w-4 h-4" />
-        მოთხოვნა გაიგზავნა ადმინისტრაციისთვის
-      </div>
-    )
   }
 
   return (
@@ -157,6 +147,13 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
           </div>
         </DialogContent>
       </Dialog>
+      {toast && (
+        <LuxuryToast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
   )
 }

@@ -1,12 +1,20 @@
--- Support Chat Messages Table
 CREATE TABLE IF NOT EXISTS public.support_messages (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
     sender_type TEXT CHECK (sender_type IN ('user', 'admin')) NOT NULL,
     sender_id UUID REFERENCES auth.users(id),
-    created_at TIMESTAMPTZ DEFAULT now()
+    image_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    -- Add explicit profile FK for easier joining
+    CONSTRAINT fk_user_profile FOREIGN KEY (user_id) REFERENCES public.profiles(id),
+    CONSTRAINT fk_sender_profile FOREIGN KEY (sender_id) REFERENCES public.profiles(id)
 );
+
+-- Indexing for performance
+CREATE INDEX IF NOT EXISTS idx_support_messages_user_id ON public.support_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_support_messages_sender_id ON public.support_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_support_messages_created_at ON public.support_messages(created_at);
 
 -- Enable RLS
 ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;

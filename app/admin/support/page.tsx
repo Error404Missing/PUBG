@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 export default function AdminSupportPage() {
   const router = useRouter()
@@ -22,6 +23,7 @@ export default function AdminSupportPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
   const [channelStatus, setChannelStatus] = useState("disconnected")
+  const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -35,20 +37,28 @@ export default function AdminSupportPage() {
       }
       setUser(authUser)
       
-      const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", authUser.id).single()
-      if (!profile?.is_admin) {
+      const { data: profile } = await supabase.from("profiles").select("is_admin, role").eq("id", authUser.id).single()
+      const hasAdminAccess = profile?.is_admin || profile?.role === 'admin'
+      
+      if (!hasAdminAccess) {
+        console.log("Access denied: Not an administrator", profile)
         router.push("/")
         return
       }
 
       // Fetch ALL support messages with profile info
-      const { data: allMessages } = await supabase
+      const { data: allMessages, error: fetchError } = await supabase
         .from("support_messages")
         .select(`
           *,
           profiles:user_id (username)
         `)
         .order("created_at", { ascending: true })
+
+      if (fetchError) {
+        console.error("Error fetching support messages:", fetchError)
+        setToast({ message: "მონაცემების წამოღება ვერ მოხერხდა", type: 'error' })
+      }
 
       if (allMessages) {
         setMessages(allMessages.map(m => ({
@@ -155,8 +165,10 @@ export default function AdminSupportPage() {
         })
 
       if (error) throw error
+      setToast({ message: "შეტყობინება წარმატებით გაიგზავნა", type: 'success' })
     } catch (err) {
       console.error("Failed to send reply:", err)
+      setToast({ message: "შეტყობინების გაგზავნა ვერ მოხერხდა", type: 'error' })
     }
   }
 
@@ -315,6 +327,14 @@ export default function AdminSupportPage() {
         confirmText="გასუფთავება"
         variant="warning"
       />
+
+      {toast && (
+        <LuxuryToast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   )
 }

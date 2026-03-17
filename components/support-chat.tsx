@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { MessageCircle, X, Send, Paperclip, Loader2, ShieldCheck, Users, CornerDownRight, Smile, Trash2, Reply, Star } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
-import { toast } from "sonner"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 import Link from "next/link"
 
 export function SupportChat() {
@@ -19,6 +19,7 @@ export function SupportChat() {
   const [replyTo, setReplyTo] = useState<any>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [toastContent, setToastContent] = useState<{ message: string, type: ToastType } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
   const [currentUsername, setCurrentUsername] = useState("")
@@ -230,6 +231,7 @@ export function SupportChat() {
             await supabase.from('notifications').insert(notifications)
           }
         }
+        setToastContent({ message: "მხარდაჭერის მოთხოვნა გაიგზავნა", type: 'success' })
       } else {
         // Global Chat (Explicitly NO images)
         if (imgUrl) return 
@@ -241,15 +243,16 @@ export function SupportChat() {
             reply_to: replyTo?.id || null
           })
         if (error) throw error
+        setToastContent({ message: "შეტყობინება წარმატებით გაიგზავნა", type: 'success' })
         setReplyTo(null)
       }
     } catch (err: any) {
       console.error("Failed to send message:", err)
       const errMsg = err?.message || ""
       if (errMsg.toLowerCase().includes('rls') || errMsg.toLowerCase().includes('row-level security') || errMsg.toLowerCase().includes('permission denied')) {
-        toast.error("შეტყობინების გაგზავნა ვერ მოხერხდა (შესაძლოა ბანი გადევთ ან პროფილი არაა დასრულებული)")
+        setToastContent({ message: "შეტყობინების გაგზავნა ვერ მოხერხდა (შესაძლოა ბანი გადევთ ან პროფილი არაა დასრულებული)", type: 'error' })
       } else {
-        toast.error(`მოხდა შეცდომა: ${errMsg.substring(0, 50)}`)
+        setToastContent({ message: `მოხდა შეცდომა: ${errMsg.substring(0, 50)}`, type: 'error' })
       }
     }
   }
@@ -260,12 +263,12 @@ export function SupportChat() {
 
      // Simple file validation
      if (!file.type.startsWith('image/')) {
-        toast.error("გთხოვთ აირჩიოთ მხოლოდ ფოტო ფაილი")
+        setToastContent({ message: "გთხოვთ აირჩიოთ მხოლოდ ფოტო ფაილი", type: 'error' })
         return
      }
 
      if (file.size > 5 * 1024 * 1024) { // 5MB Limit
-        toast.error("ფოტოს ზომა არ უნდა აღემატებოდეს 5MB-ს")
+        setToastContent({ message: "ფოტოს ზომა არ უნდა აღემატებოდეს 5MB-ს", type: 'error' })
         return
      }
 
@@ -284,12 +287,12 @@ export function SupportChat() {
           .from('support')
           .getPublicUrl(filePath)
 
-        await handleSend(null as any, publicUrl)
-        toast.success("ფოტო აიტვირთა")
-     } catch (err: any) {
-        console.error("Upload error:", err)
-        toast.error("ფოტოს ატვირთვა ვერ მოხერხდა")
-     } finally {
+         await handleSend(undefined as any, publicUrl)
+         setToastContent({ message: "ფოტო აიტვირთა", type: 'success' })
+      } catch (err: any) {
+         console.error("Upload error:", err)
+         setToastContent({ message: "ფოტოს ატვირთვა ვერ მოხერხდა", type: 'error' })
+      } finally {
         setIsUploading(false)
         if (fileInputRef.current) fileInputRef.current.value = ''
      }
@@ -297,14 +300,14 @@ export function SupportChat() {
 
   const handleDeleteMessage = async (msgId: string) => {
     if (!isAdmin) return
-    try {
-      const { error } = await supabase.from('global_messages').delete().eq('id', msgId)
-      if (error) throw error
-      toast.success("შეტყობინება წაიშალა")
-    } catch (err) {
-      toast.error("წაშლა ვერ მოხერხდა")
-    }
-  }
+     try {
+       const { error } = await supabase.from('global_messages').delete().eq('id', msgId)
+       if (error) throw error
+       setToastContent({ message: "შეტყობინება წაიშალა", type: 'success' })
+     } catch (err) {
+       setToastContent({ message: "წაშლა ვერ მოხერხდა", type: 'error' })
+     }
+   }
 
   const handleReaction = async (msgId: string, emoji: string) => {
     if (!user) return
@@ -563,7 +566,15 @@ export function SupportChat() {
             {unreadCount}
           </div>
         )}
-      </button>
-    </div>
-  )
-}
+       </button>
+ 
+       {toastContent && (
+         <LuxuryToast
+           message={toastContent.message}
+           type={toastContent.type}
+           onClose={() => setToastContent(null)}
+         />
+       )}
+     </div>
+   )
+ }

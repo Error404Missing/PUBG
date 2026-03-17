@@ -172,6 +172,7 @@ export default function AdminTeamsPage() {
         })
       }
 
+      setToast({ message: "სტატუსი წარმატებით განახლდა", type: 'success' })
       fetchTeams()
     } else if (error) {
       console.error("Status update error:", error)

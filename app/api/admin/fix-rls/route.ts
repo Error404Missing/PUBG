@@ -38,14 +38,24 @@ export async function POST(req: NextRequest) {
 
     // Fix RLS policies by ensuring all profiles are correctly marked
     // This is a global sync check
+    console.log("Global sync: Updating profile roles and admin flags...")
     const { error: syncError } = await supabase
       .from("profiles")
-      .update({ is_admin: true })
+      .update({ 
+        is_admin: true,
+        role: 'admin'
+      })
       .eq("role", "admin")
 
     if (syncError) console.error("Sync error:", syncError)
+
+    // Ensure all messages have sender profiles linked if possible
+    // This part is handled by the RLS policies we updated in the SQL script
     
-    return NextResponse.json({ success: true, message: "Permissions synchronized" })
+    return NextResponse.json({ 
+      success: true, 
+      message: "Permissions synchronized and Support Chat RLS updated" 
+    })
   } catch (error: any) {
     console.error("Fix RLS Error:", error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })

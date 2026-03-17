@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState } from "react"
 import { User, ArrowRight, ShieldCheck, Mail, ChevronLeft } from "lucide-react"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleReset = async (e: React.FormEvent) => {
@@ -19,16 +20,17 @@ export default function ForgotPasswordPage() {
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
-    setMessage(null)
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
       })
       if (error) throw error
-      setMessage("პაროლის აღდგენის ბმული გამოგზავნილია თქვენს ელ-ფოსტაზე.")
+      setToast({ message: "პაროლის აღდგენის ბმული გამოგზავნილია თქვენს ელ-ფოსტაზე.", type: 'success' })
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "შეცდომა მოხდა")
+      const errMsg = error instanceof Error ? error.message : "შეცდომა მოხდა"
+      setError(errMsg)
+      setToast({ message: "შეცდომა: " + errMsg, type: 'error' })
     } finally {
       setIsLoading(false)
     }
@@ -85,30 +87,24 @@ export default function ForgotPasswordPage() {
                     </div>
                  )}
 
-                 {message && (
-                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-sm font-bold animate-reveal">
-                       {message}
-                    </div>
-                 )}
-
-                 <Button 
-                    type="submit" 
-                    variant="premium"
-                    className="w-full h-16 text-lg group" 
-                    disabled={isLoading || !!message}
-                 >
-                    {isLoading ? (
-                       <span className="flex items-center gap-3">
-                          <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                          Sending link...
-                       </span>
-                    ) : (
-                       <span className="flex items-center gap-3">
-                          Send Recovery Link
-                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                       </span>
-                    )}
-                 </Button>
+                  <Button 
+                     type="submit" 
+                     variant="premium"
+                     className="w-full h-16 text-lg group" 
+                     disabled={isLoading || !!toast}
+                  >
+                     {isLoading ? (
+                        <span className="flex items-center gap-3">
+                           <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                           Sending link...
+                        </span>
+                     ) : (
+                        <span className="flex items-center gap-3">
+                           Send Recovery Link
+                           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </span>
+                     )}
+                  </Button>
               </form>
            </div>
         </div>

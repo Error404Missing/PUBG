@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Bell, Star, ShieldOff } from "lucide-react"
-import { toast } from "sonner"
+import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 import {
   Users,
   Search,
@@ -69,6 +69,7 @@ export function AdminUsersClient({
   const [localVipMap, setLocalVipMap] = useState<Record<string, string>>(vipMap)
   const [vipDuration, setVipDuration] = useState("30")
   const [vipDialogUserId, setVipDialogUserId] = useState<string | null>(null)
+  const [toastContent, setToastContent] = useState<{ message: string, type: ToastType } | null>(null)
 
   const filteredUsers = userList.filter(
     (u) =>
@@ -103,6 +104,7 @@ export function AdminUsersClient({
       setBanReason("")
       setBanDuration("permanent")
       setBanDialogUserId(null) // close dialog
+      setToastContent({ message: "მომხმარებელი დაიბლოკა", type: 'success' })
     }
     setIsLoading(false)
   }
@@ -114,10 +116,12 @@ export function AdminUsersClient({
       .update({ is_banned: false, ban_reason: null, ban_until: null })
       .eq("id", userId)
 
-    if (!error) {
       setUserList((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_banned: false, ban_reason: null, ban_until: null } : u))
       )
+      setToastContent({ message: "მომხმარებელი განიბლოკა", type: 'success' })
+    } else {
+      setToastContent({ message: "განბლოკვა ვერ მოხერხდა", type: 'error' })
     }
     setIsLoading(false)
   }
