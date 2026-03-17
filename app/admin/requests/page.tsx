@@ -48,15 +48,22 @@ export default async function AdminRequestsPage() {
   // Get team leader usernames
   const leaderIds = [...new Set(requests?.map((r) => r.teams?.leader_id).filter(Boolean) || [])]
   let leaderMap: Record<string, string> = {}
+  let leaderVipMap: Record<string, boolean> = {}
   if (leaderIds.length > 0) {
     const { data: leaders } = await supabase
       .from("profiles")
-      .select("id, username")
+      .select(`
+        id, 
+        username,
+        user_vip_status(vip_until)
+      `)
       .in("id", leaderIds)
 
     if (leaders) {
-      for (const l of leaders) {
+      for (const l of (leaders as any[])) {
         leaderMap[l.id] = l.username || "უცნობი"
+        const vipUntil = l.user_vip_status?.[0]?.vip_until
+        leaderVipMap[l.id] = vipUntil ? new Date(vipUntil) > new Date() : false
       }
     }
   }
@@ -144,6 +151,12 @@ export default async function AdminRequestsPage() {
                                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic flex items-center gap-2">
                                     <Users className="w-3 h-3 text-primary" />
                                     ლიდერი: <span className="text-white">{req.teams?.leader_id ? leaderMap[req.teams.leader_id] || "უცნობი" : "უცნობი"}</span>
+                                    {req.teams?.leader_id && leaderVipMap[req.teams.leader_id] && (
+                                       <span className="flex items-center gap-1 text-secondary animate-pulse-soft">
+                                         <Zap className="w-2.5 h-2.5 fill-current" />
+                                         <span className="text-[8px] font-black">VIP_ACTIVE</span>
+                                       </span>
+                                     )}
                                  </div>
                               </div>
                            </div>

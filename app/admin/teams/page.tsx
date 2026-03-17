@@ -72,6 +72,7 @@ export default function AdminTeamsPage() {
   }
 
   const [isSettingUp, setIsSettingUp] = useState(false)
+  const [isCleaning, setIsCleaning] = useState(false)
 
   const handleSystemSetup = async () => {
     setIsSettingUp(true)
@@ -101,6 +102,28 @@ export default function AdminTeamsPage() {
       setToast({ message: "შეცდომა: " + (error.message || "სერვერთან კავშირის პრობლემა"), type: 'error' })
     } finally {
       setIsSettingUp(false)
+    }
+  }
+
+  const handleCleanupTeams = async () => {
+    if (!confirm("დარწმუნებული ხართ რომ გსურთ 10 საათზე ძველი გუნდების წაშლა და მენეჯერების ჩამორთმევა?")) return
+    
+    setIsCleaning(true)
+    try {
+      const res = await fetch("/api/admin/cleanup-teams", { method: 'POST' })
+      const data = await res.json()
+      
+      if (data.success) {
+        setToast({ message: `წარმატებით წაიშალა ${data.deletedCount} ძველი გუნდი.`, type: 'success' })
+        fetchTeams()
+      } else {
+        throw new Error(data.error || "Cleanup failed")
+      }
+    } catch (error: any) {
+      console.error("Cleanup Error:", error)
+      setToast({ message: "შეცდომა გასუფთავებისას: " + error.message, type: 'error' })
+    } finally {
+      setIsCleaning(false)
     }
   }
 
@@ -300,6 +323,16 @@ export default function AdminTeamsPage() {
                     className="h-7 border-blue-500/20 text-blue-400 text-[8px] font-black uppercase tracking-widest px-3 rounded-lg hover:bg-blue-500/5"
                   >
                     <RefreshCcw className="w-3 h-3 mr-1.5" /> Force Sync
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleCleanupTeams}
+                    disabled={isCleaning}
+                    className="h-7 border-rose-500/20 text-rose-400 text-[8px] font-black uppercase tracking-widest px-3 rounded-lg hover:bg-rose-500/5 ml-2"
+                  >
+                    {isCleaning ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Trash2 className="w-3 h-3 mr-1" />}
+                    ძველების წაშლა (10სთ)
                   </Button>
                 </div>
               </div>

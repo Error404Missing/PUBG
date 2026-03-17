@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X, KeyRound, Users, Shield, LogOut, Wallet } from "lucide-react"
+import { Menu, X, KeyRound, Users, Shield, LogOut, Wallet, Plus } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { NotificationBell } from "@/components/notification-bell"
@@ -177,9 +177,17 @@ export function Navigation() {
              {user ? (
                <div className="hidden lg:flex items-center gap-2">
                  {/* Balance Display */}
-                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-500/20 bg-green-500/10 text-green-400 text-xs font-black italic mr-2 cursor-default hover:bg-green-500/20 transition-colors">
-                    <Wallet className="w-3.5 h-3.5" />
-                    {balance} ₾
+                 <div className="flex items-center gap-2 mr-2">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-green-500/20 bg-green-500/10 text-green-400 text-xs font-black italic cursor-default hover:bg-green-500/20 transition-colors">
+                        <Wallet className="w-3.5 h-3.5" />
+                        {balance} ₾
+                    </div>
+                    <Link 
+                      href="/topup"
+                      className="w-8 h-8 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-400 hover:bg-green-500/30 transition-all active:scale-95"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Link>
                  </div>
 
                  <Link href="/profile" className="w-10 h-10 rounded-full border border-white/10 glass flex items-center justify-center hover:border-primary/50 transition-all group overflow-hidden">
@@ -248,9 +256,18 @@ export function Navigation() {
               )}
               {user ? (
                  <>
-                   <div className="px-4 py-3 rounded-xl glass border border-green-500/20 text-green-400 text-xs font-black uppercase tracking-widest text-center flex justify-center items-center gap-2 bg-green-500/5">
-                     <Wallet className="w-4 h-4" />
-                     ბალანსი: {balance} ₾
+                   <div className="flex items-center gap-2 mb-2">
+                      <div className="flex-1 px-4 py-3 rounded-xl glass border border-green-500/20 text-green-400 text-xs font-black uppercase tracking-widest text-center flex justify-center items-center gap-2 bg-green-500/5">
+                        <Wallet className="w-4 h-4" />
+                        ბალანსი: {balance} ₾
+                      </div>
+                      <Link
+                        href="/topup"
+                        onClick={() => setIsOpen(false)}
+                        className="w-12 h-[46px] rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-400"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Link>
                    </div>
                    <Link
                      href="/profile"

@@ -32,6 +32,7 @@ function RegisterTeamContent() {
     maps_count: "1",
   })
   const [cooldown, setCooldown] = useState<{ active: boolean, timeLeft: string | null }>({ active: false, timeLeft: null })
+  const [isRejected, setIsRejected] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -57,6 +58,13 @@ function RegisterTeamContent() {
               })
             }
           }
+        })
+
+        // Check for rejected teams
+        supabase.from("teams").select("status").eq("leader_id", user.id).eq("status", "rejected").limit(1).then(({ data }) => {
+           if (data && data.length > 0) {
+              setIsRejected(true)
+           }
         })
       }
     })
@@ -116,6 +124,12 @@ function RegisterTeamContent() {
 
     if (cooldown.active) {
       setError(`გთხოვთ დაელოდოთ. ახალი მოთხოვნის გაგზავნა შეგეძლებათ ${cooldown.timeLeft}-ში`)
+      setIsLoading(false)
+      return
+    }
+
+    if (isRejected) {
+      setError("თქვენი გუნდი უარყოფილია ადმინისტრაციის მიერ და ვეღარ გააგზავნით ახალ მოთხოვნას.")
       setIsLoading(false)
       return
     }
