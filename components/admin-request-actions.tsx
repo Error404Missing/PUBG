@@ -37,9 +37,37 @@ export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsPr
 
     // 2. If approved, also update the team status + optionally set slot
     if (status === "approved") {
+      const slot = slotNumber && !isNaN(Number(slotNumber)) ? Number(slotNumber) : null
+      
+      if (slot !== null) {
+        // Find schedule_id for this request
+        const { data: reqData } = await supabase
+          .from("scrim_requests")
+          .select("schedule_id")
+          .eq("id", requestId)
+          .single()
+
+        if (reqData?.schedule_id) {
+          // Check if slot is taken in this schedule
+          const { data: existingSlotTeam } = await supabase
+            .from("teams")
+            .select("team_name")
+            .eq("schedule_id", reqData.schedule_id)
+            .eq("slot_number", slot)
+            .neq("id", teamId)
+            .maybeSingle()
+
+          if (existingSlotTeam) {
+            setIsLoading(false)
+            alert(`სლოტი #${slot} უკვე დაკავებულია გუნდის მიერ: "${existingSlotTeam.team_name}"`)
+            return
+          }
+        }
+      }
+
       const teamUpdate: any = { status: "approved" }
-      if (slotNumber && !isNaN(Number(slotNumber))) {
-        teamUpdate.slot_number = Number(slotNumber)
+      if (slot !== null) {
+        teamUpdate.slot_number = slot
       }
       await supabase.from("teams").update(teamUpdate).eq("id", teamId)
     }

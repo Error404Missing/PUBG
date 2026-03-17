@@ -26,6 +26,7 @@ type Team = {
   slot_number: number | null
   players_count: number
   maps_count: number
+  schedule_id?: string
   leader?: {
     username: string
   }
@@ -192,12 +193,39 @@ export default function AdminTeamsPage() {
   const updateSlot = async (teamId: string) => {
     const supabase = createClient()
     const slot = slotValue ? Number.parseInt(slotValue) : null
+    
+    if (slot !== null) {
+      // Find the team we are editing to get its schedule_id
+      const currentTeam = teams.find(t => t.id === teamId)
+      if (currentTeam?.schedule_id) {
+        // Check if ANY other team in the SAME schedule already has this slot
+        const { data: existingSlotTeam } = await supabase
+          .from("teams")
+          .select("team_name")
+          .eq("schedule_id", currentTeam.schedule_id)
+          .eq("slot_number", slot)
+          .neq("id", teamId) // exclude self
+          .maybeSingle()
+
+        if (existingSlotTeam) {
+          setToast({ 
+            message: `სლოტი #${slot} უკვე დაკავებულია გუნდის მიერ: "${existingSlotTeam.team_name}"`, 
+            type: 'error' 
+          })
+          return
+        }
+      }
+    }
+
     const { error } = await supabase.from("teams").update({ slot_number: slot }).eq("id", teamId)
 
     if (!error) {
+      setToast({ message: "სლოტი წარმატებით განახლდა", type: 'success' })
       setEditingSlot(null)
       setSlotValue("")
       fetchTeams()
+    } else {
+      setToast({ message: "შეცდომა სლოტის განახლებისას: " + error.message, type: 'error' })
     }
   }
 
