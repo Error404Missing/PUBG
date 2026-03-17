@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createBrowserClient } from "@/lib/supabase/client"
-import { Users, Crown, Shield, Gamepad2, Calendar, ChevronRight, Target, Zap, ShieldCheck, ExternalLink } from "lucide-react"
+import { Users, Crown, Shield, Gamepad2, Calendar, ChevronRight, Target, Zap, ShieldCheck, ExternalLink, Activity } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
@@ -22,6 +22,7 @@ interface Team {
   team_name: string
   team_tag: string
   leader_id: string
+  status: string
   is_vip: boolean
   slot_number: number | null
   players_count: number
@@ -50,13 +51,16 @@ export default function TeamsPage() {
 
   const fetchSchedules = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from("schedules")
-      .select("*")
-      .eq("is_active", true)
-      .order("date", { ascending: true })
+    const [schedulesRes, userRes] = await Promise.all([
+      supabase
+        .from("schedules")
+        .select("*")
+        .eq("is_active", true)
+        .order("date", { ascending: true }),
+      supabase.auth.getUser()
+    ])
 
-    setSchedules(data || [])
+    setSchedules(schedulesRes.data || [])
     setLoading(false)
   }
 
@@ -64,11 +68,14 @@ export default function TeamsPage() {
     setSelectedSchedule(schedule)
     setTeamsLoading(true)
 
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Fetch both approved teams and the user's own pending/draft teams for this schedule
     const { data: teamsData } = await supabase
       .from("teams")
       .select("*, profiles!inner(id, username, avatar_url)")
       .eq("schedule_id", schedule.id)
-      .eq("status", "approved")
+      .or(`status.eq.approved${user ? `,leader_id.eq.${user.id}` : ''}`)
       .order("is_vip", { ascending: false })
       .order("created_at", { ascending: false })
 
@@ -115,6 +122,11 @@ export default function TeamsPage() {
                 <Badge variant="outline" className="border-white/10 tracking-[0.2em] font-mono text-[10px] py-1">
                   {team.team_tag}
                 </Badge>
+                {team.status !== 'approved' && (
+                  <div className="mt-2 text-[8px] font-black text-yellow-400 uppercase tracking-widest italic flex items-center gap-1">
+                    <Activity className="w-2.5 h-2.5" /> {team.status === 'pending' ? 'Reviewing' : team.status}
+                  </div>
+                )}
               </div>
             </div>
             {team.slot_number && (
@@ -225,12 +237,13 @@ export default function TeamsPage() {
                     <span className="block mb-2 text-white/20">რეგისტრაცია</span>
                     <span className="text-white">{format(new Date(team.created_at), "dd.MM.yyyy")}</span>
                  </div>
-                 <div className="text-right">
+                  <div className="text-right">
                     <span className="block mb-2 text-white/20">სტატუსი</span>
-                    <span className="text-emerald-400 flex items-center justify-end gap-1">
-                       VERIFIED <ShieldCheck className="w-3 h-3" />
+                    <span className={`${team.status === 'approved' ? 'text-emerald-400' : 'text-yellow-400'} flex items-center justify-end gap-1 uppercase`}>
+                       {team.status === 'approved' ? 'VERIFIED' : team.status === 'pending' ? 'PENDING' : team.status} 
+                       {team.status === 'approved' ? <ShieldCheck className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
                     </span>
-                 </div>
+                  </div>
               </div>
            </div>
 

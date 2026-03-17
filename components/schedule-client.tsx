@@ -130,7 +130,7 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
                     className="h-16 flex-1 rounded-2xl text-md font-black uppercase tracking-widest italic animate-glow"
                     variant="premium"
                   >
-                    <Link href="/profile/register-team" className="flex items-center justify-center gap-2">
+                    <Link href={`/profile/register-team${scheduleId ? `?schedule_id=${scheduleId}` : ''}`} className="flex items-center justify-center gap-2">
                       რეგისტრაცია <ArrowRight className="w-5 h-5" />
                     </Link>
                   </Button>

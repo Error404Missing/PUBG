@@ -102,19 +102,29 @@ export async function POST(request: Request) {
         if (retryError) {
           return NextResponse.json({ error: retryError.message }, { status: 500 })
         }
-        // Update team status if draft
-        if (team.status === "draft") {
-          await supabase.from("teams").update({ status: "pending" }).eq("id", team_id)
-        }
+        
+        // Update team status and sync schedule_id
+        await supabase
+          .from("teams")
+          .update({ 
+            status: team.status === "draft" ? "pending" : team.status,
+            schedule_id: schedule_id 
+          })
+          .eq("id", team_id)
+
         return NextResponse.json({ success: true, message: "მოთხოვნა გაიგზავნა ადმინისტრაციისთვის", data: retry })
       }
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
-    // Update team status if it's draft
-    if (team.status === "draft") {
-      await supabase.from("teams").update({ status: "pending" }).eq("id", team_id)
-    }
+    // Update team status and sync schedule_id
+    await supabase
+      .from("teams")
+      .update({ 
+        status: team.status === "draft" ? "pending" : team.status,
+        schedule_id: schedule_id 
+      })
+      .eq("id", team_id)
 
     return NextResponse.json({
       success: true,
