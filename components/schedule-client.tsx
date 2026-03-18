@@ -75,6 +75,8 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
       setShowTeamModal(true)
       return
     }
+    // Set default selection to schedule's max
+    setPreferredMaps(mapsCount)
     setShowMapModal(true)
   }
 
@@ -115,24 +117,18 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
             </div>
 
             <div className="grid grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map(n => (
+              {[1, 2, 3, 4].filter(n => n <= mapsCount).map(n => (
                 <button
                   key={n}
                   type="button"
                   onClick={() => setPreferredMaps(n)}
-                  disabled={n > mapsCount}
                   className={`h-16 rounded-2xl font-black text-xl transition-all active:scale-95 border relative ${
-                    n > mapsCount
-                      ? 'bg-black/10 border-white/5 text-white/10 cursor-not-allowed'
-                      : preferredMaps === n
-                        ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/20'
-                        : 'bg-black/40 border-white/10 text-white/50 hover:border-white/30 hover:text-white'
+                    preferredMaps === n
+                      ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/20'
+                      : 'bg-black/40 border-white/10 text-white/50 hover:border-white/30 hover:text-white'
                   }`}
                 >
                   {n}
-                  {n > mapsCount && (
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white/20">⛔</span>
-                  )}
                 </button>
               ))}
             </div>
