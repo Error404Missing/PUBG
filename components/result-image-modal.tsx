@@ -46,12 +46,14 @@ export default function ResultImageModal({ imageUrl, title, winner }: { imageUrl
           </div>
         </div>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl bg-black/90 border-white/10 p-2 shadow-2xl overflow-hidden [&>button]:text-white">
-        <div className="relative w-full aspect-video rounded-[2rem] overflow-hidden bg-black/50">
+      <DialogContent className="max-w-[95vw] w-full h-[95vh] flex flex-col bg-black/95 border-white/10 p-2 shadow-2xl overflow-hidden [&>button]:text-white">
+        <div className="relative w-full flex-1 rounded-2xl overflow-hidden bg-transparent">
            <Image
              src={imageUrl || "/placeholder.svg"}
              alt={title || "Result"}
              fill
+             quality={100}
+             unoptimized
              className="object-contain"
            />
         </div>
