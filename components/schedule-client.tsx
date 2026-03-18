@@ -50,6 +50,29 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
         throw new Error(data.error || "შეცდომა")
       }
 
+      // NOITFY ADMINS (Client-side pattern same as Support Chat)
+      try {
+        const { createClient } = await import("@/lib/supabase/client")
+        const supabase = createClient()
+        const { data: admins } = await supabase
+          .from('profiles')
+          .select('id')
+          .or('is_admin.eq.true,role.eq.admin')
+
+        if (admins && admins.length > 0) {
+          const notifications = admins.map(admin => ({
+            user_id: admin.id,
+            title: "ახალი თამაშის მოთხოვნა 🎮",
+            message: `გუნდმა '${userTeam.team_name}' გამოგზავნა თამაშის მოთხოვნა განრიგიდან.`,
+            type: "info",
+            is_read: false
+          }))
+          await supabase.from('notifications').insert(notifications)
+        }
+      } catch (notifyErr) {
+        console.warn("Silent notification failure:", notifyErr)
+      }
+
       setToast({ message: "მოთხოვნა წარმატებით გაიგზავნა ადმინისტრაციისთვის", type: 'success' })
     } catch (error: any) {
       console.error("[v0] Error requesting game:", error)
