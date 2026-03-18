@@ -6,13 +6,15 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, username, discord_username, is_admin)
+  INSERT INTO public.profiles (id, email, username, discord_username, is_admin, avatar_url, banner_url)
   VALUES (
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'username', SPLIT_PART(NEW.email, '@', 1)),
     COALESCE(NEW.raw_user_meta_data->>'discord_username', NULL),
-    COALESCE((NEW.raw_user_meta_data->>'is_admin')::BOOLEAN, FALSE)
+    COALESCE((NEW.raw_user_meta_data->>'is_admin')::BOOLEAN, FALSE),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png'),
+    COALESCE(NEW.raw_user_meta_data->>'banner_url', 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg')
   )
   ON CONFLICT (id) DO NOTHING;
   
