@@ -138,13 +138,26 @@ export default function ProfilePage() {
       const file = e.target.files?.[0]
       if (!file) return
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+
+      // Check for GIF and VIP/Admin status
+      const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif')
+      const isUserAdmin = profile?.is_admin || profile?.role === 'admin'
+      const isUserVip = vipStatus && new Date(vipStatus.vip_until) > new Date()
+
+      if (isGif && !isUserAdmin && !isUserVip) {
+         setToast({ 
+            message: "მოძრავი (GIF) ფოტოების ატვირთვა შესაძლებელია მხოლოდ VIP ან ადმინისტრატორებისთვის", 
+            type: 'error' 
+         })
+         return
+      }
 
       setIsUploading({ type })
 
       const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`
+      const fileName = `${authUser.id}-${Math.random()}.${fileExt}`
       const filePath = `${type}s/${fileName}`
 
       const { error: uploadError } = await supabase.storage
@@ -153,7 +166,7 @@ export default function ProfilePage() {
 
       if (uploadError) {
          console.error(`Upload ${type} error:`, uploadError)
-         setMessage({ type: 'error', text: `${type === 'avatar' ? 'ფოტოს' : 'ბანერის'} ატვირთვა ვერ მოხერხდა` })
+         setToast({ message: `${type === 'avatar' ? 'ფოტოს' : 'ბანერის'} ატვირთვა ვერ მოხერხდა`, type: 'error' })
          setIsUploading({ type: null })
          return
       }
@@ -164,7 +177,7 @@ export default function ProfilePage() {
 
       setEditData(prev => ({ ...prev, [type === 'avatar' ? 'avatar_url' : 'banner_url']: publicUrl }))
       setIsUploading({ type: null })
-      setMessage({ type: 'success', text: `${type === 'avatar' ? 'ფოტო' : 'ბანერი'} დროებით აიტვირთა, შესანახად დააჭირეთ 'შენახვას'` })
+      setToast({ message: `${type === 'avatar' ? 'ფოტო' : 'ბანერი'} დროებით აიტვირთა, შესანახად დააჭირეთ 'შენახვას'`, type: 'success' })
    }
 
    const handleDeleteTeam = async () => {
@@ -247,7 +260,7 @@ export default function ProfilePage() {
                      <input
                         type="file"
                         className="hidden"
-                        accept="image/*"
+                        accept="image/png, image/jpeg, image/jpg, image/gif"
                         onChange={(e) => handleFileUpload(e, 'banner')}
                         disabled={isUploading.type !== null}
                      />
@@ -273,7 +286,7 @@ export default function ProfilePage() {
                               <input
                                  type="file"
                                  className="hidden"
-                                 accept="image/*"
+                                 accept="image/png, image/jpeg, image/jpg, image/gif"
                                  onChange={(e) => handleFileUpload(e, 'avatar')}
                                  disabled={isUploading.type !== null}
                               />
@@ -514,7 +527,7 @@ export default function ProfilePage() {
                                        <input
                                           type="file"
                                           className="hidden"
-                                          accept="image/*"
+                                          accept="image/png, image/jpeg, image/jpg, image/gif"
                                           onChange={(e) => handleFileUpload(e, 'avatar')}
                                           disabled={isUploading.type !== null}
                                        />
@@ -527,7 +540,7 @@ export default function ProfilePage() {
                                        <input
                                           type="file"
                                           className="hidden"
-                                          accept="image/*"
+                                          accept="image/png, image/jpeg, image/jpg, image/gif"
                                           onChange={(e) => handleFileUpload(e, 'banner')}
                                           disabled={isUploading.type !== null}
                                        />
