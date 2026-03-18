@@ -92,7 +92,10 @@ export async function POST(request: Request) {
     // Helper syntax to notify admins
     const notifyAdmins = async () => {
       try {
-        const { data: admins } = await supabase
+        const { createAdminClient } = await import("@/lib/supabase/admin")
+        const adminClient = createAdminClient()
+        
+        const { data: admins } = await adminClient
           .from("profiles")
           .select("id")
           .or("is_admin.eq.true,role.eq.admin")
@@ -105,10 +108,10 @@ export async function POST(request: Request) {
             type: "info",
             is_read: false
           }))
-          await supabase.from("notifications").insert(notifications)
+          await adminClient.from("notifications").insert(notifications)
         }
       } catch (e) {
-        console.warn("Failed to notify admins", e)
+        console.warn("Failed to notify admins (Admin Client Error)", e)
       }
     }
 
