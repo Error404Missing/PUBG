@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     // Verify that the user owns this team
     const { data: team, error: teamError } = await supabase
       .from("teams")
-      .select("id, status")
+      .select("id, status, team_name")
       .eq("id", team_id)
       .eq("leader_id", user.id)
       .maybeSingle()
@@ -89,6 +89,28 @@ export async function POST(request: Request) {
       .select()
       .single()
 
+    // Helper syntax to notify admins
+    const notifyAdmins = async () => {
+      try {
+        const { data: admins } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("is_admin", true)
+          
+        if (admins && admins.length > 0) {
+          const notifications = admins.map(admin => ({
+            user_id: admin.id,
+            title: "ახალი თამაშის მოთხოვნა",
+            message: `გუნდმა '${team.team_name}' გამოგზავნა სკრიმზე თამაშის მოთხოვნა.`,
+            type: "info"
+          }))
+          await supabase.from("notifications").insert(notifications)
+        }
+      } catch (e) {
+        console.warn("Failed to notify admins", e)
+      }
+    }
+
     if (insertError) {
       console.error("Scrim request insert error:", insertError)
       // If has_vip column doesn't exist, retry without it
@@ -111,6 +133,8 @@ export async function POST(request: Request) {
             schedule_id: schedule_id 
           })
           .eq("id", team_id)
+          
+        await notifyAdmins()
 
         return NextResponse.json({ success: true, message: "მოთხოვნა გაიგზავნა ადმინისტრაციისთვის", data: retry })
       }
@@ -125,6 +149,8 @@ export async function POST(request: Request) {
         schedule_id: schedule_id 
       })
       .eq("id", team_id)
+      
+    await notifyAdmins()
 
     return NextResponse.json({
       success: true,

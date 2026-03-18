@@ -1,8 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
-import { Ban, AlertTriangle } from "lucide-react"
+import { Ban, AlertTriangle, ShieldAlert } from "lucide-react"
+import { UnbanTeamButton } from "@/components/unban-team-button"
 
 export default async function BlockedPage() {
   const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: blockedTeams } = await supabase
     .from("teams")
     .select("*, profiles(username)")
@@ -33,7 +37,16 @@ export default async function BlockedPage() {
            
            <div className="grid md:grid-cols-2 gap-12 text-muted-foreground text-lg font-light leading-relaxed italic">
               <p>ეს გუნდები დაიბლოკა წესების დარღვევის გამო. დაბლოკილ გუნდებს არ შეუძლიათ სკრიმებში მონაწილეობა.</p>
-              <p>თუ თვლით, რომ შეცდომით მოხვდით ამ სიაში, გთხოვთ დაგვიკავშირდეთ კონტაქტის გვერდზე.</p>
+              <div>
+                <p className="mb-4">თუ თვლით, რომ შეცდომით მოხვდით ამ სიაში, გთხოვთ დაგვიკავშირდეთ კონტაქტის გვერდზე.</p>
+                <div className="px-6 py-4 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-start gap-4">
+                  <ShieldAlert className="w-6 h-6 text-red-400 mt-1 shrink-0" />
+                  <div>
+                    <h4 className="text-red-400 font-black text-sm uppercase tracking-widest mb-1">ბანის მოხსნა</h4>
+                    <p className="text-white font-medium text-sm">ბანის მოსახსნელად საჭიროა <strong>10 ლარის</strong> გადახდა. გუნდის ლიდერს შეუძლია ბალანსიდან თანხის ჩამოჭრით ಗუნდის რეაბილიტაცია.</p>
+                  </div>
+                </div>
+              </div>
            </div>
         </div>
 
@@ -42,10 +55,10 @@ export default async function BlockedPage() {
             blockedTeams.map((team, i) => (
               <div
                 key={team.id}
-                className="glass-card p-1 group animate-reveal"
+                className="glass-card p-1 group animate-reveal flex flex-col"
                 style={{ animationDelay: `${i * 0.1 + 0.4}s` }}
               >
-                 <div className="p-8">
+                 <div className="p-8 flex-1 flex flex-col">
                     <div className="flex items-start justify-between mb-8">
                        <div>
                           <div className="flex items-center gap-2 mb-2">
@@ -59,7 +72,7 @@ export default async function BlockedPage() {
                        </div>
                     </div>
                     
-                    <div className="flex items-center gap-3 p-4 rounded-2xl glass border border-white/5">
+                    <div className="flex items-center gap-3 p-4 rounded-2xl glass border border-white/5 mt-auto">
                        <div className="w-8 h-8 rounded-full glass border border-white/10 flex items-center justify-center">
                           <AlertTriangle className="w-4 h-4 text-white/30" />
                        </div>
@@ -68,6 +81,10 @@ export default async function BlockedPage() {
                           <div className="text-sm font-bold text-white tracking-tight">{team.profiles?.username}</div>
                        </div>
                     </div>
+
+                    {user?.id === team.leader_id && (
+                      <UnbanTeamButton teamId={team.id} />
+                    )}
                  </div>
               </div>
             ))
@@ -82,3 +99,4 @@ export default async function BlockedPage() {
     </div>
   )
 }
+
