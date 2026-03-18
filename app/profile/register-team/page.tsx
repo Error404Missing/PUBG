@@ -19,6 +19,7 @@ function RegisterTeamContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [maxAllowedMaps, setMaxAllowedMaps] = useState<number>(4)
 
   // Logo state
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -66,9 +67,24 @@ function RegisterTeamContent() {
               setIsRejected(true)
            }
         })
+
+        // Fetch schedule maps_count if present
+        if (scheduleId) {
+          supabase.from("schedules")
+            .select("maps_count")
+            .eq("id", scheduleId)
+            .single()
+            .then(({ data }) => {
+              if (data?.maps_count) {
+                const count = Number(data.maps_count)
+                setMaxAllowedMaps(count)
+                setFormData(prev => ({ ...prev, maps_count: String(count) }))
+              }
+            })
+        }
       }
     })
-  }, [router])
+  }, [router, scheduleId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -379,10 +395,11 @@ function RegisterTeamContent() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-2xl overflow-hidden p-2">
-                        <SelectItem value="1" className="rounded-xl focus:bg-primary/20 focus:text-primary transition-colors py-3">1 მაპი</SelectItem>
-                        <SelectItem value="2" className="rounded-xl focus:bg-primary/20 focus:text-primary transition-colors py-3">2 მაპი</SelectItem>
-                        <SelectItem value="3" className="rounded-xl focus:bg-primary/20 focus:text-primary transition-colors py-3">3 მაპი</SelectItem>
-                        <SelectItem value="4" className="rounded-xl focus:bg-primary/20 focus:text-primary transition-colors py-3">4 მაპი</SelectItem>
+                        {[1, 2, 3, 4].filter(n => n <= maxAllowedMaps).map(n => (
+                          <SelectItem key={n} value={String(n)} className="rounded-xl focus:bg-primary/20 focus:text-primary transition-colors py-3">
+                            {n} მაპი
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
