@@ -89,32 +89,6 @@ export async function POST(request: Request) {
       .select()
       .single()
 
-    // Helper syntax to notify admins
-    const notifyAdmins = async () => {
-      try {
-        const { createAdminClient } = await import("@/lib/supabase/admin")
-        const adminClient = createAdminClient()
-        
-        const { data: admins } = await adminClient
-          .from("profiles")
-          .select("id")
-          .or("is_admin.eq.true,role.eq.admin")
-          
-        if (admins && admins.length > 0) {
-          const notifications = admins.map(admin => ({
-            user_id: admin.id,
-            title: "ახალი თამაშის მოთხოვნა",
-            message: `გუნდმა '${team.team_name}' გამოგზავნა სკრიმზე თამაშის მოთხოვნა.`,
-            type: "info",
-            is_read: false
-          }))
-          await adminClient.from("notifications").insert(notifications)
-        }
-      } catch (e) {
-        console.warn("Failed to notify admins (Admin Client Error)", e)
-      }
-    }
-
     if (insertError) {
       console.error("Scrim request insert error:", insertError)
       // If has_vip column doesn't exist, retry without it
@@ -137,8 +111,6 @@ export async function POST(request: Request) {
             schedule_id: schedule_id 
           })
           .eq("id", team_id)
-          
-        await notifyAdmins()
 
         return NextResponse.json({ success: true, message: "მოთხოვნა გაიგზავნა ადმინისტრაციისთვის", data: retry })
       }
@@ -153,8 +125,6 @@ export async function POST(request: Request) {
         schedule_id: schedule_id 
       })
       .eq("id", team_id)
-      
-    await notifyAdmins()
 
     return NextResponse.json({
       success: true,
