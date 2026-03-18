@@ -1,5 +1,15 @@
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+
+// Admin client that bypasses RLS entirely using service role key
+function getAdminSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  return createSupabaseClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+}
 
 export async function POST(request: Request) {
   try {
@@ -112,6 +122,9 @@ export async function POST(request: Request) {
           })
           .eq("id", team_id)
 
+        // Notify admins via admin client (bypasses RLS)
+        await notifyAdminsViaServiceRole(team.team_name)
+
         return NextResponse.json({ success: true, message: "მოთხოვნა გაიგზავნა ადმინისტრაციისთვის", data: retry })
       }
       return NextResponse.json({ error: insertError.message }, { status: 500 })
@@ -126,6 +139,9 @@ export async function POST(request: Request) {
       })
       .eq("id", team_id)
 
+    // Notify admins via admin client (bypasses RLS)
+    await notifyAdminsViaServiceRole(team.team_name)
+
     return NextResponse.json({
       success: true,
       message: "მოთხოვნა გაიგზავნა ადმინისტრაციისთვის",
@@ -137,5 +153,47 @@ export async function POST(request: Request) {
       { error: error?.message || "Internal server error" },
       { status: 500 }
     )
+  }
+}
+
+async function notifyAdminsViaServiceRole(teamName: string) {
+  try {
+    const admin = getAdminSupabase()
+
+    // Fetch all admins using service role (no RLS)
+    const { data: admins, error: adminsError } = await admin
+      .from("profiles")
+      .select("id")
+      .or("is_admin.eq.true,role.eq.admin")
+
+    if (adminsError) {
+      console.error("[notify] Failed to fetch admins:", adminsError.message)
+      return
+    }
+
+    if (!admins || admins.length === 0) {
+      console.warn("[notify] No admins found in profiles table")
+      return
+    }
+
+    const notifications = admins.map((a) => ({
+      user_id: a.id,
+      title: "ახალი თამაშის მოთხოვნა 🎮",
+      message: `გუნდმა '${teamName}' გამოგზავნა თამაშის მოთხოვნა.`,
+      type: "info",
+      is_read: false,
+    }))
+
+    const { error: insertError } = await admin
+      .from("notifications")
+      .insert(notifications)
+
+    if (insertError) {
+      console.error("[notify] Failed to insert notifications:", insertError.message)
+    } else {
+      console.log(`[notify] Sent notifications to ${admins.length} admin(s)`)
+    }
+  } catch (err: any) {
+    console.error("[notify] Unexpected error:", err?.message)
   }
 }
