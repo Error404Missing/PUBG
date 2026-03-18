@@ -136,6 +136,15 @@ export default async function SchedulePage() {
                             <div className="text-sm font-bold">Max {schedule.max_teams} Teams</div>
                           </div>
                         </div>
+                        <div className="flex items-center text-white/80 group">
+                          <div className="w-8 h-8 rounded-lg glass border border-primary/20 flex items-center justify-center mr-3 group-hover:border-primary/50 transition-colors">
+                            <Zap className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-black text-primary/60 uppercase tracking-widest leading-none mb-1">Maps</div>
+                            <div className="text-sm font-bold text-primary">{(schedule as any).maps_count || 4} Maps</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -154,6 +163,7 @@ export default async function SchedulePage() {
                       userTeam={userTeam}
                       user={user}
                       registrationOpen={schedule.registration_open !== false}
+                      mapsCount={(schedule as any).maps_count || 4}
                     />
                   </div>
                 </div>

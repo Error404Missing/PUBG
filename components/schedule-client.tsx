@@ -12,11 +12,14 @@ interface ScheduleClientProps {
   userTeam: any
   user: any
   registrationOpen?: boolean
+  mapsCount?: number
 }
 
-export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = true }: ScheduleClientProps) {
+export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = true, mapsCount = 4 }: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
+  const [showMapModal, setShowMapModal] = useState(false)
+  const [preferredMaps, setPreferredMaps] = useState<number>(mapsCount)
   const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
 
   const handleRequestGame = async () => {
@@ -36,20 +39,24 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
       const res = await fetch("/api/scrim-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ team_id: userTeam.id, schedule_id: scheduleId }),
+        body: JSON.stringify({ 
+          team_id: userTeam.id, 
+          schedule_id: scheduleId,
+          preferred_maps: preferredMaps
+        }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
         if (res.status === 409) {
-          // Already requested
           setToast({ message: "მოთხოვნა უკვე გამოგზავნილია", type: 'info' })
           return
         }
         throw new Error(data.error || "შეცდომა")
       }
 
+      setShowMapModal(false)
       setToast({ message: "მოთხოვნა წარმატებით გაიგზავნა ადმინისტრაციისთვის", type: 'success' })
     } catch (error: any) {
       console.error("[v0] Error requesting game:", error)
@@ -59,10 +66,22 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
     }
   }
 
+  const handleOpenMapModal = () => {
+    if (!user) {
+      window.location.href = "/auth/login"
+      return
+    }
+    if (!userTeam) {
+      setShowTeamModal(true)
+      return
+    }
+    setShowMapModal(true)
+  }
+
   return (
     <>
       <Button
-        onClick={handleRequestGame}
+        onClick={handleOpenMapModal}
         disabled={isLoading || !registrationOpen}
         className={`whitespace-nowrap ${registrationOpen
             ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -77,6 +96,68 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
             : "მოითხოვე თამაში"}
       </Button>
 
+      {/* Maps Confirmation Modal */}
+      <Dialog open={showMapModal} onOpenChange={setShowMapModal}>
+        <DialogContent className="max-w-lg bg-[#030712] border-white/5 p-0 overflow-hidden rounded-[2.5rem] shadow-2xl shadow-primary/20">
+          <div className="p-8 lg:p-10 space-y-8">
+            <DialogHeader>
+              <DialogTitle className="text-3xl font-black text-white italic uppercase tracking-tighter">
+                მაპების <span className="text-primary">არჩევანი</span>
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
+                ამ პრეკი ტარდება <span className="text-primary font-bold">{mapsCount} მაპით</span>. აირჩიეთ რამდენი მაპით განიႮილებთ თამაში.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-4 gap-3">
+              {[1, 2, 3, 4].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPreferredMaps(n)}
+                  disabled={n > mapsCount}
+                  className={`h-16 rounded-2xl font-black text-xl transition-all active:scale-95 border ${
+                    n > mapsCount
+                      ? 'bg-black/20 border-white/5 text-white/15 cursor-not-allowed'
+                      : preferredMaps === n
+                        ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/20'
+                        : 'bg-black/40 border-white/10 text-white/50 hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
+            {preferredMaps > mapsCount && (
+              <div className="flex items-center gap-3 p-4 bg-red-500/10 rounded-2xl border border-red-500/20">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                <p className="text-red-400 text-sm font-bold">
+                  არჩეული მაპის რაოდენობა აღემატებს პრეკის ფორმატს ({mapsCount} მაპი)
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <Button
+                onClick={handleRequestGame}
+                disabled={isLoading}
+                variant="premium"
+                className="h-14 flex-1 rounded-2xl font-black uppercase tracking-widest"
+              >
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "გაგზავნა"}
+              </Button>
+              <Button
+                onClick={() => setShowMapModal(false)}
+                variant="outline"
+                className="h-14 px-8 rounded-2xl border-white/10"
+              >
+                გაუქმება
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={showTeamModal} onOpenChange={setShowTeamModal}>
         <DialogContent className="max-w-2xl bg-[#030712] border-white/5 p-0 overflow-hidden rounded-[2.5rem] shadow-2xl shadow-primary/20">
           <div className="relative">

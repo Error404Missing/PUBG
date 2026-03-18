@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { team_id, schedule_id } = await request.json()
+    const { team_id, schedule_id, preferred_maps } = await request.json()
 
     if (!team_id || !schedule_id) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -32,12 +32,20 @@ export async function POST(request: Request) {
     // Check if schedule permits registration
     const { data: schedule } = await supabase
       .from("schedules")
-      .select("registration_open")
+      .select("registration_open, maps_count")
       .eq("id", schedule_id)
       .single()
 
     if (schedule && schedule.registration_open === false) {
       return NextResponse.json({ error: "რეგისტრაცია დახურულია ამ მატჩზე" }, { status: 403 })
+    }
+
+    // Validate preferred maps
+    const scheduleMaps = schedule?.maps_count || 4
+    if (preferred_maps && preferred_maps > scheduleMaps) {
+      return NextResponse.json({ 
+        error: `ეს პრეკი ტარდება ${scheduleMaps} მაპით. ${preferred_maps} მაპს ვერ ითამაშებთ ამ ფორმატში.`
+      }, { status: 400 })
     }
 
     // Verify that the user owns this team

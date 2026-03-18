@@ -28,6 +28,7 @@ type Schedule = {
   date: string
   map_name: string | null
   max_teams: number
+  maps_count: number
   is_active: boolean
   registration_open?: boolean
 }
@@ -43,6 +44,7 @@ export default function AdminSchedulePage() {
     time: "",
     mapName: "",
     maxTeams: "100",
+    mapsCount: "4",
   })
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, scheduleId: string | null }>({
     isOpen: false,
@@ -97,6 +99,7 @@ export default function AdminSchedulePage() {
       date: dateTime,
       map_name: formData.mapName || null,
       max_teams: Number.parseInt(formData.maxTeams),
+      maps_count: Number.parseInt(formData.mapsCount),
       is_active: true,
     })
 
@@ -129,6 +132,7 @@ export default function AdminSchedulePage() {
         time: "",
         mapName: "",
         maxTeams: "100",
+        mapsCount: "4",
       })
       fetchSchedules()
     }
@@ -354,6 +358,33 @@ export default function AdminSchedulePage() {
                   </div>
                 </div>
 
+                {/* Maps Count Selector */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic flex items-center gap-2">
+                    <Target className="w-3.5 h-3.5" />
+                    მაპების რაოდენობა / Maps Count
+                  </Label>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[1, 2, 3, 4].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, mapsCount: String(n) })}
+                        className={`h-16 rounded-2xl font-black text-xl uppercase tracking-widest transition-all active:scale-95 border ${
+                          formData.mapsCount === String(n)
+                            ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/20'
+                            : 'bg-black/40 border-white/10 text-white/40 hover:border-white/30 hover:text-white'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic ml-2">
+                    * გუნდები ამ მაპების რაოდნეობის გარეშე ვერ მოხვდებიან
+                  </p>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <Button type="submit" variant="premium" className="h-16 flex-1 rounded-2xl font-black uppercase tracking-widest italic flex items-center gap-3">
                     <Save className="w-5 h-5" />
@@ -422,6 +453,10 @@ export default function AdminSchedulePage() {
                       <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
                         <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Max_Units</div>
                         <div className="text-sm font-bold text-white italic">{schedule.max_teams} Teams</div>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-primary/10 space-y-1">
+                        <div className="text-[9px] font-black text-primary/60 uppercase tracking-widest italic">Maps_Count</div>
+                        <div className="text-sm font-bold text-primary italic">{schedule.maps_count || 4} Maps</div>
                       </div>
                     </div>
                   </div>
