@@ -99,15 +99,20 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
       {/* Maps Confirmation Modal */}
       <Dialog open={showMapModal} onOpenChange={setShowMapModal}>
         <DialogContent className="max-w-lg bg-[#030712] border-white/5 p-0 overflow-hidden rounded-[2.5rem] shadow-2xl shadow-primary/20">
-          <div className="p-8 lg:p-10 space-y-8">
+          <div className="p-8 lg:p-10 space-y-6">
             <DialogHeader>
               <DialogTitle className="text-3xl font-black text-white italic uppercase tracking-tighter">
                 მაპების <span className="text-primary">არჩევანი</span>
               </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-sm">
-                ამ პრეკი ტარდება <span className="text-primary font-bold">{mapsCount} მაპით</span>. აირჩიეთ რამდენი მაპით განიႮილებთ თამაში.
-              </DialogDescription>
             </DialogHeader>
+
+            {/* Schedule maps info banner */}
+            <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-2xl border border-primary/20">
+              <Zap className="w-5 h-5 text-primary shrink-0" />
+              <p className="text-primary text-sm font-bold">
+                ამ პრეკი ტარდება <span className="underline">{mapsCount} მაპით</span>. მაქსიმალურად {mapsCount} მაპის არჩევაა შესაძლებელი.
+              </p>
+            </div>
 
             <div className="grid grid-cols-4 gap-3">
               {[1, 2, 3, 4].map(n => (
@@ -116,24 +121,28 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
                   type="button"
                   onClick={() => setPreferredMaps(n)}
                   disabled={n > mapsCount}
-                  className={`h-16 rounded-2xl font-black text-xl transition-all active:scale-95 border ${
+                  className={`h-16 rounded-2xl font-black text-xl transition-all active:scale-95 border relative ${
                     n > mapsCount
-                      ? 'bg-black/20 border-white/5 text-white/15 cursor-not-allowed'
+                      ? 'bg-black/10 border-white/5 text-white/10 cursor-not-allowed'
                       : preferredMaps === n
                         ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/20'
                         : 'bg-black/40 border-white/10 text-white/50 hover:border-white/30 hover:text-white'
                   }`}
                 >
                   {n}
+                  {n > mapsCount && (
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white/20">⛔</span>
+                  )}
                 </button>
               ))}
             </div>
 
+            {/* Hard block warning */}
             {preferredMaps > mapsCount && (
               <div className="flex items-center gap-3 p-4 bg-red-500/10 rounded-2xl border border-red-500/20">
                 <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
                 <p className="text-red-400 text-sm font-bold">
-                  არჩეული მაპის რაოდენობა აღემატებს პრეკის ფორმატს ({mapsCount} მაპი)
+                  არჩეული {preferredMaps} მაპი დაუშვებელია! ამ პრეკი {mapsCount}-მაპიანია. გთხოვთ, აირჩიეთ {mapsCount} ან ნაკლები.
                 </p>
               </div>
             )}
@@ -141,7 +150,7 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
             <div className="flex gap-4">
               <Button
                 onClick={handleRequestGame}
-                disabled={isLoading}
+                disabled={isLoading || preferredMaps > mapsCount}
                 variant="premium"
                 className="h-14 flex-1 rounded-2xl font-black uppercase tracking-widest"
               >
