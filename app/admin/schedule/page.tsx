@@ -37,6 +37,8 @@ export default function AdminSchedulePage() {
   const router = useRouter()
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [isAdding, setIsAdding] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -93,7 +95,7 @@ export default function AdminSchedulePage() {
     // Construct date string with explicit Georgia timezone (+04:00)
     const dateTime = `${formData.date}T${formData.time}:00+04:00`
 
-    const { error } = await supabase.from("schedules").insert({
+    const payload = {
       title: formData.title,
       description: formData.description || null,
       date: dateTime,
@@ -101,30 +103,47 @@ export default function AdminSchedulePage() {
       max_teams: Number.parseInt(formData.maxTeams),
       maps_count: Number.parseInt(formData.mapsCount),
       is_active: true,
-    })
+    }
+
+    let error;
+    if (isEditing && editId) {
+      const { error: updateError } = await supabase
+        .from("schedules")
+        .update(payload)
+        .eq("id", editId)
+      error = updateError
+    } else {
+      const { error: insertError } = await supabase
+        .from("schedules")
+        .insert(payload)
+      error = insertError
+    }
 
     if (error) {
-      console.error("Schedule creation error:", error)
-      setToast({ message: "შეცდომა განრიგის შექმნისას: " + error.message, type: 'error' })
+      console.error("Schedule action error:", error)
+      setToast({ message: `შეცდომა განრიგის ${isEditing ? 'განახლებისას' : 'შექმნისას'}: ` + error.message, type: 'error' })
     } else {
       // 📝 Log Action
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         await supabase.from("logs").insert({
           user_id: user.id,
-          action: `ახალი მატჩის შექმნა: ${formData.title}`,
+          action: `${isEditing ? 'მატჩის რედაქტირება' : 'ახალი მატჩის შექმნა'}: ${formData.title}`,
           entity_type: "schedule",
           details: {
             title: formData.title,
             date: dateTime,
             map: formData.mapName,
-            max_teams: formData.maxTeams
+            max_teams: formData.maxTeams,
+            is_edit: isEditing
           }
         })
       }
 
-      setToast({ message: "განრიგი წარმატებით შეიქმნა", type: 'success' })
+      setToast({ message: isEditing ? "განრიგი განახლდა" : "განრიგი წარმატებით შეიქმნა", type: 'success' })
       setIsAdding(false)
+      setIsEditing(false)
+      setEditId(null)
       setFormData({
         title: "",
         description: "",
@@ -136,6 +155,48 @@ export default function AdminSchedulePage() {
       })
       fetchSchedules()
     }
+  }
+
+  const handleEdit = (schedule: Schedule) => {
+    const d = new Date(schedule.date)
+    // Adjust for Georgia Timezone for the input fields
+    const formattedDate = format(d, "yyyy-MM-dd")
+    const formattedTime = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Tbilisi',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(d)
+
+    setFormData({
+      title: schedule.title,
+      description: schedule.description || "",
+      date: formattedDate,
+      time: formattedTime,
+      mapName: schedule.map_name || "",
+      maxTeams: String(schedule.max_teams),
+      mapsCount: String(schedule.maps_count || 4),
+    })
+    setIsEditing(true)
+    setEditId(schedule.id)
+    setIsAdding(true)
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancel = () => {
+    setIsAdding(false)
+    setIsEditing(false)
+    setEditId(null)
+    setFormData({
+      title: "",
+      description: "",
+      date: "",
+      time: "",
+      mapName: "",
+      maxTeams: "100",
+      mapsCount: "4",
+    })
   }
 
   const deleteSchedule = async (id: string) => {
@@ -262,7 +323,9 @@ export default function AdminSchedulePage() {
           <div className="glass-card p-1 animate-reveal mb-12">
             <div className="p-8 lg:p-12 space-y-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">ახალი ოპერაციის დამატება</h2>
+                <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">
+                  {isEditing ? 'ოპერაციის რედაქტირება' : 'ახალი ოპერაციის დამატება'}
+                </h2>
                 <Badge variant="outline" className="border-sky-500/20 text-sky-400">Tactical_Planning</Badge>
               </div>
 
@@ -388,11 +451,11 @@ export default function AdminSchedulePage() {
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <Button type="submit" variant="premium" className="h-16 flex-1 rounded-2xl font-black uppercase tracking-widest italic flex items-center gap-3">
                     <Save className="w-5 h-5" />
-                    ოპერაციის გააქტიურება
+                    {isEditing ? 'ცვლილებების შენახვა' : 'ოპერაციის გააქტიურება'}
                   </Button>
                   <Button
                     type="button"
-                    onClick={() => setIsAdding(false)}
+                    onClick={handleCancel}
                     variant="outline"
                     className="h-16 px-10 rounded-2xl border-white/10 hover:bg-white/5 font-black uppercase tracking-widest italic"
                   >
@@ -462,6 +525,14 @@ export default function AdminSchedulePage() {
                   </div>
 
                   <div className="flex lg:flex-col gap-3">
+                    <Button
+                      onClick={() => handleEdit(schedule)}
+                      variant="outline"
+                      className="w-14 h-14 rounded-2xl border-sky-500/20 text-sky-400 hover:bg-sky-500/10 p-0 transition-all active:scale-95"
+                      title="რედაქტირება"
+                    >
+                      <Save className="w-6 h-6" />
+                    </Button>
                     <Button
                       onClick={() => toggleRegistration(schedule.id, schedule.registration_open !== false)}
                       variant="outline"
