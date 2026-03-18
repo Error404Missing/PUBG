@@ -95,14 +95,15 @@ export async function POST(request: Request) {
         const { data: admins } = await supabase
           .from("profiles")
           .select("id")
-          .eq("is_admin", true)
+          .or("is_admin.eq.true,role.eq.admin")
           
         if (admins && admins.length > 0) {
           const notifications = admins.map(admin => ({
             user_id: admin.id,
             title: "ახალი თამაშის მოთხოვნა",
             message: `გუნდმა '${team.team_name}' გამოგზავნა სკრიმზე თამაშის მოთხოვნა.`,
-            type: "info"
+            type: "info",
+            is_read: false
           }))
           await supabase.from("notifications").insert(notifications)
         }
