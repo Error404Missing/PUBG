@@ -9,8 +9,8 @@ export default async function LeaderboardPage() {
   const supabase = await createClient()
 
   const [clansRes, playersRes] = await Promise.all([
-    supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }).order("points", { ascending: false }),
-    supabase.from("leaderboard_players").select("*").order("points", { ascending: false })
+    supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }),
+    supabase.from("leaderboard_players").select("*").order("wins", { ascending: false })
   ])
 
   const clans = clansRes.data || []
@@ -63,7 +63,6 @@ export default async function LeaderboardPage() {
                        <div>
                           <h3 className="text-2xl font-black text-white italic truncate">{clans[1].name}</h3>
                           <p className="text-slate-400 font-black uppercase tracking-widest text-xs mt-2">{clans[1].wins} WINS</p>
-                          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-tighter mt-1">{clans[1].points} PTS</p>
                        </div>
                     </div>
                   </div>
@@ -84,7 +83,6 @@ export default async function LeaderboardPage() {
                        <div>
                           <h3 className="text-3xl font-black text-white italic truncate">{clans[0].name}</h3>
                           <p className="text-amber-500 font-black uppercase tracking-widest text-sm mt-2">{clans[0].wins} WINS</p>
-                          <p className="text-amber-600 font-bold text-[10px] uppercase tracking-tighter mt-1">{clans[0].points} PTS</p>
                        </div>
                     </div>
                   </div>
@@ -102,7 +100,6 @@ export default async function LeaderboardPage() {
                        <div>
                           <h3 className="text-2xl font-black text-white italic truncate">{clans[2].name}</h3>
                           <p className="text-amber-800 font-black uppercase tracking-widest text-xs mt-2">{clans[2].wins} WINS</p>
-                          <p className="text-amber-900 font-bold text-[10px] uppercase tracking-tighter mt-1">{clans[2].points} PTS</p>
                        </div>
                     </div>
                   </div>
@@ -120,15 +117,11 @@ export default async function LeaderboardPage() {
                         </div>
                         <div>
                            <h4 className="text-2xl font-black text-white italic tracking-tight uppercase leading-none mb-1">{clan.name}</h4>
-                           <div className="flex gap-4">
-                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Wins: <span className="text-emerald-400">{clan.wins}</span></span>
-                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Matches: {clan.matches_played}</span>
-                           </div>
                         </div>
                      </div>
                      <div className="text-right">
-                        <div className="text-2xl font-black text-amber-400 italic leading-none">{clan.points}</div>
-                        <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Total Points</div>
+                        <div className="text-2xl font-black text-amber-400 italic leading-none">{clan.wins}</div>
+                        <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">Total Wins</div>
                      </div>
                   </div>
                 ))}
@@ -155,20 +148,15 @@ export default async function LeaderboardPage() {
                         <div>
                            <h4 className="text-2xl font-black text-white italic leading-none uppercase mb-2 group-hover:text-amber-400 transition-colors">{player.name}</h4>
                            <div className="flex items-center gap-4">
-                              <Badge variant="outline" className="border-white/5 text-[9px] font-black italic uppercase tracking-widest text-muted-foreground">{player.matches_played} Matches</Badge>
                               {i === 0 && <Badge className="bg-amber-500 text-black text-[9px] font-black uppercase tracking-widest">Elite MVP</Badge>}
                            </div>
                         </div>
                      </div>
 
                      <div className="flex items-center gap-12 text-right">
-                        <div className="hidden md:block">
-                           <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Kills</div>
-                           <div className="text-xl font-black text-rose-500 italic">{player.kills}</div>
-                        </div>
                         <div>
-                           <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Score</div>
-                           <div className="text-3xl font-black text-amber-400 italic">{player.points}</div>
+                           <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Wins</div>
+                           <div className="text-3xl font-black text-amber-400 italic">{player.wins}</div>
                         </div>
                      </div>
                   </div>

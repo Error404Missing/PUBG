@@ -22,8 +22,6 @@ type ClanEntry = {
   id: string
   name: string
   logo_url: string | null
-  points: number
-  matches_played: number
   wins: number
   rank: number | null
 }
@@ -32,9 +30,7 @@ type PlayerEntry = {
   id: string
   name: string
   avatar_url: string | null
-  points: number
-  kills: number
-  matches_played: number
+  wins: number
   rank: number | null
 }
 
@@ -49,8 +45,6 @@ export default function AdminLeaderboardPage() {
   const [clanForm, setClanForm] = useState({
     name: "",
     logo_url: "",
-    points: "0",
-    matches_played: "0",
     wins: "0",
     rank: "",
   })
@@ -58,9 +52,7 @@ export default function AdminLeaderboardPage() {
   const [playerForm, setPlayerForm] = useState({
     name: "",
     avatar_url: "",
-    points: "0",
-    kills: "0",
-    matches_played: "0",
+    wins: "0",
     rank: "",
   })
 
@@ -88,8 +80,8 @@ export default function AdminLeaderboardPage() {
   const fetchData = async () => {
     const supabase = createClient()
     const [clansRes, playersRes] = await Promise.all([
-      supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }).order("points", { ascending: false }),
-      supabase.from("leaderboard_players").select("*").order("points", { ascending: false })
+      supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }),
+      supabase.from("leaderboard_players").select("*").order("wins", { ascending: false })
     ])
     setClans(clansRes.data || [])
     setPlayers(playersRes.data || [])
@@ -101,8 +93,6 @@ export default function AdminLeaderboardPage() {
     const payload = {
       name: clanForm.name,
       logo_url: clanForm.logo_url || null,
-      points: Number.parseInt(clanForm.points),
-      matches_played: Number.parseInt(clanForm.matches_played),
       wins: Number.parseInt(clanForm.wins),
       rank: clanForm.rank ? Number.parseInt(clanForm.rank) : null,
     }
@@ -131,9 +121,7 @@ export default function AdminLeaderboardPage() {
     const payload = {
       name: playerForm.name,
       avatar_url: playerForm.avatar_url || null,
-      points: Number.parseInt(playerForm.points),
-      kills: Number.parseInt(playerForm.kills),
-      matches_played: Number.parseInt(playerForm.matches_played),
+      wins: Number.parseInt(playerForm.wins),
       rank: playerForm.rank ? Number.parseInt(playerForm.rank) : null,
     }
 
@@ -203,8 +191,8 @@ export default function AdminLeaderboardPage() {
     setIsAddingClan(false)
     setIsAddingPlayer(false)
     setEditId(null)
-    setClanForm({ name: "", logo_url: "", points: "0", matches_played: "0", wins: "0", rank: "" })
-    setPlayerForm({ name: "", avatar_url: "", points: "0", kills: "0", matches_played: "0", rank: "" })
+    setClanForm({ name: "", logo_url: "", wins: "0", rank: "" })
+    setPlayerForm({ name: "", avatar_url: "", wins: "0", rank: "" })
   }
 
   return (
@@ -282,15 +270,7 @@ export default function AdminLeaderboardPage() {
                          </div>
                       </div>
                    </div>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">ქულები</Label>
-                         <Input type="number" value={clanForm.points} onChange={e => setClanForm({...clanForm, points: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
-                      </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">მატჩები</Label>
-                         <Input type="number" value={clanForm.matches_played} onChange={e => setClanForm({...clanForm, matches_played: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
-                      </div>
+                   <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
                          <Label className="text-[10px] font-black uppercase text-amber-400 italic">მოგებები</Label>
                          <Input type="number" value={clanForm.wins} onChange={e => setClanForm({...clanForm, wins: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
@@ -322,26 +302,16 @@ export default function AdminLeaderboardPage() {
                        </div>
                        <div>
                           <h4 className="text-xl font-black text-white italic truncate max-w-[200px]">{clan.name}</h4>
-                          <Badge variant="outline" className="border-amber-500/20 text-amber-400 text-[9px] font-black italic uppercase">{clan.points} Points</Badge>
+                          <Badge variant="outline" className="border-amber-500/20 text-amber-400 text-[9px] font-black italic uppercase">{clan.wins} Wins</Badge>
                        </div>
                     </div>
                     <div className="flex items-center gap-8">
-                       <div className="hidden md:flex flex-col items-center">
-                          <span className="text-[10px] font-black text-muted-foreground uppercase">Matches</span>
-                          <span className="text-sm font-bold text-white">{clan.matches_played}</span>
-                       </div>
-                       <div className="hidden md:flex flex-col items-center">
-                          <span className="text-[10px] font-black text-muted-foreground uppercase">Wins</span>
-                          <span className="text-sm font-bold text-emerald-400">{clan.wins}</span>
-                       </div>
                        <div className="flex gap-2">
                           <Button variant="outline" size="icon" className="h-10 w-10 border-white/10 rounded-xl" onClick={() => {
                             setEditId(clan.id)
                             setClanForm({
                               name: clan.name,
                               logo_url: clan.logo_url || "",
-                              points: String(clan.points),
-                              matches_played: String(clan.matches_played),
                               wins: String(clan.wins),
                               rank: String(clan.rank || ""),
                             })
@@ -395,18 +365,10 @@ export default function AdminLeaderboardPage() {
                          </div>
                       </div>
                    </div>
-                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                   <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">ქულები</Label>
-                         <Input type="number" value={playerForm.points} onChange={e => setPlayerForm({...playerForm, points: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
-                      </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">Kills</Label>
-                         <Input type="number" value={playerForm.kills} onChange={e => setPlayerForm({...playerForm, kills: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
-                      </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">მატჩები</Label>
-                         <Input type="number" value={playerForm.matches_played} onChange={e => setPlayerForm({...playerForm, matches_played: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
+                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">მოგებები</Label>
+                         <Input type="number" value={playerForm.wins} onChange={e => setPlayerForm({...playerForm, wins: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
                       </div>
                       <div className="space-y-2">
                          <Label className="text-[10px] font-black uppercase text-amber-400 italic">Rank</Label>
@@ -435,27 +397,17 @@ export default function AdminLeaderboardPage() {
                        </div>
                        <div>
                           <h4 className="text-xl font-black text-white italic truncate max-w-[200px]">{player.name}</h4>
-                          <Badge variant="outline" className="border-amber-500/20 text-amber-400 text-[9px] font-black italic uppercase">{player.kills} Kills</Badge>
+                          <Badge variant="outline" className="border-amber-500/20 text-amber-400 text-[9px] font-black italic uppercase">{player.wins} Wins</Badge>
                        </div>
                     </div>
                     <div className="flex items-center gap-8">
-                       <div className="hidden md:flex flex-col items-center">
-                          <span className="text-[10px] font-black text-muted-foreground uppercase">Points</span>
-                          <span className="text-sm font-bold text-white">{player.points}</span>
-                       </div>
-                       <div className="hidden md:flex flex-col items-center">
-                          <span className="text-[10px] font-black text-muted-foreground uppercase">Matches</span>
-                          <span className="text-sm font-bold text-sky-400">{player.matches_played}</span>
-                       </div>
                        <div className="flex gap-2">
                           <Button variant="outline" size="icon" className="h-10 w-10 border-white/10 rounded-xl" onClick={() => {
                             setEditId(player.id)
                             setPlayerForm({
                               name: player.name,
                               avatar_url: player.avatar_url || "",
-                              points: String(player.points),
-                              kills: String(player.kills),
-                              matches_played: String(player.matches_played),
+                              wins: String(player.wins),
                               rank: String(player.rank || ""),
                             })
                             setIsAddingPlayer(true)
