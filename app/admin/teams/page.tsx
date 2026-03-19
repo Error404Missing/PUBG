@@ -16,6 +16,13 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
 import { LuxuryToast } from "@/components/ui/luxury-toast"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 type Team = {
   id: string
@@ -33,6 +40,8 @@ type Team = {
   profiles?: {
     username: string
   }
+  ban_reason?: string
+  ban_until?: string
 }
 
 export default function AdminTeamsPage() {
@@ -45,6 +54,17 @@ export default function AdminTeamsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, teamId: string | null }>({
     isOpen: false,
     teamId: null
+  })
+  const [banModal, setBanModal] = useState<{ 
+    isOpen: boolean, 
+    teamId: string | null, 
+    reason: string, 
+    duration: '1_day' | '1_week' | '1_month' | 'permanent' 
+  }>({
+    isOpen: false,
+    teamId: null,
+    reason: "",
+    duration: "1_day"
   })
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null)
 
@@ -143,8 +163,18 @@ export default function AdminTeamsPage() {
     setIsLoading(false)
   }
 
-  const updateTeamStatus = async (teamId: string, status: string) => {
+  const updateTeamStatus = async (teamId: string, status: string, banReason?: string, banDuration?: string) => {
     const supabase = createClient()
+
+    // Handle Ban logic
+    let banUntil = null
+    if (status === 'blocked') {
+      const now = new Date()
+      if (banDuration === '1_day') banUntil = new Date(now.setDate(now.getDate() + 1)).toISOString()
+      else if (banDuration === '1_week') banUntil = new Date(now.setDate(now.getDate() + 7)).toISOString()
+      else if (banDuration === '1_month') banUntil = new Date(now.setMonth(now.getMonth() + 1)).toISOString()
+      else banUntil = null // Permanent
+    }
 
     // Get team info for notification
     const { data: teamData } = await supabase
@@ -153,7 +183,16 @@ export default function AdminTeamsPage() {
       .eq("id", teamId)
       .single()
 
-    const { error } = await supabase.from("teams").update({ status }).eq("id", teamId)
+    const updatePayload: any = { status }
+    if (status === 'blocked') {
+      updatePayload.ban_reason = banReason || "წესების დარღვევა"
+      updatePayload.ban_until = banUntil
+    } else {
+      updatePayload.ban_reason = null
+      updatePayload.ban_until = null
+    }
+
+    const { error } = await supabase.from("teams").update(updatePayload).eq("id", teamId)
 
     if (!error && teamData) {
       // Send notification
@@ -167,7 +206,7 @@ export default function AdminTeamsPage() {
           title: isApproved ? "თამაში დადასტურდა! ✅" : isBlocked ? "თამაში დაიბლოკა 🚫" : "თამაში უარყოფილია ❌",
           message: isApproved
             ? `თქვენი მოთხოვნა პრეკზე თამაშზე დადასტურდა. დაელოდეთ Team List-ს, რომელსაც ნახავთ გუნდების სექციაში.`
-            : isBlocked ? `თქვენი გუნდის "${teamData.team_name}" მოთხოვნა დაბლოკილია ადმინისტრაციის მიერ.`
+            : isBlocked ? `თქვენი გუნდის "${teamData.team_name}" მოთხოვნა დაბლოკილია ადმინისტრაციის მიერ. მიზეზი: ${banReason || 'წესების დარღვევა'}. ვადა: ${banUntil ? new Date(banUntil).toLocaleString('ka-GE') : 'სამუდამოდ'}`
               : `სამწუხაროდ, თქვენი გუნდის "${teamData.team_name}" მოთხოვნა უარყოფილია ადმინისტრაციის მიერ.`,
           type: isApproved ? "success" : "error",
         })
@@ -540,7 +579,12 @@ export default function AdminTeamsPage() {
                         )}
                         {team.status !== "blocked" && (
                           <Button
-                            onClick={() => updateTeamStatus(team.id, "blocked")}
+                            onClick={() => setBanModal({ 
+                              isOpen: true, 
+                              teamId: team.id, 
+                              reason: "", 
+                              duration: "1_day" 
+                            })}
                             className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl px-6 font-black text-[10px] uppercase tracking-widest italic"
                           >
                             <Ban className="w-4 h-4 mr-2" />
@@ -598,6 +642,80 @@ export default function AdminTeamsPage() {
         confirmText="წაშლა"
         variant="danger"
       />
+
+      {/* Ban Team Modal */}
+      <Dialog open={banModal.isOpen} onOpenChange={(open) => !open && setBanModal(prev => ({ ...prev, isOpen: false }))}>
+        <DialogContent className="max-w-lg bg-[#030712] border-white/5 p-0 overflow-hidden rounded-[2.5rem] shadow-2xl shadow-red-500/20">
+          <div className="p-8 lg:p-10 space-y-8">
+            <DialogHeader>
+              <DialogTitle className="text-3xl font-black text-rose-500 italic uppercase tracking-tighter flex items-center gap-3">
+                <Ban className="w-8 h-8" />
+                Dizqalification <span className="text-white">Protocol</span>
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground uppercase tracking-widest text-[10px] italic font-black">
+                მიუთითეთ გუნდის დაბლოკვის ვადა და მიზეზი
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 ml-1">დაბლოკვის ვადა</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: '1_day', label: '1 Day' },
+                    { id: '1_week', label: '1 Week' },
+                    { id: '1_month', label: '1 Month' },
+                    { id: 'permanent', label: 'Permanent' },
+                  ].map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => setBanModal(prev => ({ ...prev, duration: d.id as any }))}
+                      className={`h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all active:scale-95 ${
+                        banModal.duration === d.id
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-400 shadow-lg shadow-rose-500/20'
+                          : 'bg-black/40 border-white/5 text-muted-foreground hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 ml-1">მიზეზი</Label>
+                <Input
+                  value={banModal.reason}
+                  onChange={(e) => setBanModal(prev => ({ ...prev, reason: e.target.value }))}
+                  placeholder="მაგ: წესების დარღვევა, შეურაცხყოფა..."
+                  className="h-16 bg-black/60 border-white/5 rounded-2xl focus:border-rose-500/50 text-sm font-bold placeholder:text-white/10"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button
+                  onClick={async () => {
+                    if (banModal.teamId) {
+                      await updateTeamStatus(banModal.teamId, "blocked", banModal.reason, banModal.duration)
+                      setBanModal({ isOpen: false, teamId: null, reason: "", duration: "1_day" })
+                    }
+                  }}
+                  className="h-16 flex-1 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest italic"
+                >
+                  დაბლოკვა
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setBanModal({ isOpen: false, teamId: null, reason: "", duration: "1_day" })}
+                  className="h-16 px-8 rounded-2xl border-white/10 text-muted-foreground font-black uppercase tracking-widest italic"
+                >
+                  გაუქმება
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {toast && (
         <LuxuryToast

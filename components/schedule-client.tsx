@@ -20,6 +20,7 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showMapModal, setShowMapModal] = useState(false)
   const [preferredMaps, setPreferredMaps] = useState<number>(mapsCount)
+  const [showBanModal, setShowBanModal] = useState(false)
   const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
 
   const handleRequestGame = async () => {
@@ -75,6 +76,18 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
       setShowTeamModal(true)
       return
     }
+
+    // Check for Ban
+    if (userTeam.status === 'blocked') {
+      const banUntil = userTeam.ban_until ? new Date(userTeam.ban_until) : null
+      const now = new Date()
+      
+      if (!banUntil || banUntil > now) {
+        setShowBanModal(true)
+        return
+      }
+    }
+
     // Set default selection to schedule's max
     setPreferredMaps(mapsCount)
     setShowMapModal(true)
@@ -229,6 +242,67 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
                   </Button>
                 </div>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showBanModal} onOpenChange={setShowBanModal}>
+        <DialogContent className="max-w-lg bg-[#030712] border-white/5 p-0 overflow-hidden rounded-[2.5rem] shadow-2xl shadow-rose-500/20">
+          <div className="relative p-8 lg:p-12">
+            {/* Red glow backdrop */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/10 blur-[100px] -z-10" />
+            
+            <DialogHeader className="mb-8">
+              <div className="flex items-center gap-6 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
+                  <AlertCircle className="w-8 h-8 text-rose-500 animate-pulse" />
+                </div>
+                <div>
+                  <DialogTitle className="text-4xl font-black text-rose-500 italic uppercase tracking-tighter leading-none mb-2">
+                    Unit <span className="text-white italic">Suspended</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-[10px]">
+                    თქვენი გუნდი დისკვალიფიცირებულია
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="glass p-6 rounded-2xl border border-white/5 space-y-4">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-rose-500/50 uppercase tracking-widest italic leading-none">დაბლოკვის მიზეზი</div>
+                  <div className="text-white font-bold italic tracking-tight uppercase">
+                    {userTeam?.ban_reason || "წესების დარღვევა"}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-black text-white/20 uppercase tracking-widest italic leading-none">ვადის ამოწურვა</div>
+                    <div className="text-sm font-black text-rose-400 italic">
+                      {userTeam?.ban_until 
+                        ? new Intl.DateTimeFormat('ka-GE', { 
+                            dateStyle: 'medium', 
+                            timeStyle: 'short' 
+                          }).format(new Date(userTeam.ban_until))
+                        : "სამუდამოდ"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground italic font-medium leading-relaxed px-2">
+                თქვენს გუნდს შეზღუდული აქვს პრეკებზე რეგისტრაცია დადასტურებულ ვადამდე. გთხოვთ დაიცვათ წესები სამომავლოდ.
+              </p>
+
+              <Button
+                variant="outline"
+                onClick={() => setShowBanModal(false)}
+                className="w-full h-16 rounded-2xl border-white/10 hover:bg-white/5 text-muted-foreground font-black uppercase tracking-widest italic"
+              >
+                გაგზავნა
+              </Button>
             </div>
           </div>
         </DialogContent>

@@ -607,9 +607,9 @@ export default function ProfilePage() {
                                           <div className="text-xl font-black text-white/20 italic tracking-widest mt-4">[{userTeam.team_tag}]</div>
                                        </div>
                                        <div className="flex items-center gap-3">
-                                          <Badge className={`px-4 py-1.5 uppercase italic font-black text-[10px] tracking-widest ${userTeam.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' : 'bg-secondary/20 text-secondary border-secondary/20'
+                                          <Badge className={`px-4 py-1.5 uppercase italic font-black text-[10px] tracking-widest ${userTeam.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' : userTeam.status === 'blocked' ? 'bg-rose-500/20 text-rose-400 border-rose-500/20' : 'bg-secondary/20 text-secondary border-secondary/20'
                                              }`}>
-                                             {userTeam.status === 'approved' ? 'ავტორიზებული' : userTeam.status === 'pending' ? 'განხილვაში' : 'უარყოფილი'}
+                                             {userTeam.status === 'approved' ? 'ავტორიზებული' : userTeam.status === 'pending' ? 'განხილვაში' : userTeam.status === 'blocked' ? 'დაბლოკილი' : 'უარყოფილი'}
                                           </Badge>
                                           {userTeam.is_vip && <Badge variant="gold" className="px-4 py-1.5 font-black text-[10px] tracking-widest">ELITE_UNIT</Badge>}
                                        </div>
@@ -634,9 +634,15 @@ export default function ProfilePage() {
                                           </Link>
                                        </Button>
                                        <Button
-                                          onClick={() => setIsDeleteConfirmOpen(true)}
+                                          onClick={() => {
+                                              if (userTeam.status === 'blocked') {
+                                                 setToast({ message: "დაბლოკილი გუნდის წაშლა შეუძლებელია", type: 'error' })
+                                              } else {
+                                                 setIsDeleteConfirmOpen(true)
+                                              }
+                                           }}
                                           variant="outline"
-                                          className="h-14 w-14 rounded-2xl border-rose-500/20 text-rose-500 hover:bg-rose-500/10 transition-colors"
+                                          disabled={userTeam.status === 'blocked'} className={`h-14 w-14 rounded-2xl border-rose-500/20 text-rose-500 hover:bg-rose-500/10 transition-colors ${userTeam.status === 'blocked' ? 'opacity-50 cursor-not-allowed border-rose-500/10' : ''}`}
                                        >
                                           <Trash2 className="w-5 h-5" />
                                        </Button>

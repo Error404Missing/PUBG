@@ -34,6 +34,7 @@ function RegisterTeamContent() {
   })
   const [cooldown, setCooldown] = useState<{ active: boolean, timeLeft: string | null }>({ active: false, timeLeft: null })
   const [isRejected, setIsRejected] = useState(false)
+  const [banInfo, setBanInfo] = useState<{ isBanned: boolean, reason?: string, expiresAt?: string } | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -61,12 +62,30 @@ function RegisterTeamContent() {
           }
         })
 
-        // Check for rejected teams
-        supabase.from("teams").select("status").eq("leader_id", user.id).eq("status", "rejected").limit(1).then(({ data }) => {
-           if (data && data.length > 0) {
-              setIsRejected(true)
-           }
-        })
+        // Check for rejected or blocked teams
+        supabase.from("teams")
+          .select("status, ban_reason, ban_until")
+          .eq("leader_id", user.id)
+          .or("status.eq.rejected,status.eq.blocked")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              const latestTeam = data[0]
+              if (latestTeam.status === "rejected") {
+                setIsRejected(true)
+              } else if (latestTeam.status === "blocked") {
+                const banUntil = latestTeam.ban_until ? new Date(latestTeam.ban_until) : null
+                if (!banUntil || banUntil > new Date()) {
+                  setBanInfo({ 
+                    isBanned: true, 
+                    reason: latestTeam.ban_reason, 
+                    expiresAt: latestTeam.ban_until 
+                  })
+                }
+              }
+            }
+          })
 
         // Fetch schedule maps_count if present
         if (scheduleId) {
@@ -146,6 +165,12 @@ function RegisterTeamContent() {
 
     if (isRejected) {
       setError("თქვენი გუნდი უარყოფილია ადმინისტრაციის მიერ და ვეღარ გააგზავნით ახალ მოთხოვნას.")
+      setIsLoading(false)
+      return
+    }
+
+    if (banInfo?.isBanned) {
+      setError(`თქვენი გუნდი დისკვალიფიცირებულია. მიზეზი: ${banInfo.reason || "წესების დარღვევა"}. ვადა: ${banInfo.expiresAt ? new Date(banInfo.expiresAt).toLocaleString('ka-GE') : "სამუდამოდ"}`)
       setIsLoading(false)
       return
     }
