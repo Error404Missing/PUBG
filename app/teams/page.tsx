@@ -88,38 +88,73 @@ export default function TeamsPage() {
     <Dialog key={team.id}>
       <DialogTrigger asChild>
         <div
-          className={`glass-card p-8 group animate-reveal cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98] relative ${
-            team.is_vip ? "border-secondary/30 ring-1 ring-secondary/20 shadow-[0_0_40px_-10px_rgba(255,180,0,0.1)]" : ""
+          className={`glass-card p-8 group animate-reveal cursor-pointer transition-all duration-500 hover:scale-[1.03] active:scale-[0.98] relative overflow-hidden ${
+            team.is_vip 
+              ? "border-secondary/50 ring-2 ring-secondary/20 shadow-[0_0_50px_-10px_rgba(255,180,0,0.25)] bg-gradient-to-br from-secondary/[0.07] to-transparent" 
+              : "border-white/5"
           }`}
           style={{ animationDelay: `${i * 0.05}s` }}
         >
-          <div className="flex items-start justify-between mb-8">
+          {/* VIP Animated Accent */}
+          {team.is_vip && (
+            <>
+              {/* Premium Golden Glow */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-secondary/20 blur-[80px] -z-10 group-hover:bg-secondary/30 transition-colors" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-secondary/10 blur-[60px] -z-10" />
+              
+              {/* Rotating Border Gradient (Simulation) */}
+              <div className="absolute inset-0 border border-secondary/30 rounded-[2.5rem] pointer-events-none" />
+              <div className="absolute inset-[1px] border border-secondary/10 rounded-[2.5rem] pointer-events-none" />
+              
+              {/* Corner VIP Badge */}
+              <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 pointer-events-none">
+                 <div className="absolute top-3 right-[-35px] bg-gradient-to-r from-amber-600 via-secondary to-amber-600 text-black text-[8px] font-black uppercase tracking-[0.2em] py-1 w-[120px] text-center rotate-45 shadow-xl border-y border-white/20">
+                    VIP UNIT
+                 </div>
+              </div>
+
+              {/* Texture Overlay */}
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-transparent pointer-events-none" />
+            </>
+          )}
+
+          <div className="flex items-start justify-between mb-8 relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0">
               {/* Team Logo or Default Icon */}
               {team.logo_url ? (
-                <div className={`w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border-2 ${
-                  team.is_vip ? 'border-secondary/40 shadow-[0_0_20px_-5px_rgba(255,180,0,0.4)]' : 'border-white/10'
+                <div className={`w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border-2 transition-transform group-hover:scale-110 duration-500 relative ${
+                  team.is_vip 
+                    ? 'border-secondary shadow-[0_0_30px_-5px_secondary] ring-4 ring-secondary/10' 
+                    : 'border-white/10 shadow-xl'
                 }`}>
                   <img src={team.logo_url} alt={team.team_name} className="w-full h-full object-cover" />
+                  {team.is_vip && <div className="absolute inset-0 bg-gradient-to-tr from-secondary/20 via-transparent to-transparent" />}
                 </div>
               ) : (
-                <div className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border ${
-                  team.is_vip ? 'bg-secondary/10 border-secondary/20' : 'bg-primary/10 border-primary/10'
+                <div className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 transition-transform group-hover:scale-110 duration-500 ${
+                  team.is_vip 
+                    ? 'bg-gradient-to-br from-amber-500/30 to-secondary/10 border-secondary shadow-[0_0_30px_-5px_secondary]' 
+                    : 'bg-primary/10 border-primary/10'
                 }`}>
                   {team.is_vip
-                    ? <Crown className="w-7 h-7 text-secondary" />
-                    : <Shield className="w-7 h-7 text-primary/60" />
+                    ? <Crown className="w-8 h-8 text-secondary filter drop-shadow-[0_0_8px_secondary]" />
+                    : <Shield className="w-8 h-8 text-primary/60" />
                   }
                 </div>
               )}
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1.5">
                   {team.is_vip && <Crown className="w-4 h-4 text-secondary animate-pulse-soft flex-shrink-0" />}
-                  <h3 className="text-xl font-black text-white italic tracking-tight group-hover:text-primary transition-colors truncate">
+                  <h3 className={`text-xl font-black italic tracking-tight group-hover:text-primary transition-colors truncate ${
+                    team.is_vip ? 'text-secondary' : 'text-white'
+                  }`}>
                     {team.team_name}
                   </h3>
                 </div>
-                <Badge variant="outline" className="border-white/10 tracking-[0.2em] font-mono text-[10px] py-1">
+                <Badge variant="outline" className={`tracking-[0.2em] font-mono text-[10px] py-1 ${
+                  team.is_vip ? 'border-secondary/30 text-secondary bg-secondary/5' : 'border-white/10'
+                }`}>
                   {team.team_tag}
                 </Badge>
                 {team.status !== 'approved' && (
