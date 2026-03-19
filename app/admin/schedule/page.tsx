@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Calendar, Plus, Trash2, ChevronLeft,
   Clock, MapPin, Users, Target, Save, X,
-  ArrowRight, Activity, Shield
+  ArrowRight, Activity, Shield, Zap
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -31,6 +31,8 @@ type Schedule = {
   maps_count: number
   is_active: boolean
   registration_open?: boolean
+  registration_status: 'open' | 'vip_only' | 'closed'
+  logo_required: boolean
 }
 
 export default function AdminSchedulePage() {
@@ -47,6 +49,8 @@ export default function AdminSchedulePage() {
     mapName: "",
     maxTeams: "100",
     mapsCount: "4",
+    logoRequired: false,
+    registrationStatus: "open" as 'open' | 'vip_only' | 'closed',
   })
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, scheduleId: string | null }>({
     isOpen: false,
@@ -103,6 +107,8 @@ export default function AdminSchedulePage() {
       max_teams: Number.parseInt(formData.maxTeams),
       maps_count: Number.parseInt(formData.mapsCount),
       is_active: true,
+      logo_required: formData.logoRequired,
+      registration_status: formData.registrationStatus,
     }
 
     let error;
@@ -135,6 +141,8 @@ export default function AdminSchedulePage() {
             date: dateTime,
             map: formData.mapName,
             max_teams: formData.maxTeams,
+            logo_required: formData.logoRequired,
+            registration_status: formData.registrationStatus,
             is_edit: isEditing
           }
         })
@@ -152,6 +160,8 @@ export default function AdminSchedulePage() {
         mapName: "",
         maxTeams: "100",
         mapsCount: "4",
+        logoRequired: false,
+        registrationStatus: "open",
       })
       fetchSchedules()
     }
@@ -176,6 +186,8 @@ export default function AdminSchedulePage() {
       mapName: schedule.map_name || "",
       maxTeams: String(schedule.max_teams),
       mapsCount: String(schedule.maps_count || 4),
+      logoRequired: schedule.logo_required || false,
+      registrationStatus: schedule.registration_status || "open",
     })
     setIsEditing(true)
     setEditId(schedule.id)
@@ -196,6 +208,8 @@ export default function AdminSchedulePage() {
       mapName: "",
       maxTeams: "100",
       mapsCount: "4",
+      logoRequired: false,
+      registrationStatus: "open",
     })
   }
 
@@ -243,15 +257,15 @@ export default function AdminSchedulePage() {
     setDeleteConfirm({ isOpen: false, scheduleId: null })
   }
 
-  const toggleRegistration = async (id: string, currentStatus: boolean) => {
+  const updateRegistrationStatus = async (id: string, status: 'open' | 'vip_only' | 'closed') => {
     const supabase = createClient()
     const { error } = await supabase
       .from("schedules")
-      .update({ registration_open: !currentStatus })
+      .update({ registration_status: status })
       .eq("id", id)
 
     if (error) {
-      console.error("Toggle registration error:", error)
+      console.error("Update registration status error:", error)
       setToast({ message: "სტატუსის შეცვლა ვერ მოხერხდა", type: 'error' })
     } else {
       // 📝 Log Action
@@ -260,18 +274,18 @@ export default function AdminSchedulePage() {
       if (user) {
         await supabase.from("logs").insert({
           user_id: user.id,
-          action: `რეგისტრაციის სტატუსის შეცვლა: ${!currentStatus ? 'გაიხსნა' : 'დაიხურა'}`,
+          action: `რეგისტრაციის სტატუსის შეცვლა: ${status}`,
           entity_type: "schedule",
           entity_id: id,
           details: {
             title: schedule?.title,
-            registration_open: !currentStatus
+            registration_status: status
           }
         })
       }
 
       setToast({
-        message: !currentStatus ? "რეგისტრაცია გაიხსნა" : "რეგისტრაცია დაიხურა",
+        message: status === 'open' ? "რეგისტრაცია გაიხსნა" : status === 'vip_only' ? "რეგისტრაცია მხოლოდ VIP-თვის" : "რეგისტრაცია დაიხურა",
         type: 'success'
       })
       fetchSchedules()
@@ -421,6 +435,63 @@ export default function AdminSchedulePage() {
                   </div>
                 </div>
 
+                {/* Logo & Status Settings */}
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Logo Requirement */}
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic flex items-center gap-2">
+                       გუნდის ლოგო / Team Logo
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, logoRequired: true })}
+                        className={`h-16 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 border ${
+                          formData.logoRequired
+                            ? 'bg-rose-500/20 border-rose-500 text-rose-500 shadow-lg shadow-rose-500/20'
+                            : 'bg-black/40 border-white/10 text-white/40 hover:border-white/30 hover:text-white'
+                        }`}
+                      >
+                        სავალდებულო (Mandatory)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, logoRequired: false })}
+                        className={`h-16 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 border ${
+                          !formData.logoRequired
+                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-lg shadow-emerald-500/20'
+                            : 'bg-black/40 border-white/10 text-white/40 hover:border-white/30 hover:text-white'
+                        }`}
+                      >
+                        არ არის სავალდებულო
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Initial Registration Status */}
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic flex items-center gap-2">
+                      რეგისტრაციის სტატუსი / Reg Status
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['open', 'vip_only', 'closed'] as const).map(s => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, registrationStatus: s })}
+                          className={`h-16 rounded-xl font-black text-[10px] uppercase tracking-tighter transition-all active:scale-95 border ${
+                            formData.registrationStatus === s
+                              ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/20'
+                              : 'bg-black/40 border-white/10 text-white/40 hover:border-white/30 hover:text-white'
+                          }`}
+                        >
+                          {s === 'open' ? 'გახსნილი' : s === 'vip_only' ? 'მხოლოდ VIP' : 'დახურული'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Maps Count Selector */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic flex items-center gap-2">
@@ -521,36 +592,67 @@ export default function AdminSchedulePage() {
                         <div className="text-[9px] font-black text-primary/60 uppercase tracking-widest italic">Maps_Count</div>
                         <div className="text-sm font-bold text-primary italic">{schedule.maps_count || 4} Maps</div>
                       </div>
+                      <div className="glass p-4 rounded-2xl border border-rose-500/10 space-y-1">
+                        <div className="text-[9px] font-black text-rose-500/60 uppercase tracking-widest italic">Logo_Req</div>
+                        <div className={`text-sm font-bold italic ${schedule.logo_required ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          {schedule.logo_required ? 'დიახ' : 'არა'}
+                        </div>
+                      </div>
+                      <div className="glass p-4 rounded-2xl border border-sky-500/10 space-y-1">
+                        <div className="text-[9px] font-black text-sky-500/60 uppercase tracking-widest italic">Reg_Status</div>
+                        <div className="text-sm font-bold text-sky-400 italic uppercase">
+                          {schedule.registration_status === 'open' ? 'Gia' : schedule.registration_status === 'vip_only' ? 'VIP Only' : 'Closed'}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex lg:flex-col gap-3">
-                    <Button
-                      onClick={() => handleEdit(schedule)}
-                      variant="outline"
-                      className="w-14 h-14 rounded-2xl border-sky-500/20 text-sky-400 hover:bg-sky-500/10 p-0 transition-all active:scale-95"
-                      title="რედაქტირება"
-                    >
-                      <Save className="w-6 h-6" />
-                    </Button>
-                    <Button
-                      onClick={() => toggleRegistration(schedule.id, schedule.registration_open !== false)}
-                      variant="outline"
-                      className={`w-14 h-14 rounded-2xl border p-0 transition-all active:scale-95 ${schedule.registration_open !== false
-                          ? "border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
-                          : "border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
-                        }`}
-                      title={schedule.registration_open !== false ? "რეგისტრაციის დახურვა" : "რეგისტრაციის გახსნა"}
-                    >
-                      {schedule.registration_open !== false ? <Activity className="w-6 h-6" /> : <X className="w-6 h-6" />}
-                    </Button>
-                    <Button
-                      onClick={() => setDeleteConfirm({ isOpen: true, scheduleId: schedule.id })}
-                      variant="outline"
-                      className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
-                    >
-                      <Trash2 className="w-6 h-6" />
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => updateRegistrationStatus(schedule.id, 'open')}
+                          variant="outline"
+                          className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'open' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-white/5 text-white/20'}`}
+                          title="რეგისტრაციის გახსნა ყველასთვის"
+                        >
+                          <Activity className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          onClick={() => updateRegistrationStatus(schedule.id, 'vip_only')}
+                          variant="outline"
+                          className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'vip_only' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'border-white/5 text-white/20'}`}
+                          title="რეგისტრაციის გახსნა მხოლოდ VIP-თვის"
+                        >
+                          <Zap className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          onClick={() => updateRegistrationStatus(schedule.id, 'closed')}
+                          variant="outline"
+                          className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'closed' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'border-white/5 text-white/20'}`}
+                          title="რეგისტრაციის დახურვა ყველასთვის"
+                        >
+                          <X className="w-5 h-5" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleEdit(schedule)}
+                          variant="outline"
+                          className="w-14 h-14 rounded-2xl border-sky-500/20 text-sky-400 hover:bg-sky-500/10 p-0 transition-all active:scale-95"
+                          title="რედაქტირება"
+                        >
+                          <Save className="w-6 h-6" />
+                        </Button>
+                        <Button
+                          onClick={() => setDeleteConfirm({ isOpen: true, scheduleId: schedule.id })}
+                          variant="outline"
+                          className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
+                        >
+                          <Trash2 className="w-6 h-6" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -32,12 +32,33 @@ export async function POST(request: Request) {
     // Check if schedule permits registration
     const { data: schedule } = await supabase
       .from("schedules")
-      .select("registration_open, maps_count")
+      .select("registration_status, logo_required, maps_count")
       .eq("id", schedule_id)
       .single()
 
-    if (schedule && schedule.registration_open === false) {
+    const regStatus = schedule?.registration_status || 'open'
+    
+    if (regStatus === 'closed') {
       return NextResponse.json({ error: "რეგისტრაცია დახურულია ამ მატჩზე" }, { status: 403 })
+    }
+
+    // Check VIP status if needed
+    let isVip = false
+    try {
+      const { data: vipStatus } = await supabase
+        .from("user_vip_status")
+        .select("vip_until")
+        .eq("user_id", user.id)
+        .maybeSingle()
+      if (vipStatus && new Date(vipStatus.vip_until) > new Date()) {
+        isVip = true
+      }
+    } catch (e) {
+      console.warn("VIP status check failed:", e)
+    }
+
+    if (regStatus === 'vip_only' && !isVip) {
+      return NextResponse.json({ error: "რეგისტრაცია ამჟამად მხოლოდ VIP მომხმარებლებისთვისაა ხელმისაწვდომი" }, { status: 403 })
     }
 
     // Validate preferred maps
@@ -51,7 +72,7 @@ export async function POST(request: Request) {
     // Verify that the user owns this team
     const { data: team, error: teamError } = await supabase
       .from("teams")
-      .select("id, status, team_name")
+      .select("id, status, team_name, logo_url")
       .eq("id", team_id)
       .eq("leader_id", user.id)
       .maybeSingle()
@@ -63,6 +84,13 @@ export async function POST(request: Request) {
 
     if (!team) {
       return NextResponse.json({ error: "Team not found or unauthorized" }, { status: 403 })
+    }
+
+    // Check Logo requirement
+    if (schedule?.logo_required && !team.logo_url) {
+      return NextResponse.json({ 
+        error: "ამ მატჩზე რეგისტრაციისთვის გუნდის ლოგო სავალდებულოა. გთხოვთ ატვირთოთ ლოგო პროფილის გვერდიდან." 
+      }, { status: 400 })
     }
 
     // Check if request already exists
@@ -87,18 +115,9 @@ export async function POST(request: Request) {
       status: "pending",
     }
 
-    // Try to add has_vip if possible
-    try {
-      const { data: vipStatus } = await supabase
-        .from("user_vip_status")
-        .select("vip_until")
-        .eq("user_id", user.id)
-        .maybeSingle()
-      if (vipStatus && new Date(vipStatus.vip_until) > new Date()) {
-        insertData.has_vip = true
-      }
-    } catch (e) {
-      console.warn("VIP status check failed (non-critical):", e)
+    // Use pre-calculated isVip
+    if (isVip) {
+      insertData.has_vip = true
     }
 
     const { data: scrimRequest, error: insertError } = await supabase

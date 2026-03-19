@@ -162,7 +162,9 @@ export default async function SchedulePage() {
                       scheduleId={schedule.id}
                       userTeam={userTeam}
                       user={user}
-                      registrationOpen={schedule.registration_open !== false}
+                      registrationStatus={schedule.registration_status}
+                      logoRequired={schedule.logo_required}
+                      isUserVip={!!userVipStatus}
                       mapsCount={(schedule as any).maps_count || 4}
                     />
                   </div>

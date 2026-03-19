@@ -12,10 +12,22 @@ interface ScheduleClientProps {
   userTeam: any
   user: any
   registrationOpen?: boolean
+  registrationStatus?: 'open' | 'vip_only' | 'closed'
+  logoRequired?: boolean
   mapsCount?: number
+  isUserVip?: boolean
 }
 
-export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = true, mapsCount = 4 }: ScheduleClientProps) {
+export function ScheduleClient({ 
+  scheduleId, 
+  userTeam, 
+  user, 
+  registrationOpen = true, 
+  registrationStatus = 'open',
+  logoRequired = false,
+  mapsCount = 4,
+  isUserVip = false
+}: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showMapModal, setShowMapModal] = useState(false)
@@ -97,18 +109,29 @@ export function ScheduleClient({ scheduleId, userTeam, user, registrationOpen = 
     <>
       <Button
         onClick={handleOpenMapModal}
-        disabled={isLoading || !registrationOpen}
-        className={`whitespace-nowrap ${registrationOpen
-            ? "bg-blue-600 hover:bg-blue-700 text-white"
-            : "bg-neutral-800 text-neutral-400 cursor-not-allowed border border-white/5"
-          }`}
+        disabled={isLoading || registrationStatus === 'closed' || (registrationStatus === 'vip_only' && !isUserVip)}
+        className={`whitespace-nowrap transition-all active:scale-95 ${
+          registrationStatus === 'closed'
+            ? "bg-neutral-800 text-neutral-400 cursor-not-allowed border border-white/5"
+            : registrationStatus === 'vip_only' && !isUserVip
+            ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
+        }`}
       >
-        <Zap className="w-4 h-4 mr-2" />
-        {!registrationOpen
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : registrationStatus === 'vip_only' ? (
+          <Zap className="w-4 h-4 mr-2" />
+        ) : (
+          <Zap className="w-4 h-4 mr-2" />
+        )}
+        {registrationStatus === 'closed'
           ? "რეგისტრაცია დახურულია"
+          : registrationStatus === 'vip_only' && !isUserVip
+          ? "მხოლოდ VIP მომხმარებლებისთვის"
           : isLoading
-            ? "იტვირთება..."
-            : "მოითხოვე თამაში"}
+          ? "იტვირთება..."
+          : "მოითხოვე თამაში"}
       </Button>
 
       {/* Maps Confirmation Modal */}
