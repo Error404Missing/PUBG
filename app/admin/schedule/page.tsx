@@ -601,7 +601,7 @@ export default function AdminSchedulePage() {
                       <div className="glass p-4 rounded-2xl border border-sky-500/10 space-y-1">
                         <div className="text-[9px] font-black text-sky-500/60 uppercase tracking-widest italic">Reg_Status</div>
                         <div className="text-sm font-bold text-sky-400 italic uppercase">
-                          {schedule.registration_status === 'open' ? 'Gia' : schedule.registration_status === 'vip_only' ? 'VIP Only' : 'Closed'}
+                          {schedule.registration_status === 'open' ? 'ღიაა' : schedule.registration_status === 'vip_only' ? 'VIP UNit' : 'დახურული'}
                         </div>
                       </div>
                     </div>
