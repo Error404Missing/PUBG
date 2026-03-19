@@ -9,7 +9,7 @@ export default async function LeaderboardPage() {
   const supabase = await createClient()
 
   const [clansRes, playersRes] = await Promise.all([
-    supabase.from("leaderboard_clans").select("*").order("points", { ascending: false }),
+    supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }).order("points", { ascending: false }),
     supabase.from("leaderboard_players").select("*").order("points", { ascending: false })
   ])
 
@@ -62,7 +62,8 @@ export default async function LeaderboardPage() {
                        </div>
                        <div>
                           <h3 className="text-2xl font-black text-white italic truncate">{clans[1].name}</h3>
-                          <p className="text-slate-400 font-black uppercase tracking-widest text-xs mt-2">{clans[1].points} PTS</p>
+                          <p className="text-slate-400 font-black uppercase tracking-widest text-xs mt-2">{clans[1].wins} WINS</p>
+                          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-tighter mt-1">{clans[1].points} PTS</p>
                        </div>
                     </div>
                   </div>
@@ -82,7 +83,8 @@ export default async function LeaderboardPage() {
                        </div>
                        <div>
                           <h3 className="text-3xl font-black text-white italic truncate">{clans[0].name}</h3>
-                          <p className="text-amber-500 font-black uppercase tracking-widest text-sm mt-2">{clans[0].points} PTS</p>
+                          <p className="text-amber-500 font-black uppercase tracking-widest text-sm mt-2">{clans[0].wins} WINS</p>
+                          <p className="text-amber-600 font-bold text-[10px] uppercase tracking-tighter mt-1">{clans[0].points} PTS</p>
                        </div>
                     </div>
                   </div>
@@ -99,7 +101,8 @@ export default async function LeaderboardPage() {
                        </div>
                        <div>
                           <h3 className="text-2xl font-black text-white italic truncate">{clans[2].name}</h3>
-                          <p className="text-amber-800 font-black uppercase tracking-widest text-xs mt-2">{clans[2].points} PTS</p>
+                          <p className="text-amber-800 font-black uppercase tracking-widest text-xs mt-2">{clans[2].wins} WINS</p>
+                          <p className="text-amber-900 font-bold text-[10px] uppercase tracking-tighter mt-1">{clans[2].points} PTS</p>
                        </div>
                     </div>
                   </div>

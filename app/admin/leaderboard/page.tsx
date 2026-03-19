@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { 
   Trophy, Plus, Trash2, ChevronLeft, 
   Users, User, Save, X, Edit2, 
-  ArrowUpCircle, Medal, Star, Zap
+  ArrowUpCircle, Medal, Star, Zap, Upload, Loader2
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -65,6 +65,7 @@ export default function AdminLeaderboardPage() {
   })
 
   const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -87,7 +88,7 @@ export default function AdminLeaderboardPage() {
   const fetchData = async () => {
     const supabase = createClient()
     const [clansRes, playersRes] = await Promise.all([
-      supabase.from("leaderboard_clans").select("*").order("points", { ascending: false }),
+      supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }).order("points", { ascending: false }),
       supabase.from("leaderboard_players").select("*").order("points", { ascending: false })
     ])
     setClans(clansRes.data || [])
@@ -152,6 +153,38 @@ export default function AdminLeaderboardPage() {
       resetForms()
       fetchData()
     }
+  }
+
+  const handleFileUpload = async (file: File, type: 'clan' | 'player') => {
+    if (!file) return
+    
+    setIsUploading(true)
+    const supabase = createClient()
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
+    const filePath = `${type}s/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('leaderboard')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      setToast({ message: "ატვირთვა ვერ მოხერხდა: " + uploadError.message, type: 'error' })
+      setIsUploading(false)
+      return null
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('leaderboard').getPublicUrl(filePath)
+    
+    if (type === 'clan') {
+      setClanForm({ ...clanForm, logo_url: publicUrl })
+    } else {
+      setPlayerForm({ ...playerForm, avatar_url: publicUrl })
+    }
+    
+    setIsUploading(false)
+    setToast({ message: "ფოტო წარმატებით აიტვირთა", type: 'success' })
+    return publicUrl
   }
 
   const deleteEntry = async (id: string, table: 'leaderboard_clans' | 'leaderboard_players') => {
@@ -226,9 +259,27 @@ export default function AdminLeaderboardPage() {
                          <Label className="text-[10px] font-black uppercase text-amber-400 italic">კლანის სახელი</Label>
                          <Input required value={clanForm.name} onChange={e => setClanForm({...clanForm, name: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
                       </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">ლოგოს URL (ლინკი)</Label>
-                         <Input value={clanForm.logo_url} onChange={e => setClanForm({...clanForm, logo_url: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">კლანის ლოგო</Label>
+                         <div className="flex items-center gap-4">
+                            <div className="w-20 h-20 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden">
+                               {clanForm.logo_url ? (
+                                 <img src={clanForm.logo_url} className="w-full h-full object-cover" alt="" />
+                               ) : (
+                                 <Upload className="w-6 h-6 text-white/20" />
+                               )}
+                            </div>
+                            <div className="flex-1">
+                               <Input 
+                                 type="file" 
+                                 accept="image/*" 
+                                 onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'clan')}
+                                 className="h-12 bg-black/40 border-white/10"
+                                 disabled={isUploading}
+                               />
+                               <p className="text-[9px] text-muted-foreground mt-2 italic">* პირდაპირი ატვირთვა</p>
+                            </div>
+                         </div>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -321,9 +372,27 @@ export default function AdminLeaderboardPage() {
                          <Label className="text-[10px] font-black uppercase text-amber-400 italic">სახელი</Label>
                          <Input required value={playerForm.name} onChange={e => setPlayerForm({...playerForm, name: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
                       </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">ავატარის URL</Label>
-                         <Input value={playerForm.avatar_url} onChange={e => setPlayerForm({...playerForm, avatar_url: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
+                      <div className="space-y-4">
+                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">მოთამაშის ავატარი</Label>
+                         <div className="flex items-center gap-4">
+                            <div className="w-20 h-20 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden">
+                               {playerForm.avatar_url ? (
+                                 <img src={playerForm.avatar_url} className="w-full h-full object-cover" alt="" />
+                               ) : (
+                                 <Upload className="w-6 h-6 text-white/20" />
+                               )}
+                            </div>
+                            <div className="flex-1">
+                               <Input 
+                                 type="file" 
+                                 accept="image/*" 
+                                 onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'player')}
+                                 className="h-12 bg-black/40 border-white/10"
+                                 disabled={isUploading}
+                               />
+                               <p className="text-[9px] text-muted-foreground mt-2 italic">* პირდაპირი ატვირთვა</p>
+                            </div>
+                         </div>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
