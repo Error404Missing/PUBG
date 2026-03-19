@@ -478,11 +478,11 @@ export function SupportChat() {
                                </div>
 
                                {/* Message Actions */}
-                               <div className={`absolute -top-3 ${msg.userId === user?.id ? 'right-full mr-2' : 'left-full ml-2'} hidden group-hover:flex items-center gap-1 bg-black/80 backdrop-blur-xl border border-white/10 p-1 rounded-xl shadow-2xl z-20`}>
-                                   <button onClick={() => setReplyTo(msg)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/50 hover:text-white transition-colors" title="Reply"><Reply className="w-3 h-3" /></button>
-                                   <button onClick={() => setShowEmojiPicker(msg.id)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/50 hover:text-white transition-colors" title="React"><Smile className="w-3 h-3" /></button>
+                               <div className={`absolute -top-4 ${msg.userId === user?.id ? 'right-0' : 'left-0'} opacity-0 group-hover:opacity-100 flex items-center gap-1 bg-zinc-900 border border-white/20 p-1 rounded-xl shadow-2xl z-20 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto`}>
+                                   <button onClick={() => setReplyTo(msg)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/50 hover:text-white transition-colors" title="Reply"><Reply className="w-3.5 h-3.5" /></button>
+                                   <button onClick={() => setShowEmojiPicker(msg.id)} className="p-1.5 hover:bg-white/10 rounded-lg text-white/50 hover:text-white transition-colors" title="React"><Smile className="w-3.5 h-3.5" /></button>
                                    {isAdmin && (
-                                     <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 hover:bg-rose-500/20 rounded-lg text-rose-500/50 hover:text-rose-500 transition-colors" title="Delete"><Trash2 className="w-3 h-3" /></button>
+                                     <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 hover:bg-rose-500/20 rounded-lg text-rose-500/50 hover:text-rose-500 transition-colors" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                                    )}
                                </div>
 
