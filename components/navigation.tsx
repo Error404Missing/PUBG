@@ -101,6 +101,7 @@ export function Navigation() {
     { href: "/schedule", label: "განრიგი" },
     { href: "/teams", label: "გუნდები" },
     { href: "/results", label: "შედეგები" },
+    { href: "/leaderboard", label: "Leaderboard" },
     { href: "/blocked", label: "დაბლოკილები" },
     { href: "/case-opening", label: "კეისები", special: "case" },
     { href: "/vip", label: "VIP", special: "vip" },

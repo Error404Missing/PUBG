@@ -68,6 +68,13 @@ export default async function AdminPage() {
       color: "blue" 
     },
     { 
+      href: "/admin/leaderboard", 
+      label: "Leaderboard", 
+      desc: "საუკეთესო კლანების და მოთამაშეების რეიტინგი", 
+      icon: Trophy, 
+      color: "amber" 
+    },
+    { 
       href: "/admin/users", 
       label: "მომხმარებლები", 
       desc: "роლების მართვა, ბანი, VIP ადმინისტრირება", 
