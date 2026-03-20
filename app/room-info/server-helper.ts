@@ -13,30 +13,40 @@ export async function getRoomInfoData(userId: string) {
     .eq("id", userId)
     .single()
 
-  const isAdmin = profile?.is_admin === true || profile?.role === 'admin'
-  const isManager = profile?.role === "manager" || isAdmin // admins are also managers
+  const isAdmin = !!(profile?.is_admin || profile?.role === 'admin')
+  const isManager = !!(profile?.role === 'manager' || isAdmin)
 
-  // 2. Fetch User's Requests directly (Bypassing RLS)
-  // We join with teams on leader_id = userId
-  const { data: allRequests } = await supabaseAdmin
-    .from("scrim_requests")
-    .select(`
-        id,
-        team_id,
-        schedule_id,
-        status,
-        slot_number,
-        preferred_maps,
-        teams!inner (id, team_name, leader_id, slot_number)
-    `)
-    .eq("teams.leader_id", userId)
+  // 2. Fetch User's Teams IDs
+  const { data: userTeams } = await supabaseAdmin
+    .from("teams")
+    .select("id")
+    .eq("leader_id", userId)
 
-  const teamIds = (allRequests as any[])?.map(r => r.team_id) || []
+  const teamIds = userTeams?.map(t => t.id) || []
 
-  // 4. Filter approved
-  const approvedRequests = allRequests.filter(r => 
-    r.status?.toLowerCase() === 'approved' || r.status?.toLowerCase() === 'verified'
-  )
+  // 3. Fetch Scrim Requests for these teams
+  let allRequests: any[] = []
+  if (teamIds.length > 0) {
+    const { data } = await supabaseAdmin
+      .from("scrim_requests")
+      .select(`
+          id,
+          team_id,
+          schedule_id,
+          status,
+          slot_number,
+          preferred_maps,
+          teams (id, team_name, leader_id, slot_number)
+      `)
+      .in("team_id", teamIds)
+    allRequests = data || []
+  }
+
+  // 4. Filter approved with trimming/casing robustness
+  const approvedRequests = allRequests.filter(r => {
+    const s = r.status?.toLowerCase().trim()
+    return s === 'approved' || s === 'verified'
+  })
 
   // 5. Fetch Active Schedules
   const { data: allSchedules } = await supabaseAdmin
