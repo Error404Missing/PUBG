@@ -28,48 +28,40 @@ export default async function RoomInfoPage() {
   const isManager = profile?.role === "manager"
   const isAdmin = profile?.is_admin
 
-  // Step 1: Fetch all teams led by this user (including non-approved teams)
-  const { data: userTeams } = await supabase
-    .from("teams")
-    .select("id, slot_number, team_name")
-    .eq("leader_id", user.id)
-
-  const teamIds = userTeams?.map(t => t.id) || []
-
-  // Step 2: Fetch all approved requests for these teams
-  let approvedRequestsData: any[] = []
-  if (teamIds.length > 0) {
-    const { data: requests } = await supabase
-      .from("scrim_requests")
-      .select(`
-        schedule_id, 
-        team_id
-      `)
-      .in("team_id", teamIds)
-      .eq("status", "approved")
-    
-    approvedRequestsData = requests || []
-  }
-
-  const approvedScheduleIds = approvedRequestsData?.map(r => r.schedule_id) || []
-  
-  // Step 3: Create a map of schedule_id -> team_data
-  const scheduleToTeamMap = new Map()
-  approvedRequestsData?.forEach((r: any) => {
-    const team = userTeams?.find(t => t.id === r.team_id)
-    if (team) {
-      scheduleToTeamMap.set(r.schedule_id, team)
-    }
-  })
-
-  // Fetch all active schedules
+  // 1. Fetch ALL active schedules
   const { data: allSchedules } = await supabase
     .from("schedules")
     .select("*")
     .eq("is_active", true)
     .order("date", { ascending: true })
 
-  // Page access: Must be admin, manager, OR lead an approved team for any active schedule
+  // 2. Fetch ALL approved requests for THIS user (using leader_id across any team)
+  // We fetch directly from scrim_requests joined with teams
+  const { data: userApprovedRequests } = await supabase
+    .from("scrim_requests")
+    .select(`
+      schedule_id, 
+      team_id,
+      status,
+      teams!inner (
+        id,
+        leader_id,
+        slot_number,
+        team_name
+      )
+    `)
+    .eq("teams.leader_id", user.id)
+    .in("status", ["approved", "Approved"]) // Handle potential case mismatch
+
+  // Create a map for easy lookup
+  const approvedScheduleMap = new Map()
+  userApprovedRequests?.forEach((req: any) => {
+    approvedScheduleMap.set(req.schedule_id, req.teams)
+  })
+
+  const approvedScheduleIds = Array.from(approvedScheduleMap.keys())
+
+  // Check access: Admin OR Manager OR has ANY approved request
   if (!isAdmin && !isManager && approvedScheduleIds.length === 0) {
      redirect("/")
   }
@@ -93,15 +85,9 @@ export default async function RoomInfoPage() {
         </div>
 
         <div className="space-y-16">
-          {allSchedules?.sort((a, b) => {
-            const aApproved = approvedScheduleIds.includes(a.id)
-            const bApproved = approvedScheduleIds.includes(b.id)
-            if (aApproved && !bApproved) return -1
-            if (!aApproved && bApproved) return 1
-            return new Date(a.date).getTime() - new Date(b.date).getTime()
-          }).map((schedule, i) => {
-            const isApproved = approvedScheduleIds.includes(schedule.id)
-            const teamInfo = scheduleToTeamMap.get(schedule.id)
+          {allSchedules?.map((schedule, i) => {
+            const teamInfo = approvedScheduleMap.get(schedule.id)
+            const isApproved = !!teamInfo || isAdmin
             
             return (
               <div key={schedule.id} className="animate-reveal" style={{ animationDelay: `${i * 0.1}s` }}>
@@ -109,7 +95,7 @@ export default async function RoomInfoPage() {
                   {/* Status Indicator for Approved matches */}
                   {isApproved && (
                     <div className="absolute top-0 right-0 px-6 py-2 bg-emerald-500 text-black font-black text-[10px] uppercase tracking-widest italic rounded-bl-2xl z-20">
-                      Approved_Unit_Active
+                      {isAdmin && !teamInfo ? 'Admin_Overwatch' : 'Approved_Unit_Active'}
                     </div>
                   )}
 
@@ -136,7 +122,7 @@ export default async function RoomInfoPage() {
                   </div>
 
                   <div className="p-8 lg:p-12">
-                    {(isApproved || isAdmin) ? (
+                    {isApproved ? (
                       /* Show Room Info */
                       <div className="space-y-8">
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -168,24 +154,25 @@ export default async function RoomInfoPage() {
                                 {(schedule as any).room_time || (schedule.date ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(schedule.date)) : "N/A")}
                              </div>
                           </div>
-                          <div className="glass p-6 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 space-y-2">
-                             <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Your Slot</div>
-                             <div className="text-3xl font-black text-white italic tracking-tighter">
-                               #{teamInfo?.slot_number || "TBD"}
-                             </div>
-                          </div>
+                          {teamInfo && (
+                            <div className="glass p-6 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 space-y-2">
+                               <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Your Slot</div>
+                               <div className="text-3xl font-black text-white italic tracking-tighter">
+                                 #{teamInfo.slot_number || "TBD"}
+                               </div>
+                            </div>
+                          )}
                         </div>
 
-                         {/* Visual Distinction for Multiple Rooms / Admin Status */}
                          <div className="p-6 rounded-2xl bg-white/5 border border-white/5 italic flex items-center gap-4">
                             <Info className="w-5 h-5 text-primary" />
-                            <p className="text-xs text-muted-foreground font-bold">
-                               {isAdmin ? (
-                                 <>თქვენ ხედავთ ამ ინფორმაციას რადგან ხართ **ადმინისტრატორი**.</>
+                            <div className="text-xs text-muted-foreground font-bold">
+                               {isAdmin && !teamInfo ? (
+                                 <p>თქვენ ხედავთ ამ ინფორმაციას რადგან ხართ **ადმინისტრატორი**.</p>
                                ) : (
-                                 <>თქვენ ხართ ამ კონკრეტულ ოთახში (<b>{schedule.title}</b>). დარწმუნდით რომ შედიხართ სწორ სლოტზე: <b>#{teamInfo?.slot_number || "TDB"}</b>.</>
+                                 <p>თქვენ ხართ ამ კონკრეტულ ოთახში (<b>{schedule.title}</b>). დარწმუნდით რომ შედიხართ სწორ სლოტზე: <b>#{teamInfo?.slot_number || "TDB"}</b>.</p>
                                )}
-                            </p>
+                            </div>
                          </div>
                       </div>
                     ) : (
@@ -213,39 +200,6 @@ export default async function RoomInfoPage() {
             </div>
           )}
         </div>
-
-        {approvedScheduleIds.length > 0 && (
-          <div className="mt-20 glass-card p-12 border-sky-500/20 bg-sky-500/5 relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-                <Target className="w-48 h-48 text-white" />
-             </div>
-             <div className="relative z-10">
-                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-6 leading-none">Tactical Briefing</h3>
-                <div className="grid md:grid-cols-2 gap-10">
-                   <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground leading-relaxed flex items-start gap-4 italic font-bold">
-                         <span className="w-2 h-2 rounded-full bg-sky-500 mt-1.5 shrink-0" />
-                         გამოიყენეთ მითითებული ოთახის ID და პაროლი თამაშში შესასველად.
-                      </p>
-                      <p className="text-sm text-muted-foreground leading-relaxed flex items-start gap-4 italic font-bold">
-                         <span className="w-2 h-2 rounded-full bg-sky-500 mt-1.5 shrink-0" />
-                         დაიკავეთ მხოლოდ თქვენი კუთვნილი სლოტი, წინააღმდეგ შემთხვევაში გაიკიკებით.
-                      </p>
-                   </div>
-                   <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground leading-relaxed flex items-start gap-4 italic font-bold">
-                         <span className="w-2 h-2 rounded-full bg-sky-500 mt-1.5 shrink-0" />
-                         აკრძალულია ინფორმაციის გადაცემა მესამე პირებისთვის.
-                      </p>
-                      <p className="text-sm text-muted-foreground leading-relaxed flex items-start gap-4 italic font-bold">
-                         <span className="w-2 h-2 rounded-full bg-sky-500 mt-1.5 shrink-0" />
-                         შესვლა დაიწყეთ მითითებულ დროს 10-15 წუთით ადრე.
-                      </p>
-                   </div>
-                </div>
-             </div>
-          </div>
-        )}
       </div>
     </div>
   )
