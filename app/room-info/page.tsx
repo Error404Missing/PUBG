@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { Calendar, KeyRound, Lock, Map as MapIcon, Hash, Info, Shield, Target } from "lucide-react"
+import { Calendar, KeyRound, Lock, Map as MapIcon, Hash, Info, Shield, Target, Bug } from "lucide-react"
 import { format } from "date-fns"
 import { ka } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
@@ -28,46 +28,52 @@ export default async function RoomInfoPage() {
   const isManager = profile?.role === "manager"
   const isAdmin = profile?.is_admin
 
-  // 1. Fetch user's teams directly to bypass any JOIN RLS issues
+  // 1. Fetch user's teams
   const { data: userTeams } = await supabase
     .from("teams")
-    .select("id, slot_number, team_name")
+    .select("*")
     .eq("leader_id", user.id)
 
   const teamIds = userTeams?.map(t => t.id) || []
 
-  // 2. Fetch approved requests for these teams
-  let approvedRequestsData: any[] = []
-  if (teamIds.length > 0) {
-    const { data: requests } = await supabase
-      .from("scrim_requests")
-      .select("schedule_id, team_id, status")
-      .in("team_id", teamIds)
-      .in("status", ["approved", "Approved"])
-    
-    approvedRequestsData = requests || []
-  }
+  // 2. Fetch all requests for these teams (more permissive fetch)
+  const { data: requests } = await supabase
+    .from("scrim_requests")
+    .select("schedule_id, team_id, status")
+    .in("team_id", teamIds)
+  
+  const approvedRequests = requests?.filter(r => r.status?.toLowerCase() === "approved") || []
+  const approvedScheduleIdsFromRequests = approvedRequests.map(r => r.schedule_id)
 
-  // 3. Map schedule_id to team data
+  // 3. Create a map of schedule_id -> team_data
   const approvedScheduleMap = new Map()
-  approvedRequestsData.forEach((req: any) => {
+  
+  // Method A: From Approved Requests
+  approvedRequests.forEach((req: any) => {
     const team = userTeams?.find(t => t.id === req.team_id)
     if (team) {
        approvedScheduleMap.set(req.schedule_id, team)
     }
   })
 
-  // 4. Admin sees everything - fetch all active schedules
+  // Method B: Fallback - if a team has an active schedule_id and status=approved
+  userTeams?.forEach(team => {
+      if (team.schedule_id && team.status === 'approved') {
+          if (!approvedScheduleMap.has(team.schedule_id)) {
+             approvedScheduleMap.set(team.schedule_id, team)
+          }
+      }
+  })
+
+  // Fetch all active schedules
   const { data: allSchedules } = await supabase
     .from("schedules")
     .select("*")
     .eq("is_active", true)
     .order("date", { ascending: true })
 
-  const approvedScheduleIds = Array.from(approvedScheduleMap.keys())
-
-  // Access check
-  if (!isAdmin && !isManager && approvedScheduleIds.length === 0) {
+  // Final check for page access
+  if (!isAdmin && !isManager && approvedScheduleMap.size === 0) {
      redirect("/")
   }
 
@@ -76,6 +82,20 @@ export default async function RoomInfoPage() {
       <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_100%_0%,rgba(0,180,255,0.03),transparent_70%)] -z-10" />
 
       <div className="container mx-auto max-w-5xl relative">
+        {/* Debug Info (Visible only for Admins to help debugging) */}
+        {isAdmin && (
+           <div className="mb-8 p-4 glass rounded-xl border border-primary/20 bg-primary/5 text-primary text-[10px] items-center gap-4 flex animate-pulse">
+              <Bug className="w-4 h-4" />
+              <div className="flex flex-wrap gap-4">
+                 <span>UID: {user.id.substring(0,8)}...</span>
+                 <span>Teams: {teamIds.length}</span>
+                 <span>Reqs: {requests?.length || 0}</span>
+                 <span>Appr: {approvedScheduleMap.size}</span>
+                 <span>Role: {profile?.role}</span>
+              </div>
+           </div>
+        )}
+
         <div className="mb-20 text-center animate-reveal">
            <div className="inline-flex items-center justify-center w-20 h-20 rounded-[2rem] glass border border-primary/20 mb-8 relative group">
             <Lock className="w-10 h-10 text-primary transition-transform group-hover:scale-110 duration-500" />
