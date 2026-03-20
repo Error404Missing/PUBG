@@ -151,6 +151,10 @@ export function SupportChat() {
              time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
            }
            setGlobalMessages((prev) => prev.some(m => m.id === newMessage.id) ? prev : [...prev, newMessage])
+           
+           if (!isOpen && newMessage.userId !== user?.id) {
+             setUnreadCount(prev => prev + 1)
+           }
         }
       )
       .on(
@@ -562,8 +566,8 @@ export function SupportChat() {
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-8 h-8" />}
         {!isOpen && unreadCount > 0 && (
-          <div className="absolute -top-1 -right-1 w-6 h-6 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-4 border-background animate-bounce shadow-lg">
-            {unreadCount}
+          <div className="absolute -top-1 -right-1 w-7 h-7 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-4 border-background animate-bounce shadow-lg">
+            +{unreadCount}
           </div>
         )}
        </button>

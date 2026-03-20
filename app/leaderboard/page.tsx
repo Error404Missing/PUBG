@@ -10,7 +10,7 @@ export default async function LeaderboardPage() {
 
   const [clansRes, playersRes] = await Promise.all([
     supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }),
-    supabase.from("leaderboard_players").select("*").order("wins", { ascending: false })
+    supabase.from("leaderboard_players").select("*").order("kills", { ascending: false })
   ])
 
   const clans = clansRes.data || []
@@ -155,8 +155,8 @@ export default async function LeaderboardPage() {
 
                      <div className="flex items-center gap-12 text-right">
                         <div>
-                           <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Wins</div>
-                           <div className="text-3xl font-black text-amber-400 italic">{player.wins}</div>
+                           <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Kills</div>
+                           <div className="text-3xl font-black text-amber-400 italic">{player.kills}</div>
                         </div>
                      </div>
                   </div>

@@ -30,7 +30,7 @@ type PlayerEntry = {
   id: string
   name: string
   avatar_url: string | null
-  wins: number
+  kills: number
   rank: number | null
 }
 
@@ -52,7 +52,7 @@ export default function AdminLeaderboardPage() {
   const [playerForm, setPlayerForm] = useState({
     name: "",
     avatar_url: "",
-    wins: "0",
+    kills: "0",
     rank: "",
   })
 
@@ -81,7 +81,7 @@ export default function AdminLeaderboardPage() {
     const supabase = createClient()
     const [clansRes, playersRes] = await Promise.all([
       supabase.from("leaderboard_clans").select("*").order("wins", { ascending: false }),
-      supabase.from("leaderboard_players").select("*").order("wins", { ascending: false })
+      supabase.from("leaderboard_players").select("*").order("kills", { ascending: false })
     ])
     setClans(clansRes.data || [])
     setPlayers(playersRes.data || [])
@@ -121,7 +121,7 @@ export default function AdminLeaderboardPage() {
     const payload = {
       name: playerForm.name,
       avatar_url: playerForm.avatar_url || null,
-      wins: Number.parseInt(playerForm.wins),
+      kills: Number.parseInt(playerForm.kills),
       rank: playerForm.rank ? Number.parseInt(playerForm.rank) : null,
     }
 
@@ -192,7 +192,7 @@ export default function AdminLeaderboardPage() {
     setIsAddingPlayer(false)
     setEditId(null)
     setClanForm({ name: "", logo_url: "", wins: "0", rank: "" })
-    setPlayerForm({ name: "", avatar_url: "", wins: "0", rank: "" })
+    setPlayerForm({ name: "", avatar_url: "", kills: "0", rank: "" })
   }
 
   return (
@@ -367,8 +367,8 @@ export default function AdminLeaderboardPage() {
                    </div>
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">მოგებები</Label>
-                         <Input type="number" value={playerForm.wins} onChange={e => setPlayerForm({...playerForm, wins: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
+                         <Label className="text-[10px] font-black uppercase text-amber-400 italic">Kills</Label>
+                         <Input type="number" value={playerForm.kills} onChange={e => setPlayerForm({...playerForm, kills: e.target.value})} className="h-14 rounded-xl bg-black/40 border-white/10" />
                       </div>
                       <div className="space-y-2">
                          <Label className="text-[10px] font-black uppercase text-amber-400 italic">Rank</Label>
@@ -397,7 +397,7 @@ export default function AdminLeaderboardPage() {
                        </div>
                        <div>
                           <h4 className="text-xl font-black text-white italic truncate max-w-[200px]">{player.name}</h4>
-                          <Badge variant="outline" className="border-amber-500/20 text-amber-400 text-[9px] font-black italic uppercase">{player.wins} Wins</Badge>
+                          <Badge variant="outline" className="border-amber-500/20 text-amber-400 text-[9px] font-black italic uppercase">{player.kills} Kills</Badge>
                        </div>
                     </div>
                     <div className="flex items-center gap-8">
@@ -407,7 +407,7 @@ export default function AdminLeaderboardPage() {
                             setPlayerForm({
                               name: player.name,
                               avatar_url: player.avatar_url || "",
-                              wins: String(player.wins),
+                              kills: String(player.kills),
                               rank: String(player.rank || ""),
                             })
                             setIsAddingPlayer(true)
