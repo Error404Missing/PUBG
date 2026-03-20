@@ -94,22 +94,24 @@ export default async function TeamsPage({
           </Link>
         </div>
 
-        <div className="mb-24 text-center animate-reveal">
-          <h1 className="text-6xl md:text-8xl font-black mb-6 text-white tracking-tighter italic uppercase text-glow">
-            {selectedSchedule.title}
-          </h1>
-          <div className="flex items-center justify-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic">
-             <span>{format(new Date(selectedSchedule.date), "PPP", { locale: ka })}</span>
-             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-             <span className="text-primary">
-               {new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(selectedSchedule.date))}
-             </span>
-             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-             <span className="text-primary">{teams.length} UNITS_LOGGED</span>
-          </div>
-        </div>
+         <div className="mb-24 text-center animate-reveal">
+           <h1 className="text-6xl md:text-8xl font-black mb-6 text-white tracking-tighter italic uppercase text-glow">
+             {selectedSchedule.title}
+           </h1>
+           <div className="flex items-center justify-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic">
+              <span>{format(new Date(selectedSchedule.date), "PPP", { locale: ka })}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-primary">
+                {new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(selectedSchedule.date))}
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-primary">{teams.length} UNITS_LOGGED</span>
+           </div>
+         </div>
 
-        <TeamsClient teams={teams} />
+         <div key={scheduleId}>
+            <TeamsClient teams={teams} />
+         </div>
       </div>
     </div>
   )

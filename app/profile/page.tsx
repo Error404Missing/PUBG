@@ -381,23 +381,111 @@ export default function ProfilePage() {
 
                <div className="lg:col-span-2 space-y-8">
                   {isEditing ? (
-                     <div className="glass-card p-8 lg:p-12 space-y-8 animate-reveal">
-                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">მონაცემების რედაქტირება</h2>
-                        <div className="grid md:grid-cols-2 gap-8">
-                           <Input value={editData.username} onChange={(e) => setEditData({ ...editData, username: e.target.value })} placeholder="Username" />
-                           <Input value={editData.discord_username} onChange={(e) => setEditData({ ...editData, discord_username: e.target.value })} placeholder="Discord" />
-                           <Input value={editData.instagram_url} onChange={(e) => setEditData({ ...editData, instagram_url: e.target.value })} placeholder="Instagram URL" />
-                           <Input value={editData.tiktok_url} onChange={(e) => setEditData({ ...editData, tiktok_url: e.target.value })} placeholder="TikTok URL" />
+                     <div className="glass-card p-10 lg:p-14 animate-reveal space-y-12">
+                        <div className="flex items-center justify-between">
+                           <div>
+                              <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">პროფილის რედაქტირება</h2>
+                              <p className="text-[10px] font-black text-primary/40 uppercase tracking-[0.4em] italic mt-2">Edit_Unit_Profile_Data</p>
+                           </div>
+                           <Badge variant="gold" className="px-4 py-1.5 font-black text-[10px] tracking-widest uppercase italic">Secure_Link</Badge>
                         </div>
-                        <textarea 
-                           className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white focus:border-primary transition-all outline-none"
-                           value={editData.bio} 
-                           onChange={(e) => setEditData({ ...editData, bio: e.target.value })} 
-                           placeholder="Bio / მოკლე ინფორმაცია" 
-                        />
-                        <Button onClick={handleUpdate} variant="premium" className="h-16 w-full rounded-2xl font-black uppercase tracking-widest">
-                           <Save className="w-5 h-5 mr-3" /> შენახვა
-                        </Button>
+
+                        {/* Direct Media Upload Area */}
+                        <div className="grid sm:grid-cols-2 gap-8">
+                           <div className="space-y-4">
+                              <label className="text-[10px] font-black text-white/30 uppercase tracking-widest italic ml-2">Unit_Avatar</label>
+                              <div className="relative group aspect-square rounded-[3rem] overflow-hidden border-2 border-dashed border-white/10 hover:border-primary/50 transition-all cursor-pointer">
+                                 <img 
+                                    src={editData.avatar_url || 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png'} 
+                                    className={`w-full h-full object-cover ${isUploading.type === 'avatar' ? 'opacity-30 blur-sm' : ''}`}
+                                 />
+                                 <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-20">
+                                    <Camera className="w-10 h-10 text-white mb-2" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">ატვირთვა</span>
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
+                                 </label>
+                                 {isUploading.type === 'avatar' && (
+                                    <div className="absolute inset-0 flex items-center justify-center z-30">
+                                       <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                                    </div>
+                                 )}
+                              </div>
+                           </div>
+
+                           <div className="space-y-4">
+                              <label className="text-[10px] font-black text-white/30 uppercase tracking-widest italic ml-2">Tactical_Banner</label>
+                              <div className="relative group aspect-square rounded-[3rem] overflow-hidden border-2 border-dashed border-white/10 hover:border-primary/50 transition-all cursor-pointer">
+                                 <img 
+                                    src={editData.banner_url || 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg'} 
+                                    className={`w-full h-full object-cover ${isUploading.type === 'banner' ? 'opacity-30 blur-sm' : ''}`}
+                                 />
+                                 <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-20">
+                                    <Camera className="w-10 h-10 text-white mb-2" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">ატვირთვა</span>
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner')} />
+                                 </label>
+                                 {isUploading.type === 'banner' && (
+                                    <div className="absolute inset-0 flex items-center justify-center z-30">
+                                       <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                                    </div>
+                                 )}
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-8">
+                           <div className="space-y-3">
+                              <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">მეტსახელი</label>
+                              <Input 
+                                 value={editData.username} 
+                                 onChange={(e) => setEditData({ ...editData, username: e.target.value })} 
+                                 className="h-14 bg-white/5 border-white/10 rounded-2xl focus:border-primary text-md"
+                              />
+                           </div>
+                           <div className="space-y-3">
+                              <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Discord ID</label>
+                              <Input 
+                                 value={editData.discord_username} 
+                                 onChange={(e) => setEditData({ ...editData, discord_username: e.target.value })} 
+                                 className="h-14 bg-white/5 border-white/10 rounded-2xl focus:border-primary text-md"
+                              />
+                           </div>
+                           <div className="space-y-3">
+                              <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Instagram URL</label>
+                              <Input 
+                                 value={editData.instagram_url} 
+                                 onChange={(e) => setEditData({ ...editData, instagram_url: e.target.value })} 
+                                 className="h-14 bg-white/5 border-white/10 rounded-2xl focus:border-primary text-md"
+                              />
+                           </div>
+                           <div className="space-y-3">
+                              <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">TikTok URL</label>
+                              <Input 
+                                 value={editData.tiktok_url} 
+                                 onChange={(e) => setEditData({ ...editData, tiktok_url: e.target.value })} 
+                                 className="h-14 bg-white/5 border-white/10 rounded-2xl focus:border-primary text-md"
+                              />
+                           </div>
+                        </div>
+
+                        <div className="space-y-3">
+                           <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Bio / ბიოგრაფია</label>
+                           <textarea 
+                              className="w-full h-40 bg-white/5 border border-white/10 rounded-[2.5rem] p-8 text-md text-white focus:border-primary transition-all outline-none italic font-light"
+                              value={editData.bio} 
+                              onChange={(e) => setEditData({ ...editData, bio: e.target.value })} 
+                              placeholder="მოუყევით სხვებს თქვენს შესახებ..." 
+                           />
+                        </div>
+
+                        <div className="flex gap-4">
+                           <Button onClick={() => setIsEditing(false)} variant="outline" className="h-16 flex-1 rounded-2xl border-white/10 text-white font-black uppercase tracking-widest italic">
+                              გაუქმება
+                           </Button>
+                           <Button onClick={handleUpdate} variant="premium" className="h-16 flex-[2] rounded-2xl font-black uppercase tracking-widest italic">
+                              <Save className="w-5 h-5 mr-3" /> მონაცემების შენახვა
+                           </Button>
+                        </div>
                      </div>
                   ) : (
                      <div className="space-y-8">
