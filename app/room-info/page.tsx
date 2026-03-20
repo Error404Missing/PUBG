@@ -107,61 +107,102 @@ export default async function RoomInfoPage() {
 
                   <div className="p-8 lg:p-12">
                     {isApproved ? (
-                      <div className="space-y-10">
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                          {/* Room ID Module */}
-                          <div className="glass-darker p-8 rounded-3xl border border-white/5 space-y-4 group relative overflow-hidden h-40 flex flex-col justify-between">
-                             <div className="text-[11px] font-black text-primary uppercase tracking-[0.3em] italic opacity-60">Room_ID</div>
-                             <div className="text-3xl font-black text-white italic tracking-tighter truncate text-glow">
-                                {schedule.room_id || "NOT_ASSIGNED"}
-                             </div>
-                             <CopyButton value={schedule.room_id || ""} label="Room ID" />
-                          </div>
-
-                          {/* Password Module */}
-                          <div className="glass-darker p-8 rounded-3xl border border-white/5 space-y-4 group relative overflow-hidden h-40 flex flex-col justify-between">
-                             <div className="text-[11px] font-black text-primary uppercase tracking-[0.3em] italic opacity-60">Pass_Key</div>
-                             <div className="text-3xl font-black text-white italic tracking-tighter truncate text-glow">
-                                {schedule.room_password || "ENCRYPTED"}
-                             </div>
-                             <CopyButton value={schedule.room_password || ""} label="Password" />
-                          </div>
-
-                          {/* Map Module */}
-                          <div className="glass-darker p-8 rounded-3xl border border-white/5 h-40 flex flex-col justify-between bg-accent/[0.02]">
-                            <div className="text-[11px] font-black text-accent uppercase tracking-[0.3em] italic opacity-60">Map_Sector</div>
-                            <div className="text-2xl font-black text-white italic uppercase flex items-center gap-3">
-                               {(schedule as any).room_map || schedule.map_name || "PENDING"}
-                            </div>
-                          </div>
-
-                          {/* Time Module */}
-                          <div className="glass-darker p-8 rounded-3xl border border-white/5 h-40 flex flex-col justify-between bg-orange-500/[0.02]">
-                             <div className="text-[11px] font-black text-orange-400 uppercase tracking-[0.3em] italic opacity-60">Drop_Time</div>
-                             <div className="text-2xl font-black text-white italic uppercase">
-                                {(schedule as any).room_time || "LIVE"}
-                             </div>
-                          </div>
+                      <div className="space-y-12">
+                        {/* Status Message */}
+                        <div className="flex items-center gap-4 p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 animate-pulse-soft">
+                           <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                              <Shield className="w-5 h-5 text-emerald-400" />
+                           </div>
+                           <div>
+                              <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-1">Authorization_Verified</div>
+                              <div className="text-sm font-bold text-white/90 italic tracking-tight">თქვენ გაქვთ წვდომა ამ მატჩის მონაცემებზე</div>
+                           </div>
                         </div>
 
-                        {teamInfo && (
-                         <div className="glass p-8 rounded-[2.5rem] bg-emerald-500/[0.02] border border-emerald-500/10 flex items-center justify-between">
-                            <div>
-                               <div className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em] italic mb-2">თქვენი გუნდის სლოტია:</div>
-                               <div className="text-sm font-bold text-white/50 tracking-wider">REG: {teamInfo.team_name}</div>
-                            </div>
-                            <div className="text-6xl font-black text-emerald-400 italic tracking-tighter">
-                              #{teamInfo.slot_number || "??"}
-                            </div>
-                         </div>
-                        )}
+                        {/* Briefing Module - The Core Info */}
+                        <div className="grid lg:grid-cols-2 gap-8">
+                           {/* Left Side: Room Credentials */}
+                           <div className="space-y-6">
+                              <div className="text-[11px] font-black text-white/30 uppercase tracking-[0.4em] mb-4 italic">Mission_Briefing_Secure_Link</div>
+                              
+                              <div className="glass-darker p-8 rounded-[2rem] border border-white/5 space-y-8 relative overflow-hidden group">
+                                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[40px] rounded-full" />
+                                 
+                                 <div className="flex items-center justify-between">
+                                    <div>
+                                       <div className="text-[10px] font-black text-primary uppercase tracking-[0.3em] italic mb-3">Room_ID</div>
+                                       <div className="text-4xl font-black text-white italic tracking-tighter text-glow">
+                                          {schedule.room_id || "NOT_ASSIGNED"}
+                                       </div>
+                                    </div>
+                                    <CopyButton value={schedule.room_id || ""} label="Room ID" />
+                                 </div>
+
+                                 <div className="h-px bg-gradient-to-r from-white/10 to-transparent" />
+
+                                 <div className="flex items-center justify-between">
+                                    <div>
+                                       <div className="text-[10px] font-black text-primary uppercase tracking-[0.3em] italic mb-3">Pass_Key</div>
+                                       <div className="text-4xl font-black text-white italic tracking-tighter text-glow">
+                                          {schedule.room_password || "ENCRYPTED"}
+                                       </div>
+                                    </div>
+                                    <CopyButton value={schedule.room_password || ""} label="Password" />
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* Right Side: Deployment Stats */}
+                           <div className="space-y-6">
+                              <div className="text-[11px] font-black text-white/30 uppercase tracking-[0.4em] mb-4 italic">Deployment_Intel</div>
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                 <div className="glass-darker p-6 rounded-[1.5rem] border border-white/5 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                       <MapIcon className="w-4 h-4 text-emerald-400" />
+                                       <span className="text-[10px] font-black text-white/40 uppercase tracking-widest italic">Map_Sector</span>
+                                    </div>
+                                    <div className="text-xl font-black text-white italic uppercase tracking-tighter">
+                                       {(schedule as any).room_map || schedule.map_name || "PENDING"}
+                                    </div>
+                                 </div>
+
+                                 <div className="glass-darker p-6 rounded-[1.5rem] border border-white/5 space-y-4">
+                                    <div className="flex items-center gap-3">
+                                       <Activity className="w-4 h-4 text-orange-400" />
+                                       <span className="text-[10px] font-black text-white/40 uppercase tracking-widest italic">Start_Time</span>
+                                    </div>
+                                    <div className="text-xl font-black text-white italic uppercase tracking-tighter">
+                                       {(schedule as any).room_time || "LIVE"}
+                                    </div>
+                                 </div>
+                                 
+                                 {teamInfo && (
+                                    <div className="col-span-2 glass p-8 rounded-[1.5rem] bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-between relative overflow-hidden group">
+                                       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                          <Shield className="w-20 h-20 text-emerald-400" />
+                                       </div>
+                                       <div>
+                                          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.4em] italic mb-3">თქვენი სლოტია:</div>
+                                          <div className="text-lg font-black text-white italic tracking-tight">{teamInfo.team_name}</div>
+                                       </div>
+                                       <div className="text-6xl font-black text-emerald-400 italic tracking-tighter z-10">
+                                          #{teamInfo.slot_number || "??"}
+                                       </div>
+                                    </div>
+                                 )}
+                              </div>
+                           </div>
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-16 space-y-6 opacity-40">
-                         <Lock className="w-12 h-12 text-white/40" />
+                      <div className="flex flex-col items-center justify-center py-24 space-y-8 opacity-40">
+                         <div className="w-24 h-24 rounded-[2rem] glass border border-white/10 flex items-center justify-center">
+                           <Lock className="w-10 h-10 text-white/40" />
+                         </div>
                          <div className="text-center">
-                            <h3 className="text-xl font-black text-white/40 italic uppercase tracking-tighter leading-none mb-2">Access_Restricted</h3>
-                            <p className="text-[10px] text-white/20 font-bold uppercase tracking-[0.2em]">ამ მატჩის მონაცემები თქვენთვის დახურულია.</p>
+                            <h3 className="text-2xl font-black text-white/40 italic uppercase tracking-tighter leading-none mb-3">Access_Restricted</h3>
+                            <p className="text-[10px] text-white/20 font-black uppercase tracking-[0.4em]">ამ მატჩის მონაცემები თქვენთვის დახურულია.</p>
                          </div>
                       </div>
                     )}
