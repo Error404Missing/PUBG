@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { getTeamsBySchedule, fetchActiveSchedules } from "./server-helper"
 import { TeamsClient } from "./teams-client"
 
+import { ScheduleSelector } from "@/components/teams/schedule-selector"
+
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
@@ -18,11 +20,16 @@ export default async function TeamsPage({
   // In Next.js 14/15, searchParams might need to be awaited or accessed directly
   const params = await searchParams
   const scheduleId = params?.schedule
-  const schedules = await fetchActiveSchedules()
-  const selectedSchedule = schedules.find(s => String(s.id) === String(scheduleId))
+  const schedulesData = await fetchActiveSchedules()
+  const selectedSchedule = schedulesData.find(s => String(s.id) === String(scheduleId))
   
-  console.log("TeamsPage Debug:", { scheduleId, schedulesCount: schedules.length, found: !!selectedSchedule })
-  
+  // Create serializable schedules list for client component
+  const schedules = schedulesData.map(s => ({
+     id: s.id,
+     title: s.title,
+     date: s.date.toISOString(),
+  }))
+
   let teams: any[] = []
   if (scheduleId) {
     teams = await getTeamsBySchedule(scheduleId)
@@ -43,38 +50,7 @@ export default async function TeamsPage({
             <p className="text-xs text-muted-foreground font-black uppercase tracking-[0.5em] italic">Operation_Select_Schedule</p>
           </div>
 
-          <div className="grid gap-6">
-            {schedules.map((s, i) => (
-              <Link 
-                key={s.id} 
-                href={`/teams?schedule=${s.id}`}
-                className="glass-card p-1 group animate-reveal block"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                  <div className="p-8 flex items-center gap-8">
-                    <div className="w-16 h-16 rounded-2xl glass border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform bg-primary/5">
-                      <Gamepad2 className="w-8 h-8 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-3xl font-black text-white group-hover:text-primary transition-colors italic tracking-tighter uppercase">
-                        {s.title}
-                      </h3>
-                      <div className="flex items-center gap-3 text-[10px] font-black text-white/30 uppercase tracking-widest mt-1">
-                        <span>{format(new Date(s.date), "PPP", { locale: ka })}</span>
-                        <span className="w-1 h-1 rounded-full bg-primary" />
-                        <span className="text-primary">
-                          {new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(s.date))}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="hidden sm:flex items-center gap-3 px-6 py-3 rounded-2xl glass border border-white/5 opacity-0 group-hover:opacity-100 transition-all">
-                      <span className="text-[10px] font-black uppercase tracking-widest">DEPLOY_VIEW</span>
-                      <Zap className="w-4 h-4 text-primary animate-pulse" />
-                    </div>
-                  </div>
-              </Link>
-            ))}
-          </div>
+          <ScheduleSelector schedules={schedules} />
         </div>
       </div>
     )
