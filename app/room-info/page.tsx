@@ -128,10 +128,10 @@ export default async function RoomInfoPage() {
                               <div className="glass-darker p-8 rounded-[2rem] border border-white/5 space-y-8 relative overflow-hidden group">
                                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-[40px] rounded-full" />
                                  
-                                 <div className="flex items-center justify-between">
+                                 <div className="flex items-center justify-between relative group">
                                     <div>
                                        <div className="text-[10px] font-black text-primary uppercase tracking-[0.3em] italic mb-3">Room_ID</div>
-                                       <div className="text-4xl font-black text-white italic tracking-tighter text-glow">
+                                       <div className="text-4xl font-black text-white italic tracking-tighter">
                                           {schedule.room_id || "NOT_ASSIGNED"}
                                        </div>
                                     </div>
@@ -140,10 +140,10 @@ export default async function RoomInfoPage() {
 
                                  <div className="h-px bg-gradient-to-r from-white/10 to-transparent" />
 
-                                 <div className="flex items-center justify-between">
+                                 <div className="flex items-center justify-between relative group">
                                     <div>
                                        <div className="text-[10px] font-black text-primary uppercase tracking-[0.3em] italic mb-3">Pass_Key</div>
-                                       <div className="text-4xl font-black text-white italic tracking-tighter text-glow">
+                                       <div className="text-4xl font-black text-white italic tracking-tighter">
                                           {schedule.room_password || "ENCRYPTED"}
                                        </div>
                                     </div>
