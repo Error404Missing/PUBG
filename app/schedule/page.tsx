@@ -16,11 +16,11 @@ export default async function SchedulePage() {
   const user = userRes.data.user
   const schedules = schedulesRes.data
 
-  let userTeam = null
+  let userTeam = null // kept for fallback
   let userVipStatus = null
+  let userTeamBySchedule: Record<string, any> = {} // map: schedule_id -> team
 
   if (user) {
-    // Fetch team and VIP status in parallel
     const [teamRes, vipRes] = await Promise.all([
       supabase
         .from("teams")
@@ -41,6 +41,29 @@ export default async function SchedulePage() {
 
     if (vipStatus && new Date(vipStatus.vip_until) > new Date()) {
       userVipStatus = vipStatus
+    }
+
+    // Fetch all approved/pending scrim_requests for this user, to know which schedules they're in
+    if (userTeam) {
+      // Get all teams this user leads
+      const { data: allUserTeams } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("leader_id", user.id)
+
+      if (allUserTeams && allUserTeams.length > 0) {
+        const teamIds = allUserTeams.map(t => t.id)
+        const { data: requests } = await supabase
+          .from("scrim_requests")
+          .select("schedule_id, team_id, status, teams(*)")
+          .in("team_id", teamIds)
+          .neq("status", "rejected")
+
+        // Build a map: schedule_id -> team data
+        requests?.forEach((r: any) => {
+          userTeamBySchedule[r.schedule_id] = r.teams
+        })
+      }
     }
   }
 
@@ -161,7 +184,7 @@ export default async function SchedulePage() {
                      <ScheduleClient
                       scheduleId={schedule.id}
                       scheduleTitle={schedule.title}
-                      userTeam={userTeam}
+                      userTeam={userTeamBySchedule[schedule.id] || userTeam}
                       user={user}
                       registrationStatus={schedule.registration_status}
                       logoRequired={schedule.logo_required}

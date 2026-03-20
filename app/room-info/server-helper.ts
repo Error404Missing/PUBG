@@ -24,19 +24,29 @@ export async function getRoomInfoData(userId: string) {
 
   const teamIds = userTeams?.map(t => t.id) || []
 
-  // 3. Fetch User's Requests (Bypassing RLS)
-  const { data: allRequests } = await supabaseAdmin
-    .from("scrim_requests")
-    .select(`
-        *,
-        teams (id, team_name, leader_id)
-    `)
-    .or(`team_id.in.(${teamIds.length ? teamIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
+  // 3. Fetch ALL of the user's scrim_requests (Bypassing RLS)
+  // slot_number is on scrim_requests, not teams
+  let allRequests: any[] = []
+  if (teamIds.length > 0) {
+    const { data } = await supabaseAdmin
+      .from("scrim_requests")
+      .select(`
+          id,
+          team_id,
+          schedule_id,
+          status,
+          slot_number,
+          preferred_maps,
+          teams (id, team_name, leader_id)
+      `)
+      .in("team_id", teamIds)
+    allRequests = data || []
+  }
 
-  // 4. Filter approved and verified
-  const approvedRequests = allRequests?.filter(r => 
+  // 4. Filter approved
+  const approvedRequests = allRequests.filter(r => 
     r.status?.toLowerCase() === 'approved' || r.status?.toLowerCase() === 'verified'
-  ) || []
+  )
 
   // 5. Fetch Active Schedules
   const { data: allSchedules } = await supabaseAdmin
