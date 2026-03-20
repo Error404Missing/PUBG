@@ -9,6 +9,7 @@ import { format } from "date-fns"
 import { ka } from "date-fns/locale"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import Link from "next/link"
+import { getScheduleTeams, getSiteRequestsDump } from "./actions"
 
 interface Schedule {
   id: string
@@ -69,69 +70,27 @@ export default function TeamsPage() {
     setTeamsLoading(true)
     setTeams([])
 
-    console.log("Fetching for schedule:", schedule.id)
+    console.log("Fetching for schedule (Server Action):", schedule.id)
 
-    // 1. Fetch ALL requests for this schedule (Join-less)
-    const { data: rawRequests, error: reqError } = await supabase
-      .from("scrim_requests")
-      .select("*")
-      .eq("schedule_id", schedule.id)
+    try {
+      const result = await getScheduleTeams(schedule.id)
 
-    if (reqError) {
-      alert(`SQL Error (Requests): ${reqError.message}`)
+      if (result.error) {
+        alert(`Server Action Error: ${result.error}`)
+        setTeamsLoading(false)
+        return
+      }
+
+      const assembledTeams = (result.data || []) as Team[]
+      console.log("Assembled Teams (Server):", assembledTeams)
+      
+      setTeams(assembledTeams)
+      setVerifiedTeams(assembledTeams)
+    } catch (err: any) {
+      alert(`Runtime Error: ${err.message}`)
+    } finally {
       setTeamsLoading(false)
-      return
     }
-
-    if (!rawRequests || rawRequests.length === 0) {
-      // Diagnostic alert for admin
-      const { data: allReqSample } = await supabase.from("scrim_requests").select("schedule_id, status").limit(5)
-      console.log("No requests found. Sample from DB:", allReqSample)
-      setTeamsLoading(false)
-      return
-    }
-
-    // 2. Fetch Teams for these requests
-    const teamIds = rawRequests.map(r => r.team_id)
-    const { data: rawTeams, error: teamsError } = await supabase
-      .from("teams")
-      .select("*")
-      .in("id", teamIds)
-
-    if (teamsError) {
-      alert(`SQL Error (Teams): ${teamsError.message}`)
-      setTeamsLoading(false)
-      return
-    }
-
-    // 3. Fetch Profiles
-    const leaderIds = rawTeams?.map(t => t.leader_id) || []
-    const { data: rawProfiles } = await supabase
-      .from("profiles")
-      .select("*")
-      .in("id", leaderIds)
-
-    const teamsMap = new Map(rawTeams?.map(t => [t.id, t]))
-    const profilesMap = new Map(rawProfiles?.map(p => [p.id, p]))
-
-    // 4. Assemble with case-insensitive check
-    const assembledTeams = rawRequests
-      .filter(r => r.status?.toLowerCase() === 'approved' || r.status?.toLowerCase() === 'verified')
-      .map(r => {
-        const team = teamsMap.get(r.team_id)
-        if (!team) return null
-        return {
-          ...team,
-          slot_number: r.slot_number || team.slot_number,
-          profiles: profilesMap.get(team.leader_id) || null
-        }
-      })
-      .filter(Boolean) as Team[]
-
-    console.log("Assembled Teams:", assembledTeams)
-    setTeams(assembledTeams)
-    setTeamsLoading(false)
-    setVerifiedTeams(assembledTeams)
   }
 
   const TeamCard = ({ team, i }: { team: Team, i: number }) => (
@@ -475,7 +434,8 @@ export default function TeamsPage() {
                         variant="outline" 
                         className="mt-4 text-[8px] h-8"
                         onClick={async () => {
-                           const { data } = await supabase.from('scrim_requests').select('status, schedule_id, team_id').limit(50);
+                           const result = await getSiteRequestsDump();
+                           const data = result.data;
                            const body = document.getElementById('db-dump-body');
                            if (body && data) {
                               body.innerHTML = data.map(r => `
