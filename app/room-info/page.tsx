@@ -30,14 +30,15 @@ export default async function RoomInfoPage() {
   const isAdmin = profile?.is_admin
 
   // 1. Fetch user's profile and teams (DIAGNOSTIC)
-  const [{ data: userTeams }, { data: allRequests }, { data: allSiteTeams }, { data: allSiteRequests }] = await Promise.all([
+  const [{ data: userTeams }, { data: allRequests }, { data: allSiteTeams }, { data: allSiteRequests }, { data: dbAuthId }] = await Promise.all([
     supabase.from("teams").select("*").eq("leader_id", user.id),
     supabase.from("scrim_requests").select(`
         *,
         teams!inner(id, team_name, leader_id)
     `).eq("teams.leader_id", user.id),
     isAdmin ? supabase.from("teams").select("id, team_name, leader_id").limit(10) : Promise.resolve({ data: null }),
-    isAdmin ? supabase.from("scrim_requests").select("id, team_id, status").limit(10) : Promise.resolve({ data: null })
+    isAdmin ? supabase.from("scrim_requests").select("id, team_id, status").limit(10) : Promise.resolve({ data: null }),
+    supabase.rpc("get_my_auth_id")
   ])
 
   // Diagnostic values
@@ -101,16 +102,17 @@ export default async function RoomInfoPage() {
                     </div>
                  </div>
                  
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-black/40 rounded-3xl border border-white/5">
+                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-6 bg-black/40 rounded-3xl border border-white/5">
                     {[
-                        { label: "Full_Profile_UUID", value: user.id },
+                        { label: "Profile_UUID", value: user.id },
+                        { label: "DB_Auth_ID", value: dbAuthId || 'NULL (Auth Failed)' },
                         { label: "Teams_Found", value: teamIds.length },
                         { label: "Requests_Found", value: allRequests?.length || 0 },
                         { label: "Approved_Regs", value: approvedRequests.length }
                     ].map((s, i) => (
                       <div key={i} className="space-y-1 text-center border-r border-white/5 last:border-0 pr-4 last:pr-0">
                          <div className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">{s.label}</div>
-                         <div className={`text-[11px] font-black text-primary italic break-all ${s.label.includes('UUID') ? 'text-[8px] font-mono' : ''}`}>{s.value}</div>
+                         <div className={`text-[10px] font-black text-primary italic break-all ${s.label.includes('ID') ? 'text-[7px] font-mono' : ''}`}>{s.value}</div>
                       </div>
                     ))}
                  </div>
