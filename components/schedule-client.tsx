@@ -17,6 +17,7 @@ interface ScheduleClientProps {
   mapsCount?: number
   isUserVip?: boolean
   scheduleTitle?: string
+  hasTeamForThisSchedule?: boolean // true only if team has a request for THIS specific schedule
 }
 
 export function ScheduleClient({ 
@@ -28,7 +29,8 @@ export function ScheduleClient({
   logoRequired = false,
   mapsCount = 4,
   isUserVip = false,
-  scheduleTitle = "მატჩი"
+  scheduleTitle = "მატჩი",
+  hasTeamForThisSchedule = false
 }: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
@@ -86,8 +88,16 @@ export function ScheduleClient({
       window.location.href = "/auth/login"
       return
     }
+
+    // If user has no team at all → show team creation modal
     if (!userTeam) {
       setShowTeamModal(true)
+      return
+    }
+
+    // If user has a team but NOT linked to THIS schedule → redirect to create a new team for this schedule
+    if (!hasTeamForThisSchedule) {
+      window.location.href = `/profile/register-team?schedule_id=${scheduleId}`
       return
     }
 

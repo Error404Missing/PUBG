@@ -57,71 +57,58 @@ export function AdminRequestActions({ requestId, teamId: initialTeamId }: AdminR
 
     // 3. If approved, handle slot number and final team status
     if (finalStatus === "approved") {
-      const slot = slotNumber && !isNaN(Number(slotNumber)) ? Number(slotNumber) : null
-      
-      if (slot !== null) {
-          // Find schedule_id for this request
-          const { data: reqData, error: scheduleFetchError } = await supabase
+      // Find schedule_id for this request
+      const { data: reqData } = await supabase
+        .from("scrim_requests")
+        .select("schedule_id")
+        .eq("id", requestId)
+        .single()
+
+      if (reqData?.schedule_id) {
+        // Determine slot: use entered value OR auto-assign next available
+        let slot: number
+        
+        if (slotNumber && !isNaN(Number(slotNumber))) {
+          slot = Number(slotNumber)
+        } else {
+          // Auto-assign: count existing approved in this schedule + 1
+          const { count } = await supabase
             .from("scrim_requests")
-            .select("schedule_id")
-            .eq("id", requestId)
-            .single()
+            .select("id", { count: "exact" })
+            .eq("schedule_id", reqData.schedule_id)
+            .eq("status", "approved")
+            .neq("id", requestId)
+          slot = (count || 0) + 1
+        }
 
-          if (scheduleFetchError) {
-            console.error("Error fetching schedule_id:", scheduleFetchError)
-            alert(`Error fetching schedule ID: ${scheduleFetchError.message}`)
-            setIsLoading(false)
-            return
-          }
+        // Check if this slot is already taken
+        const { data: existingSlotReq } = await supabase
+          .from("scrim_requests")
+          .select("id")
+          .eq("schedule_id", reqData.schedule_id)
+          .eq("slot_number", slot)
+          .eq("status", "approved")
+          .neq("id", requestId)
+          .maybeSingle()
 
-          if (reqData?.schedule_id) {
-            // Check if slot is taken in this schedule by another APPROVED request
-            const { data: existingSlotReq, error: existingSlotError } = await supabase
-              .from("scrim_requests")
-              .select("id")
-              .eq("schedule_id", reqData.schedule_id)
-              .eq("slot_number", slot)
-              .eq("status", "approved")
-              .neq("id", requestId)
-              .maybeSingle()
+        if (existingSlotReq) {
+          alert(`სლოტი #${slot} უკვე დაკავებულია! გთხოვთ შეიყვანოთ სხვა სლოტი.`)
+          setIsLoading(false)
+          return
+        }
 
-            if (existingSlotError) {
-              console.error("Error checking existing slot:", existingSlotError)
-              alert(`Error checking existing slot: ${existingSlotError.message}`)
-              setIsLoading(false)
-              return
-            }
-
-            if (existingSlotReq) {
-              alert(`სლოტი #${slot} უკვე დაკავებულია სხვა გუნდის მიერ ამ მატჩზე!`)
-              setIsLoading(false)
-              return
-            }
-
-            const { error: slotUpdateError } = await supabase
-              .from("scrim_requests")
-              .update({ slot_number: slot })
-              .eq("id", requestId)
-
-            if (slotUpdateError) {
-               console.error("Slot update error:", slotUpdateError)
-               alert(`Error updating slot: ${slotUpdateError.message}`)
-               // Do not return here, as the request status was already updated successfully
-            }
-          }
+        // Set the slot
+        await supabase
+          .from("scrim_requests")
+          .update({ slot_number: slot })
+          .eq("id", requestId)
       }
 
-      // Also update team status to approved (global verification)
-      const { error: teamUpdateError } = await supabase
+      // Also update team status to approved
+      await supabase
         .from("teams")
         .update({ status: "approved" })
         .eq("id", teamId)
-
-      if (teamUpdateError) {
-         console.error("Team status update error:", teamUpdateError)
-         alert(`Error updating team status: ${teamUpdateError.message}`)
-         // Do not return here, as the request status was already updated successfully
-      }
     }
 
     // 4. Send notification to team leader + Update Role

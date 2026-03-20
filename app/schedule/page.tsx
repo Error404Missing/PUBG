@@ -185,6 +185,7 @@ export default async function SchedulePage() {
                       scheduleId={schedule.id}
                       scheduleTitle={schedule.title}
                       userTeam={userTeamBySchedule[schedule.id] || userTeam}
+                      hasTeamForThisSchedule={!!userTeamBySchedule[schedule.id]}
                       user={user}
                       registrationStatus={schedule.registration_status}
                       logoRequired={schedule.logo_required}
