@@ -3,6 +3,8 @@ import { Trophy } from "lucide-react"
 import Image from "next/image"
 import ResultImageModal from "@/components/result-image-modal"
 
+export const dynamic = 'force-dynamic'
+
 export default async function ResultsPage() {
   const supabase = await createClient()
   const { data: results } = await supabase.from("results").select("*").order("created_at", { ascending: false })

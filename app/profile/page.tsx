@@ -281,12 +281,38 @@ export default function ProfilePage() {
                             {profile?.balance || 0} GEL
                          </div>
                      </div>
-                     <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-4">
                         <p className="text-muted-foreground text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2 italic">
                            <Shield className="w-3 h-3 text-primary" />
-                           {profile?.role === 'admin' ? 'კომენდანტი' : profile?.role === 'manager' ? 'სექტორის მენეჯერი' : 'ოპერატორი'}
+                           {profile?.role === 'admin' ? 'Kommander' : profile?.role === 'manager' ? 'Sector Manager' : 'Operator'}
                         </p>
-                     </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3">
+                           {profile?.instagram_url && (
+                              <a href={profile.instagram_url} target="_blank" className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center text-white/40 hover:text-primary hover:border-primary/50 transition-all group/social">
+                                 <Instagram className="w-5 h-5 group-hover/social:scale-110 transition-transform" />
+                              </a>
+                           )}
+                           {profile?.tiktok_url && (
+                              <a href={profile.tiktok_url} target="_blank" className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center text-white/40 hover:text-primary hover:border-primary/50 transition-all group/social">
+                                 <Music2 className="w-5 h-5 group-hover/social:scale-110 transition-transform" />
+                              </a>
+                           )}
+                           {profile?.discord_username && (
+                              <div className="flex items-center gap-3 px-4 h-10 rounded-xl glass border border-white/5 text-[11px] font-black text-white/40 italic">
+                                 <MessageSquare className="w-4 h-4" /> {profile.discord_username}
+                              </div>
+                           )}
+                           {!profile?.instagram_url && !profile?.tiktok_url && !profile?.discord_username && (
+                              <div 
+                                onClick={() => setIsEditing(true)}
+                                className="flex items-center gap-2 px-4 h-10 rounded-xl glass border border-dashed border-white/10 text-[10px] font-black text-white/20 italic hover:border-primary/30 hover:text-primary/50 transition-all cursor-pointer"
+                              >
+                                 <ExternalLink className="w-3 h-3" /> Connect_Socials
+                              </div>
+                           )}
+                        </div>
+                      </div>
                   </div>
 
                   <div className="flex gap-3 pb-2">
@@ -305,16 +331,46 @@ export default function ProfilePage() {
          <div className="container mx-auto max-w-6xl mt-12 px-8">
             <div className="grid lg:grid-cols-3 gap-12">
                <div className="space-y-8">
+                  {/* Badges Section */}
+                  <div className="glass-card p-8 space-y-8 relative overflow-hidden">
+                     <div className="absolute top-0 right-0 p-4 opacity-5">
+                        <Award className="w-32 h-32" />
+                     </div>
+                     <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                        <div className="text-[10px] font-black text-primary uppercase tracking-widest italic">User_Achievements</div>
+                        <Award className="w-4 h-4 text-primary" />
+                     </div>
+                     
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${vipStatus ? 'bg-secondary/10 border-secondary/30 shadow-lg shadow-secondary/5' : 'bg-white/5 border-white/5 opacity-50'}`}>
+                           <Crown className={`w-8 h-8 ${vipStatus ? 'text-secondary animate-pulse' : 'text-white/20'}`} />
+                           <span className={`text-[10px] font-black uppercase tracking-widest ${vipStatus ? 'text-secondary' : 'text-white/20'}`}>Elite_VIP</span>
+                        </div>
+                        <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${profile?.role === 'admin' ? 'bg-primary/10 border-primary/30 shadow-lg shadow-primary/5' : 'bg-white/5 border-white/5 opacity-50'}`}>
+                           <Shield className={`w-8 h-8 ${profile?.role === 'admin' ? 'text-primary' : 'text-white/20'}`} />
+                           <span className={`text-[10px] font-black uppercase tracking-widest ${profile?.role === 'admin' ? 'text-primary' : 'text-white/20'}`}>Commander</span>
+                        </div>
+                        <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${profile?.balance > 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/5 opacity-50'}`}>
+                           <Wallet className={`w-8 h-8 ${profile?.balance > 0 ? 'text-emerald-500' : 'text-white/20'}`} />
+                           <span className={`text-[10px] font-black uppercase tracking-widest ${profile?.balance > 0 ? 'text-emerald-400' : 'text-white/20'}`}>Investor</span>
+                        </div>
+                        <div className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all ${userTeam ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/5 opacity-50'}`}>
+                           <Users className={`w-8 h-8 ${userTeam ? 'text-blue-500' : 'text-white/20'}`} />
+                           <span className={`text-[10px] font-black uppercase tracking-widest ${userTeam ? 'text-blue-400' : 'text-white/20'}`}>Team_Leader</span>
+                        </div>
+                     </div>
+                  </div>
+
                   <div className="glass-card p-8 space-y-6">
                      <div className="flex items-center justify-between pb-4 border-b border-white/5">
-                        <div className="text-[10px] font-black text-primary uppercase tracking-widest italic">Permission_Level</div>
-                        <Shield className="w-4 h-4 text-primary" />
+                        <div className="text-[10px] font-black text-primary uppercase tracking-widest italic">Operational_Status</div>
+                        <Zap className="w-4 h-4 text-primary" />
                      </div>
                      <div className="p-4 rounded-2xl glass border border-white/5 flex items-center justify-between">
                         <span className="text-sm font-bold text-white uppercase tracking-wider">{String(profile?.role || 'USER').toUpperCase()}</span>
-                        <Badge variant="outline" className="text-[8px] opacity-50 italic">Verified</Badge>
+                        <Badge variant="outline" className="text-[8px] opacity-50 italic">Verified_Core</Badge>
                      </div>
-                     {profile?.is_admin && (
+                     {profile?.role === 'admin' && (
                         <Link href="/admin" className="p-4 rounded-2xl bg-secondary/10 border border-secondary/20 flex items-center justify-between group hover:bg-secondary/20 transition-all">
                            <span className="text-sm font-bold text-secondary uppercase tracking-wider">მართვის პანელი</span>
                            <ChevronRight className="w-4 h-4 text-secondary group-hover:translate-x-1 transition-transform" />

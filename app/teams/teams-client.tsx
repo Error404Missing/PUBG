@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Users, Crown, Shield, Target, Zap, Users2, Info, ChevronRight, LayoutGrid, Calendar, Globe, MessageSquare, Instagram, Music2 } from "lucide-react"
+import { Users, Crown, Shield, Target, Zap, Users2, Info, ChevronRight, LayoutGrid, Calendar, Globe, MessageSquare, Instagram, Music2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -141,128 +141,155 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
 
       {/* Team Details Intelligence Modal */}
       <Dialog open={!!selectedTeam} onOpenChange={(open) => !open && setSelectedTeam(null)}>
-        <DialogContent className={`max-w-2xl bg-[#030712] border-white/5 p-0 overflow-hidden rounded-[3rem] shadow-2xl ${selectedTeam?.is_vip ? 'shadow-secondary/20 border-secondary/20' : 'shadow-primary/20'}`}>
+        <DialogContent className={`max-w-3xl bg-[#020204] border-white/5 p-0 overflow-hidden rounded-[3rem] shadow-2xl ${selectedTeam?.is_vip ? 'shadow-secondary/20 border-secondary/20' : 'shadow-primary/20'}`}>
           {selectedTeam && (
             <div className="relative">
+              {/* Luxury Background mesh */}
+              <div className="absolute inset-0 bg-mesh opacity-20 -z-10" />
+              
               {/* Header Visual */}
-              <div className="h-48 relative overflow-hidden">
+              <div className="h-64 relative overflow-hidden">
                 <div className={`absolute inset-0 bg-gradient-to-br transition-opacity duration-1000 ${
                   selectedTeam.is_vip 
                     ? 'from-secondary/20 via-background to-background' 
                     : 'from-primary/20 via-background to-background'
                 }`} />
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
                 
-                <div className="absolute top-10 left-10 flex items-center gap-8">
-                  <div className={`w-28 h-28 rounded-[2rem] glass p-1 border-2 relative z-10 shadow-2xl ${
-                    selectedTeam.is_vip ? 'border-secondary shadow-secondary/20' : 'border-white/10'
+                <div className="absolute top-12 left-12 flex flex-col md:flex-row items-center gap-10">
+                  <div className={`w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] glass p-1.5 border-2 relative z-10 shadow-2xl ${
+                    selectedTeam.is_vip ? 'border-secondary/50 shadow-secondary/40' : 'border-white/10'
                   }`}>
-                    {selectedTeam.logo_url ? (
-                      <img src={selectedTeam.logo_url} className="w-full h-full object-cover rounded-[1.8rem]" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-white/5 rounded-[1.8rem]">
-                        {selectedTeam.is_vip ? <Crown className="w-12 h-12 text-secondary" /> : <Shield className="w-12 h-12 text-primary/40" /> }
-                      </div>
+                    <img 
+                      src={selectedTeam.logo_url || (selectedTeam.is_vip ? 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg' : 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png')} 
+                      className={`w-full h-full object-cover rounded-[2.2rem] ${selectedTeam.is_vip ? 'shadow-2xl' : ''}`} 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = selectedTeam.is_vip ? 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg' : 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png'
+                      }}
+                    />
+                    {selectedTeam.is_vip && (
+                       <div className="absolute -top-3 -right-3 w-10 h-10 bg-secondary rounded-xl flex items-center justify-center shadow-lg shadow-secondary/50 border-2 border-background">
+                          <Crown className="w-5 h-5 text-background" />
+                       </div>
                     )}
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                       <h2 className={`text-5xl font-black italic tracking-tighter uppercase leading-none ${
+                  <div className="space-y-4 text-center md:text-left">
+                    <div className="flex flex-col md:flex-row items-center gap-4">
+                       <h2 className={`text-6xl md:text-7xl font-black italic tracking-tighter uppercase leading-none drop-shadow-2xl ${
                          selectedTeam.is_vip ? 'text-secondary text-glow' : 'text-white'
                        }`}>{selectedTeam.team_name}</h2>
-                       <Badge variant="outline" className={`text-xl font-black border-white/10 ${selectedTeam.is_vip ? 'bg-secondary/10 text-secondary border-secondary/20' : 'bg-white/5 text-white/40'}`}>
+                       <Badge variant={selectedTeam.is_vip ? 'gold' : 'outline'} className="text-2xl font-black py-1 px-4 italic">
                          [{selectedTeam.team_tag}]
                        </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-white/30 italic">
-                       <span className="flex items-center gap-2"><Globe className="w-3 h-3" /> Mission_Ready</span>
-                       <span className="w-1 h-1 rounded-full bg-primary" />
-                       <span className="flex items-center gap-2"><LayoutGrid className="w-3 h-3" /> {selectedTeam.maps_count || 4} Maps</span>
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-[10px] font-black uppercase tracking-[0.5em] text-white/40 italic">
+                       <span className="flex items-center gap-2"><Zap className={`w-3 h-3 ${selectedTeam.is_vip ? 'text-secondary' : 'text-primary'}`} /> MISSION_READY</span>
+                       <span className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                       <span className="flex items-center gap-2"><LayoutGrid className="w-3 h-3" /> {selectedTeam.maps_count || 4} OPS_QUOTA</span>
                     </div>
                   </div>
                 </div>
-
-                {selectedTeam.is_vip && (
-                   <div className="absolute top-8 right-8">
-                      <div className="bg-secondary/10 border border-secondary/30 px-6 py-2 rounded-full flex items-center gap-3 shadow-2xl">
-                         <Crown className="w-4 h-4 text-secondary" />
-                         <span className="text-[10px] font-black text-secondary tracking-[0.3em] uppercase italic">Supreme_Elite_Unit</span>
-                      </div>
-                   </div>
-                )}
               </div>
 
-              <div className="p-10 lg:p-14 pt-6 space-y-12">
+              <div className="p-10 lg:p-14 pt-10 space-y-16">
                  {/* Commander Briefing */}
-                 <div className="grid md:grid-cols-3 gap-8">
-                    <div className="md:col-span-2 space-y-6">
-                       <div className="space-y-4">
-                          <h3 className="text-sm font-black text-white/20 uppercase tracking-[0.4em] italic mb-6">Commander_Briefing</h3>
-                          <div className="glass p-8 rounded-[2rem] border border-white/5 relative group hover:border-white/10 transition-all">
-                             <div className="flex items-start gap-6">
-                                <div className="w-16 h-16 rounded-2xl border border-white/10 overflow-hidden shrink-0 shadow-xl">
-                                   <img src={selectedTeam.profiles?.avatar_url || "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"} className="w-full h-full object-cover" />
+                 <div className="grid lg:grid-cols-5 gap-12">
+                    <div className="lg:col-span-3 space-y-8">
+                       <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xs font-black text-white/20 uppercase tracking-[0.5em] italic">Operation_Manager_Brief</h3>
+                          <div className="h-px flex-1 bg-white/5 ml-6" />
+                       </div>
+                       
+                       <div className="glass-card p-1 relative group overflow-visible">
+                          <div className="p-8 space-y-8">
+                             <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                                <div className="relative">
+                                   <div className="w-24 h-24 rounded-3xl border border-white/10 overflow-hidden shrink-0 shadow-2xl relative z-10">
+                                      <img 
+                                        src={selectedTeam.profiles?.avatar_url || "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"} 
+                                        className="w-full h-full object-cover" 
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"
+                                        }}
+                                      />
+                                   </div>
+                                   <div className="absolute inset-x-0 inset-y-0 bg-primary/20 blur-2xl -z-10 scale-150 opacity-50" />
                                 </div>
-                                <div className="space-y-2 flex-1">
-                                   <div className="text-2xl font-black text-white uppercase italic">{selectedTeam.profiles?.username || 'ანონიმური'}</div>
-                                   <p className="text-sm text-white/40 font-medium leading-relaxed italic">
+                                <div className="space-y-4 flex-1 text-center md:text-left">
+                                   <div className="space-y-1">
+                                      <div className="text-xs font-black text-primary/60 uppercase tracking-widest italic leading-none">Commanding_Officer</div>
+                                      <div className="text-4xl font-black text-white uppercase italic tracking-tight">{selectedTeam.profiles?.username || 'ANONYMOUS'}</div>
+                                   </div>
+                                   <p className="text-base text-white/50 font-medium leading-relaxed italic max-w-xl">
                                       {selectedTeam.profiles?.bio || "ოპერატორის ბიოგრაფია ჯერჯერობით არ არის ხელმისაწვდომი. დაშიფრული მონაცემები."}
                                    </p>
                                 </div>
                              </div>
                              
-                             <div className="flex gap-3 mt-8 pt-8 border-t border-white/5">
-                                {selectedTeam.profiles?.instagram_url && (
-                                   <a href={selectedTeam.profiles.instagram_url} target="_blank" className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center hover:border-primary/50 text-white/40 hover:text-primary transition-all">
-                                      <Instagram className="w-4 h-4" />
-                                   </a>
-                                )}
-                                {selectedTeam.profiles?.tiktok_url && (
-                                   <a href={selectedTeam.profiles.tiktok_url} target="_blank" className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center hover:border-primary/50 text-white/40 hover:text-primary transition-all">
-                                      <Music2 className="w-4 h-4" />
-                                   </a>
-                                )}
+                             <div className="flex flex-wrap items-center gap-4 pt-8 border-t border-white/5">
+                                <div className="flex items-center gap-3">
+                                   {selectedTeam.profiles?.instagram_url && (
+                                      <a href={selectedTeam.profiles.instagram_url} target="_blank" className="w-12 h-12 rounded-2xl glass-darker border border-white/10 flex items-center justify-center hover:border-primary/50 text-white/40 hover:text-primary transition-all group/icon">
+                                         <Instagram className="w-5 h-5 group-hover/icon:scale-110" />
+                                      </a>
+                                   )}
+                                   {selectedTeam.profiles?.tiktok_url && (
+                                      <a href={selectedTeam.profiles.tiktok_url} target="_blank" className="w-12 h-12 rounded-2xl glass-darker border border-white/10 flex items-center justify-center hover:border-primary/50 text-white/40 hover:text-primary transition-all group/icon">
+                                         <Music2 className="w-5 h-5 group-hover/icon:scale-110" />
+                                      </a>
+                                   )}
+                                   {selectedTeam.profiles?.discord_username && (
+                                      <div className="px-5 h-12 rounded-2xl glass-darker border border-white/5 flex items-center gap-3 text-[10px] font-black text-white/40 italic">
+                                         <MessageSquare className="w-4 h-4" /> {selectedTeam.profiles.discord_username}
+                                      </div>
+                                   )}
+                                </div>
                                 <div className="flex-1" />
                                 <Link 
                                   href={`/profile/${selectedTeam.leader_id}`}
-                                  className="px-6 py-2 rounded-xl glass border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 transition-all"
+                                  className="h-12 px-8 rounded-2xl bg-primary/10 border border-primary/30 text-primary text-xs font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center gap-2 group/link shadow-lg shadow-primary/10"
                                 >
-                                  სრული პროფილი
+                                  View_Profile <ChevronRight className="w-4 h-4 group-hover/link:translate-x-1" />
                                 </Link>
                              </div>
                           </div>
                        </div>
                     </div>
 
-                    <div className="space-y-6">
-                       <h3 className="text-sm font-black text-white/20 uppercase tracking-[0.4em] italic mb-6">Unit_Stats</h3>
-                       <div className="space-y-4">
+                    <div className="lg:col-span-2 space-y-8">
+                       <h3 className="text-xs font-black text-white/20 uppercase tracking-[0.5em] italic">Deployment_Stats</h3>
+                       <div className="grid gap-6">
                           {[
-                            { label: 'OPERATORS', value: `${selectedTeam.players_count || 4} / 4`, icon: Users2 },
-                            { label: 'MAP_QUOTA', value: `${selectedTeam.maps_count || 4}`, icon: Target },
-                            { label: 'STATUS', value: selectedTeam.is_vip ? 'ELITE' : 'ACTIVE', icon: Zap },
+                            { label: 'OPERATORS', value: `${selectedTeam.players_count || 4} / 4`, icon: Users2, detail: 'UNITS_SYNCED' },
+                            { label: 'MAP_QUOTA', value: `${selectedTeam.maps_count || 4} OPERATIONS`, icon: Target, detail: 'SECTOR_COVERAGE' },
+                            { label: 'UNIT_STATUS', value: selectedTeam.is_vip ? 'SUPREME_ELITE' : 'ACTIVE_DUTY', icon: Zap, detail: 'PRIORITY_LEVEL' },
                           ].map((stat, idx) => (
-                             <div key={idx} className="glass p-5 rounded-2xl border border-white/5 flex items-center justify-between group hover:bg-white/5 transition-all">
-                                <div className="flex items-center gap-3">
-                                   <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-all">
-                                      <stat.icon className="w-4 h-4 text-white/40 group-hover:text-primary transition-colors" />
+                             <div key={idx} className="glass-card p-1 group overflow-visible">
+                                <div className="p-6 flex items-center justify-between">
+                                   <div className="flex items-center gap-4">
+                                      <div className={`w-12 h-12 rounded-2xl glass border border-white/5 flex items-center justify-center transition-all group-hover:scale-110 ${idx === 2 && selectedTeam.is_vip ? 'bg-secondary/20 border-secondary/30' : ''}`}>
+                                         <stat.icon className={`w-6 h-6 transition-colors ${idx === 2 && selectedTeam.is_vip ? 'text-secondary' : 'text-primary/60'}`} />
+                                      </div>
+                                      <div>
+                                         <div className="text-[9px] font-black text-white/20 uppercase tracking-widest leading-none mb-1">{stat.label}</div>
+                                         <div className={`text-xl font-black italic tracking-tight ${idx === 2 && selectedTeam.is_vip ? 'text-secondary' : 'text-white'}`}>{stat.value}</div>
+                                      </div>
                                    </div>
-                                   <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">{stat.label}</span>
+                                   <Badge variant="outline" className="text-[8px] opacity-30 italic">{stat.detail}</Badge>
                                 </div>
-                                <span className={`text-sm font-black italic ${stat.label === 'STATUS' && selectedTeam.is_vip ? 'text-secondary' : 'text-white'}`}>{stat.value}</span>
                              </div>
                           ))}
                        </div>
                     </div>
                  </div>
 
-                 <div className="flex justify-center pt-4">
+                 <div className="flex justify-center">
                    <Button 
                      onClick={() => setSelectedTeam(null)}
                      variant="outline" 
-                     className="h-14 px-12 rounded-2xl border-white/10 hover:bg-white/5 text-muted-foreground font-black uppercase tracking-widest italic"
+                     className="h-16 px-16 rounded-[2rem] border-white/10 hover:bg-white/5 text-muted-foreground font-black uppercase tracking-widest italic transition-all group hover:text-white"
                    >
-                     დახურვა
+                     Close_Interface <X className="w-4 h-4 ml-3 opacity-20 group-hover:opacity-100" />
                    </Button>
                  </div>
               </div>

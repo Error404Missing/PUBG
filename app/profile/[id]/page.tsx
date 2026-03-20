@@ -1,11 +1,11 @@
-"use client"
+"use client" // Profile Public View
 
 import { useState, useEffect } from "react"
 import { createBrowserClient } from "@/lib/supabase/client"
 import {
    User, Mail, Shield, Award, Zap, Hash,
    MessageSquare, ChevronLeft, ExternalLink,
-   Target, Calendar, Users, Instagram, Music2
+   Target, Calendar, Users, Instagram, Music2, Wallet, Crown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -178,6 +178,21 @@ export default function PublicProfilePage() {
                            </div>
                         </div>
 
+                        {/* Badges and Info Section */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
+                            {[
+                               { label: 'Elite_VIP', status: !!vipStatus, icon: Crown, color: 'text-secondary', bg: 'bg-secondary/10 border-secondary/20' },
+                               { label: 'Commander', status: profile?.role === 'admin', icon: Shield, color: 'text-primary', bg: 'bg-primary/10 border-primary/20' },
+                               { label: 'Active_Inv', status: profile?.balance > 0, icon: Zap, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+                               { label: 'Team_Lead', status: !!userTeam, icon: Users, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' }
+                            ].map((badge, i) => (
+                               <div key={i} className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-3 text-center group ${badge.status ? badge.bg : 'bg-white/5 border-white/5 opacity-30 cursor-not-allowed'}`}>
+                                  <badge.icon className={`w-10 h-10 transition-transform ${badge.status ? badge.color + ' group-hover:scale-110' : 'text-white/20'}`} />
+                                  <div className={`text-[9px] font-black uppercase tracking-widest italic ${badge.status ? badge.color : 'text-white/20'}`}>{badge.label}</div>
+                               </div>
+                            ))}
+                        </div>
+
                         <div className="grid sm:grid-cols-2 gap-6">
                            <div className="glass p-8 rounded-[2.5rem] border border-white/5 group hover:border-primary/20 transition-colors">
                               <div className="flex items-center justify-between mb-4">
@@ -190,15 +205,15 @@ export default function PublicProfilePage() {
                               <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic">Communication_Link</div>
                            </div>
 
-                           <div className="glass p-8 rounded-[2.5rem] border border-white/5 group hover:border-blue-400/20 transition-colors">
+                           <div className="glass p-8 rounded-[2.5rem] border border-white/5 group hover:border-emerald-400/20 transition-colors">
                               <div className="flex items-center justify-between mb-4">
-                                 <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center">
-                                    <Award className="w-5 h-5 text-blue-400" />
+                                 <div className="w-10 h-10 rounded-xl bg-emerald-400/10 flex items-center justify-center">
+                                    <Wallet className="w-5 h-5 text-emerald-400" />
                                  </div>
-                                 <div className="text-[8px] font-black text-white/20 uppercase tracking-widest italic">Honor_Index</div>
+                                 <div className="text-[8px] font-black text-white/20 uppercase tracking-widest italic">Account_Assets</div>
                               </div>
-                              <div className="text-xl font-black text-white italic tracking-tight truncate">{vipStatus ? "Elite_Rank" : "Standard_Rank"}</div>
-                              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic">Security_Access_Lv</div>
+                              <div className="text-xl font-black text-white italic tracking-tight truncate">{profile?.balance || 0} GEL</div>
+                              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic">Verified_Inventory</div>
                            </div>
 
                            <div className="glass p-8 rounded-[2.5rem] border border-white/5 group hover:border-primary/20 transition-colors">
@@ -210,12 +225,12 @@ export default function PublicProfilePage() {
                               </div>
                               {profile.instagram_url ? (
                                  <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="text-xl font-black text-white italic tracking-tight hover:text-primary transition-colors hover:underline truncate block">
-                                    View Profile
+                                    View_Direct_Feed
                                  </a>
                               ) : (
                                  <div className="text-xl font-black text-white italic tracking-tight truncate">Not Connected</div>
                               )}
-                              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic">Social_Link</div>
+                              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic">Social_Protocol</div>
                            </div>
 
                            <div className="glass p-8 rounded-[2.5rem] border border-white/5 group hover:border-primary/20 transition-colors">
@@ -227,12 +242,12 @@ export default function PublicProfilePage() {
                               </div>
                               {profile.tiktok_url ? (
                                  <a href={profile.tiktok_url} target="_blank" rel="noopener noreferrer" className="text-xl font-black text-white italic tracking-tight hover:text-primary transition-colors hover:underline truncate block">
-                                    View Profile
+                                    View_Briefing
                                  </a>
                               ) : (
                                  <div className="text-xl font-black text-white italic tracking-tight truncate">Not Connected</div>
                               )}
-                              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic">Social_Link</div>
+                              <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic">Social_Protocol</div>
                            </div>
                         </div>
                      </div>
