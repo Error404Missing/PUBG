@@ -5,6 +5,7 @@ import { ka } from "date-fns/locale"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { getTeamsBySchedule, fetchActiveSchedules } from "./server-helper"
+import { TeamsClient } from "./teams-client"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -108,81 +109,7 @@ export default async function TeamsPage({
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {teams.length > 0 ? (
-            teams.map((team, i) => (
-              <Link 
-                key={team.id} 
-                href={`/profile/${team.leader_id}`}
-                className={`glass-card p-1 relative overflow-hidden group animate-reveal ${team.is_vip ? 'vip-card-premium' : ''}`} 
-                style={{ animationDelay: `${i * 0.05}s` }}
-              >
-                {team.is_vip && <div className="vip-border-shimmer" />}
-                <div className="p-8">
-                  <div className="flex items-start justify-between mb-8">
-                    <div className="flex items-center gap-5">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 ${team.is_vip ? 'border-secondary/50 bg-secondary/10 shadow-[0_0_20px_-5px_secondary]' : 'border-white/10 bg-white/5'}`}>
-                        {team.logo_url ? (
-                          <img src={team.logo_url} className="w-full h-full object-cover rounded-2xl" />
-                        ) : (
-                          team.is_vip ? <Crown className="w-8 h-8 text-secondary" /> : <Shield className="w-8 h-8 text-primary/40" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className={`text-2xl font-black italic tracking-tighter uppercase ${team.is_vip ? 'text-secondary' : 'text-white'}`}>{team.team_name}</h3>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-white/10 text-[9px] font-black uppercase tracking-widest text-white/40 py-1">{team.team_tag}</Badge>
-                          <Badge className={`text-[8px] font-black uppercase tracking-widest py-0.5 px-2 rounded-sm border ${
-                            team.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                            team.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                            'bg-red-500/10 text-red-400 border-red-500/20'
-                          }`}>
-                            {team.status?.toLowerCase().trim() === 'approved' ? 'Active' : (team.status?.toLowerCase().trim() === 'pending' || team.status?.toLowerCase().trim() === 'review') ? 'Review' : team.status?.toLowerCase().trim() === 'rejected' ? 'Rejected' : 'Banned'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    {team.slot_number && (
-                      <div className="text-right">
-                        <div className="text-[9px] font-black text-white/20 uppercase tracking-widest leading-none mb-1">Slot</div>
-                        <div className="text-3xl font-black text-primary italic leading-none">#{team.slot_number}</div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 rounded-2xl glass-darker border border-white/5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full border border-white/10 overflow-hidden">
-                          <img src={team.profiles?.avatar_url || "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"} className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                          <p className="text-[8px] font-black text-white/20 uppercase tracking-widest leading-none mb-1">Commander</p>
-                          <p className="text-[11px] font-bold text-white uppercase italic">{team.profiles?.username || "Unknown"}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between px-2">
-                      <div className="flex items-center gap-2 text-[10px] font-black uppercase italic text-white/40">
-                         <Users2 className="w-3.5 h-3.5" /> {team.players_count || 4} OPS
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest italic tracking-[0.2em]">VERIFIED_UNIT</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))
-          ) : (
-            <div className="col-span-full py-32 text-center glass-card border-dashed border-white/5 opacity-50">
-              <Users className="w-16 h-16 text-white/10 mx-auto mb-6" />
-              <h3 className="text-2xl font-black text-white/20 italic uppercase tracking-tighter mb-2">No_Data_Returned</h3>
-              <p className="text-[10px] text-white/10 font-bold uppercase tracking-[0.3em]">ამ განრიგში გუნდები ჯერ არ მოიძებნა.</p>
-            </div>
-          )}
-        </div>
+        <TeamsClient teams={teams} />
       </div>
     </div>
   )
