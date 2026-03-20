@@ -1,4 +1,5 @@
 "use client"
+// Vercel Build Trigger: Final access fix deployment.
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
