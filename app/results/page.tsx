@@ -62,7 +62,7 @@ export default async function ResultsPage() {
                           <ResultImageModal 
                             imageUrl={result.image_url} 
                             title={result.title} 
-                            winner="TEAM ALPHA" 
+                            winner={result.winner_team || "Winner Team"} 
                           />
                         </div>
                      )}
