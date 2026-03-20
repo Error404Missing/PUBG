@@ -182,7 +182,7 @@ export default async function AdminRequestsPage() {
                            </div>
                          </div>
                          
-                         <div className="grid md:grid-cols-2 gap-4">
+                          <div className="grid md:grid-cols-3 gap-4">
                             <div className="glass p-4 rounded-2xl border border-white/5 flex items-center gap-4">
                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                                   <Calendar className="w-5 h-5 text-blue-400" />
@@ -203,7 +203,18 @@ export default async function AdminRequestsPage() {
                                   </div>
                                </div>
                             </div>
-                         </div>
+                            <div className="glass p-4 rounded-2xl border border-amber-500/10 flex items-center gap-4">
+                               <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+                                  <Gamepad2 className="w-5 h-5" />
+                               </div>
+                               <div>
+                                  <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">მაპები / სლოტი</div>
+                                  <div className="text-sm font-bold text-white italic tracking-tight uppercase">
+                                     {req.preferred_maps || 0} Maps {req.slot_number ? `| Slot #${req.slot_number}` : ""}
+                                  </div>
+                                </div>
+                            </div>
+                          </div>
 
                          <div className="mt-4 flex items-center gap-2 text-[9px] font-black text-white/30 uppercase tracking-[0.2em] italic">
                             Intel_Logged: {format(new Date(req.created_at), "PPP p", { locale: ka })}

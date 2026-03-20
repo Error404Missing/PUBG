@@ -29,7 +29,7 @@ export default async function RoomInfoPage() {
   const isManager = profile?.role === "manager"
   const isAdmin = profile?.is_admin
 
-  // 1. Fetch user's teams
+  // 1. Fetch user's teams directly
   const { data: userTeams } = await supabase
     .from("teams")
     .select("*")
@@ -37,15 +37,19 @@ export default async function RoomInfoPage() {
 
   const teamIds = userTeams?.map(t => t.id) || []
 
-  // 2. Fetch all requests for these teams (The single source of truth for match approval)
-  const { data: requests } = await supabase
+  // 2. Fetch all requests (no filter on status yet to see if they exist)
+  const { data: allUserRequests } = await supabase
     .from("scrim_requests")
     .select("schedule_id, team_id, status, slot_number, preferred_maps")
     .in("team_id", teamIds)
   
-  const approvedRequests = requests?.filter(r => r.status?.toLowerCase() === "approved") || []
+  // LOG FOR DEBUGGING (Visible to Admins)
+  const approvedRequests = allUserRequests?.filter(r => 
+      r.status?.toLowerCase() === "approved" || 
+      r.status?.toLowerCase() === "verified"
+  ) || []
 
-  // 3. Create a map of schedule_id -> request_info (contains slot and team)
+  // 3. Create a map of schedule_id -> request_info
   const approvedScheduleMap = new Map()
   
   approvedRequests.forEach((req: any) => {
@@ -53,7 +57,7 @@ export default async function RoomInfoPage() {
     if (team) {
        approvedScheduleMap.set(req.schedule_id, {
           ...team,
-          slot_number: req.slot_number || team.slot_number, // Favors request slot
+          slot_number: req.slot_number || team.slot_number,
           preferred_maps: req.preferred_maps
        })
     }
@@ -68,7 +72,8 @@ export default async function RoomInfoPage() {
 
   const approvedScheduleIds = Array.from(approvedScheduleMap.keys())
 
-  if (!isAdmin && !isManager && approvedScheduleMap.size === 0) {
+  // Access Denial: Only if user HAS NO TEAMS or NO APPROVED REQUESTS and is NOT Admin/Manager
+  if (!isAdmin && !isManager && teamIds.length === 0) {
      redirect("/")
   }
 
@@ -80,38 +85,44 @@ export default async function RoomInfoPage() {
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/2 -z-10" />
 
       <div className="container mx-auto max-w-5xl relative">
-        {/* Admin Hub Bar */}
+        {/* Admin Hub Bar (Diagnostic) */}
         {isAdmin && (
            <div className="mb-12 animate-reveal">
-              <div className="glass-darker p-4 rounded-3xl border border-white/5 flex items-center justify-between group hover:border-primary/20 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Bug className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <div className="space-y-0.5">
-                      <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic leading-none">Access_Override</div>
-                      <div className="text-sm font-black text-white italic tracking-tighter">ADMIN_OVERWATCH_ENABLED</div>
+              <div className="glass-darker p-4 rounded-3xl border border-white/5 flex flex-col gap-4">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <Bug className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic leading-none">Access_Override</div>
+                        <div className="text-sm font-black text-white italic tracking-tighter uppercase">Admin_Diagnostic_Interface</div>
+                      </div>
                     </div>
-                    <div className="h-8 w-px bg-white/5" />
-                    <div className="grid grid-cols-4 gap-6">
-                      {[
+                    <div className="px-4 py-2 rounded-xl bg-primary/5 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-[0.2em] italic">
+                       Force_Stable
+                    </div>
+                 </div>
+                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6 p-4 bg-white/[0.02] rounded-2xl border border-white/5">
+                    {[
+                        { label: "Profile_ID", value: user.id.slice(0, 8) },
                         { label: "Teams", value: teamIds.length },
-                        { label: "Reqs", value: requests?.length || 0 },
-                        { label: "Approve", value: approvedScheduleMap.size },
-                        { label: "Role", value: profile?.role?.toUpperCase() }
-                      ].map((stat, i) => (
-                        <div key={i} className="space-y-0.5 text-center">
-                          <div className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em]">{stat.label}</div>
-                          <div className="text-[11px] font-black text-primary italic">{stat.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="px-4 py-2 rounded-xl bg-primary/5 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-[0.2em] italic">
-                   System_Stable
-                </div>
+                        { label: "User_Requests", value: allUserRequests?.length || 0 },
+                        { label: "Approved_Reqs", value: approvedRequests.length },
+                        { label: "Role", value: profile?.role?.toUpperCase() || "USER" }
+                    ].map((s, i) => (
+                      <div key={i} className="space-y-1 text-center border-r border-white/5 last:border-0">
+                         <div className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em]">{s.label}</div>
+                         <div className="text-[11px] font-black text-primary italic">{s.value}</div>
+                      </div>
+                    ))}
+                 </div>
+                 {/* Detail log for admin */}
+                 {allUserRequests && allUserRequests.length > 0 && (
+                   <div className="text-[9px] font-mono text-white/20 px-4 py-2 bg-black/40 rounded-xl overflow-x-auto whitespace-nowrap">
+                      Requests: {allUserRequests.map(r => `[ID:${r.schedule_id.slice(0,4)}|Status:${r.status}|Slot:${r.slot_number}]`).join(', ')}
+                   </div>
+                 )}
               </div>
            </div>
         )}

@@ -16,6 +16,7 @@ interface ScheduleClientProps {
   logoRequired?: boolean
   mapsCount?: number
   isUserVip?: boolean
+  scheduleTitle?: string
 }
 
 export function ScheduleClient({ 
@@ -26,7 +27,8 @@ export function ScheduleClient({
   registrationStatus = 'open',
   logoRequired = false,
   mapsCount = 4,
-  isUserVip = false
+  isUserVip = false,
+  scheduleTitle = "მატჩი"
 }: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
@@ -140,7 +142,8 @@ export function ScheduleClient({
           <div className="p-8 lg:p-10 space-y-6">
             <DialogHeader>
               <DialogTitle className="text-3xl font-black text-white italic uppercase tracking-tighter">
-                მაპების <span className="text-primary">არჩევანი</span>
+                {scheduleTitle}
+                <div className="text-primary text-sm tracking-widest mt-1">მაპების არჩევანი</div>
               </DialogTitle>
             </DialogHeader>
 

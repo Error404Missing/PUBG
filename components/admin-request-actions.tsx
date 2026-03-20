@@ -40,10 +40,35 @@ export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsPr
       const slot = slotNumber && !isNaN(Number(slotNumber)) ? Number(slotNumber) : null
       
       if (slot !== null) {
-        await supabase
-          .from("scrim_requests")
-          .update({ slot_number: slot })
-          .eq("id", requestId)
+          // Find schedule_id for this request
+          const { data: reqData } = await supabase
+            .from("scrim_requests")
+            .select("schedule_id")
+            .eq("id", requestId)
+            .single()
+
+          if (reqData?.schedule_id) {
+            // Check if slot is taken in this schedule by another APPROVED request
+            const { data: existingSlotReq } = await supabase
+              .from("scrim_requests")
+              .select("id")
+              .eq("schedule_id", reqData.schedule_id)
+              .eq("slot_number", slot)
+              .eq("status", "approved")
+              .neq("id", requestId)
+              .maybeSingle()
+
+            if (existingSlotReq) {
+              setIsLoading(false)
+              alert(`სლოტი #${slot} უკვე დაკავებულია სხვა გუნდის მიერ ამ მატჩზე!`)
+              return
+            }
+
+            await supabase
+              .from("scrim_requests")
+              .update({ slot_number: slot })
+              .eq("id", requestId)
+          }
       }
 
       // Also update team status to approved (global verification)

@@ -158,8 +158,9 @@ export default async function SchedulePage() {
                         +12
                       </div>
                     </div>
-                    <ScheduleClient
+                     <ScheduleClient
                       scheduleId={schedule.id}
+                      scheduleTitle={schedule.title}
                       userTeam={userTeam}
                       user={user}
                       registrationStatus={schedule.registration_status}
