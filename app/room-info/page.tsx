@@ -37,7 +37,10 @@ export default async function RoomInfoPage() {
         teams!inner(id, team_name, leader_id)
     `).eq("teams.leader_id", user.id),
     isAdmin ? supabase.from("teams").select("id, team_name, leader_id").limit(10) : Promise.resolve({ data: null }),
-    isAdmin ? supabase.from("scrim_requests").select("id, team_id, status").limit(10) : Promise.resolve({ data: null }),
+    isAdmin ? supabase.from("scrim_requests").select(`
+        *,
+        teams!inner(id, team_name)
+    `).limit(20) : Promise.resolve({ data: null }),
     supabase.rpc("get_my_auth_id")
   ])
 
@@ -130,10 +133,10 @@ export default async function RoomInfoPage() {
                             ))}
                          </div>
                          <div className="space-y-1">
-                            <div className="text-[8px] text-white/20">Site Requests Status:</div>
+                            <div className="text-[8px] text-white/20">Site Requests Status + Team:</div>
                             {(allSiteRequests as any[])?.map(r => (
                               <div key={r.id} className="text-[7px] font-mono text-white/40">
-                                 {r.id.slice(0,5)}.. | Status: {r.status}
+                                 {r.teams?.team_name || '??'} | Status: {r.status}
                               </div>
                             ))}
                          </div>

@@ -12,7 +12,7 @@ interface AdminRequestActionsProps {
   teamId: string
 }
 
-export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsProps) {
+export function AdminRequestActions({ requestId, teamId: initialTeamId }: AdminRequestActionsProps) {
   const supabase = createClient()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -21,35 +21,61 @@ export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsPr
 
   const handleAction = async (status: "approved" | "rejected") => {
     setIsLoading(true)
+    
+    // 0. Define final status
+    const finalStatus = status.toLowerCase()
 
-    // 1. Update scrim_request status
-    const { error: initialError } = await supabase
+    // 1. Fetch team ID for this request
+    const { data: requestData, error: fetchError } = await supabase
       .from("scrim_requests")
-      .update({ status })
+      .select("team_id")
       .eq("id", requestId)
+      .single()
 
-    if (initialError) {
-      console.error("Request update error:", initialError)
+    if (fetchError) {
+      console.error("Error fetching request details:", fetchError)
+      alert(`Error fetching request details: ${fetchError.message}`)
       setIsLoading(false)
-      alert("შეცდომა: " + initialError.message)
       return
     }
 
-    // 2. If approved, also set slot number on the request
-    if (status === "approved") {
+    const teamId = requestData.team_id
+
+    // 2. Update the scrim_request status
+    const { error: requestError } = await supabase
+      .from("scrim_requests")
+      .update({ status: finalStatus })
+      .eq("id", requestId)
+
+    if (requestError) {
+      console.error("Request update error:", requestError)
+      alert(`Error updating request status: ${requestError.message}`)
+      setIsLoading(false)
+      return
+    }
+
+    // 3. If approved, handle slot number and final team status
+    if (finalStatus === "approved") {
       const slot = slotNumber && !isNaN(Number(slotNumber)) ? Number(slotNumber) : null
       
       if (slot !== null) {
           // Find schedule_id for this request
-          const { data: reqData } = await supabase
+          const { data: reqData, error: scheduleFetchError } = await supabase
             .from("scrim_requests")
             .select("schedule_id")
             .eq("id", requestId)
             .single()
 
+          if (scheduleFetchError) {
+            console.error("Error fetching schedule_id:", scheduleFetchError)
+            alert(`Error fetching schedule ID: ${scheduleFetchError.message}`)
+            setIsLoading(false)
+            return
+          }
+
           if (reqData?.schedule_id) {
             // Check if slot is taken in this schedule by another APPROVED request
-            const { data: existingSlotReq } = await supabase
+            const { data: existingSlotReq, error: existingSlotError } = await supabase
               .from("scrim_requests")
               .select("id")
               .eq("schedule_id", reqData.schedule_id)
@@ -58,42 +84,70 @@ export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsPr
               .neq("id", requestId)
               .maybeSingle()
 
-            if (existingSlotReq) {
+            if (existingSlotError) {
+              console.error("Error checking existing slot:", existingSlotError)
+              alert(`Error checking existing slot: ${existingSlotError.message}`)
               setIsLoading(false)
-              alert(`სლოტი #${slot} უკვე დაკავებულია სხვა გუნდის მიერ ამ მატჩზე!`)
               return
             }
 
-            await supabase
+            if (existingSlotReq) {
+              alert(`სლოტი #${slot} უკვე დაკავებულია სხვა გუნდის მიერ ამ მატჩზე!`)
+              setIsLoading(false)
+              return
+            }
+
+            const { error: slotUpdateError } = await supabase
               .from("scrim_requests")
               .update({ slot_number: slot })
               .eq("id", requestId)
+
+            if (slotUpdateError) {
+               console.error("Slot update error:", slotUpdateError)
+               alert(`Error updating slot: ${slotUpdateError.message}`)
+               // Do not return here, as the request status was already updated successfully
+            }
           }
       }
 
       // Also update team status to approved (global verification)
-      await supabase.from("teams").update({ status: "approved" }).eq("id", teamId)
+      const { error: teamUpdateError } = await supabase
+        .from("teams")
+        .update({ status: "approved" })
+        .eq("id", teamId)
+
+      if (teamUpdateError) {
+         console.error("Team status update error:", teamUpdateError)
+         alert(`Error updating team status: ${teamUpdateError.message}`)
+         // Do not return here, as the request status was already updated successfully
+      }
     }
 
-    // 3. Send notification to team leader + Update Role
+    // 4. Send notification to team leader + Update Role
     try {
-      // Get team leader id
-      const { data: teamData } = await supabase
+      // Get team leader id and team name
+      const { data: teamData, error: teamLeaderFetchError } = await supabase
         .from("teams")
         .select("leader_id, team_name")
         .eq("id", teamId)
         .maybeSingle()
 
-      if (teamData?.leader_id) {
-        const isApproved = status === "approved"
+      if (teamLeaderFetchError) {
+        console.error("Error fetching team leader details:", teamLeaderFetchError)
+        // Continue without notification if leader fetch fails
+      } else if (teamData?.leader_id) {
+        const isApproved = finalStatus === "approved"
         
         if (isApproved) {
             // Update role to manager
-            await supabase.from("profiles").update({ role: 'manager' }).eq("id", teamData.leader_id)
+            const { error: roleUpdateError } = await supabase.from("profiles").update({ role: 'manager' }).eq("id", teamData.leader_id)
+            if (roleUpdateError) {
+              console.warn("Error updating user role:", roleUpdateError)
+            }
         }
 
         const slotMsg = slotNumber && isApproved ? ` სლოტი: #${slotNumber}` : ""
-        await supabase.from("notifications").insert({
+        const { error: notificationError } = await supabase.from("notifications").insert({
           user_id: teamData.leader_id,
           title: isApproved ? "გუნდი დადასტურდა ✅" : "გუნდი უარყოფილდა ❌",
           message: isApproved
@@ -101,6 +155,9 @@ export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsPr
             : `სამწუხაროდ, თქვენი გუნდის "${teamData.team_name}" მოთხოვნა უარყოფილიკია ადმინისტრაციის მიერ.`,
           type: isApproved ? "success" : "error",
         })
+        if (notificationError) {
+          console.warn("Error sending notification:", notificationError)
+        }
       }
     } catch (e) {
       console.warn("Notification/Role update failed:", e)
