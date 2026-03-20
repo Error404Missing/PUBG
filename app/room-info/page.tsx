@@ -118,7 +118,7 @@ export default async function RoomInfoPage() {
                   </div>
 
                   <div className="p-8 lg:p-12">
-                    {isApproved ? (
+                    {(isApproved || isAdmin) ? (
                       /* Show Room Info */
                       <div className="space-y-8">
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -156,14 +156,17 @@ export default async function RoomInfoPage() {
                           </div>
                         </div>
 
-                        {/* Visual Distinction for Multiple Rooms */}
-                        <div className="p-6 rounded-2xl bg-white/5 border border-white/5 italic flex items-center gap-4">
-                           <Info className="w-5 h-5 text-primary" />
-                           <p className="text-xs text-muted-foreground">
-                              თქვენ ხართ ამ კონკრეტულ ოთახში (<b>{schedule.title}</b>). 
-                              დარწმუნდით რომ შედიხართ სწორ სლოტზე: <b>#{teamData?.slot_number || "TDB"}</b>.
-                           </p>
-                        </div>
+                         {/* Visual Distinction for Multiple Rooms / Admin Status */}
+                         <div className="p-6 rounded-2xl bg-white/5 border border-white/5 italic flex items-center gap-4">
+                            <Info className="w-5 h-5 text-primary" />
+                            <p className="text-xs text-muted-foreground font-bold">
+                               {isAdmin ? (
+                                 <>თქვენ ხედავთ ამ ინფორმაციას რადგან ხართ **ადმინისტრატორი**.</>
+                               ) : (
+                                 <>თქვენ ხართ ამ კონკრეტულ ოთახში (<b>{schedule.title}</b>). დარწმუნდით რომ შედიხართ სწორ სლოტზე: <b>#{teamData?.slot_number || "TDB"}</b>.</>
+                               )}
+                            </p>
+                         </div>
                       </div>
                     ) : (
                       /* Restricted Message */
