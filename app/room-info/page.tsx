@@ -28,23 +28,30 @@ export default async function RoomInfoPage() {
   const isManager = profile?.role === "manager"
   const isAdmin = profile?.is_admin
 
-  if (!isManager && !isAdmin) {
-    redirect("/")
-  }
-
-  // Fetch all teams user leads
-  const { data: userTeams } = await supabase
-    .from("teams")
-    .select("id, slot_number, team_name, schedule_id")
-    .eq("leader_id", user.id)
-
-  // Fetch all approved requests for these teams
-  const { data: approvedRequests } = await supabase
+  // Fetch all approved requests for the current user's teams directly
+  const { data: approvedRequestsData } = await supabase
     .from("scrim_requests")
-    .select("id, schedule_id, team_id")
-    .in("team_id", userTeams?.map(t => t.id) || [])
+    .select(`
+      schedule_id, 
+      team_id,
+      teams!inner (
+        id,
+        leader_id,
+        slot_number,
+        team_name
+      )
+    `)
+    .eq("teams.leader_id", user.id)
     .eq("status", "approved")
+
+  const approvedScheduleIds = approvedRequestsData?.map(r => r.schedule_id) || []
   
+  // Create a map of schedule_id -> team_data for quick lookup
+  const scheduleToTeamMap = new Map()
+  approvedRequestsData?.forEach((r: any) => {
+    scheduleToTeamMap.set(r.schedule_id, r.teams)
+  })
+
   // Fetch all active schedules
   const { data: allSchedules } = await supabase
     .from("schedules")
@@ -52,13 +59,10 @@ export default async function RoomInfoPage() {
     .eq("is_active", true)
     .order("date", { ascending: true })
 
-  const approvedScheduleIds = approvedRequests?.map(r => r.schedule_id) || []
-  
-  // Create a map of schedule_id -> team_id for quick lookup
-  const scheduleToTeamMap = new Map()
-  approvedRequests?.forEach(r => {
-    scheduleToTeamMap.set(r.schedule_id, r.team_id)
-  })
+  // Page access: Must be admin, manager, OR lead an approved team for any active schedule
+  if (!isAdmin && !isManager && approvedScheduleIds.length === 0) {
+     redirect("/")
+  }
 
   return (
     <div className="min-h-screen py-32 px-4 relative overflow-hidden bg-background">
@@ -87,6 +91,7 @@ export default async function RoomInfoPage() {
             return new Date(a.date).getTime() - new Date(b.date).getTime()
           }).map((schedule, i) => {
             const isApproved = approvedScheduleIds.includes(schedule.id)
+            const teamInfo = scheduleToTeamMap.get(schedule.id)
             
             return (
               <div key={schedule.id} className="animate-reveal" style={{ animationDelay: `${i * 0.1}s` }}>
@@ -153,25 +158,25 @@ export default async function RoomInfoPage() {
                                 {(schedule as any).room_time || (schedule.date ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(schedule.date)) : "N/A")}
                              </div>
                           </div>
-                         <div className="glass p-6 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 space-y-2">
-                            <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Your Slot</div>
-                            <div className="text-3xl font-black text-white italic tracking-tighter">
-                               #{userTeams?.find(t => t.id === scheduleToTeamMap.get(schedule.id))?.slot_number || "TBD"}
-                            </div>
-                         </div>
-                      </div>
+                          <div className="glass p-6 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 space-y-2">
+                             <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Your Slot</div>
+                             <div className="text-3xl font-black text-white italic tracking-tighter">
+                               #{teamInfo?.slot_number || "TBD"}
+                             </div>
+                          </div>
+                        </div>
 
-                      {/* Visual Distinction for Multiple Rooms / Admin Status */}
-                      <div className="p-6 rounded-2xl bg-white/5 border border-white/5 italic flex items-center gap-4">
-                         <Info className="w-5 h-5 text-primary" />
-                         <p className="text-xs text-muted-foreground font-bold">
-                            {isAdmin ? (
-                              <>თქვენ ხედავთ ამ ინფორმაციას რადგან ხართ **ადმინისტრატორი**.</>
-                            ) : (
-                              <>თქვენ ხართ ამ კონკრეტულ ოთახში (<b>{schedule.title}</b>). დარწმუნდით რომ შედიხართ სწორ სლოტზე: <b>#{userTeams?.find(t => t.id === scheduleToTeamMap.get(schedule.id))?.slot_number || "TDB"}</b>.</>
-                            )}
-                         </p>
-                      </div>
+                         {/* Visual Distinction for Multiple Rooms / Admin Status */}
+                         <div className="p-6 rounded-2xl bg-white/5 border border-white/5 italic flex items-center gap-4">
+                            <Info className="w-5 h-5 text-primary" />
+                            <p className="text-xs text-muted-foreground font-bold">
+                               {isAdmin ? (
+                                 <>თქვენ ხედავთ ამ ინფორმაციას რადგან ხართ **ადმინისტრატორი**.</>
+                               ) : (
+                                 <>თქვენ ხართ ამ კონკრეტულ ოთახში (<b>{schedule.title}</b>). დარწმუნდით რომ შედიხართ სწორ სლოტზე: <b>#{teamInfo?.slot_number || "TDB"}</b>.</>
+                               )}
+                            </p>
+                         </div>
                       </div>
                     ) : (
                       /* Restricted Message */
