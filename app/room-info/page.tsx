@@ -20,6 +20,7 @@ export default async function RoomInfoPage() {
     redirect("/auth/login")
   }
 
+  // 1. Fetch user data (Profiles table is key)
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, is_admin")
@@ -29,29 +30,28 @@ export default async function RoomInfoPage() {
   const isManager = profile?.role === "manager"
   const isAdmin = profile?.is_admin
 
-  // 1. Fetch user's profile and teams (DIAGNOSTIC)
-  const [{ data: userTeams }, { data: allRequests }, { data: allSiteTeams }, { data: allSiteRequests }, { data: dbAuthId }] = await Promise.all([
-    supabase.from("teams").select("*").eq("leader_id", user.id),
-    supabase.from("scrim_requests").select(`
-        *,
-        teams!inner(id, team_name, leader_id)
-    `).eq("teams.leader_id", user.id),
-    isAdmin ? supabase.from("teams").select("id, team_name, leader_id").limit(10) : Promise.resolve({ data: null }),
-    isAdmin ? supabase.from("scrim_requests").select(`
-        *,
-        teams!inner(id, team_name)
-    `).limit(20) : Promise.resolve({ data: null }),
-    supabase.rpc("get_my_auth_id")
-  ])
+  // 2. Fetch User's Teams (Leader ID primary check)
+  const { data: userTeams } = await supabase
+    .from("teams")
+    .select("id, team_name")
+    .eq("leader_id", user.id)
 
-  // Diagnostic values
   const teamIds = userTeams?.map(t => t.id) || []
-  const approvedRequests = allRequests?.filter(r => 
-      r.status?.toLowerCase() === "approved" || 
-      r.status?.toLowerCase() === "verified"
-  ) || []
 
-  // Create a map of schedule_id -> request_info
+  // 3. Fetch User's Requests (Fetch by ID list to bypass join issues)
+  const { data: allRequests } = await supabase
+    .from("scrim_requests")
+    .select(`
+        *,
+        teams (id, team_name, leader_id)
+    `)
+    .or(`team_id.in.(${teamIds.length ? teamIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
+
+  // Filter approved and build map
+  const approvedRequests = allRequests?.filter(r => 
+    r.status?.toLowerCase() === 'approved' || r.status?.toLowerCase() === 'verified'
+  ) || []
+  
   const approvedScheduleMap = new Map()
   approvedRequests.forEach((req: any) => {
     approvedScheduleMap.set(req.schedule_id, {
@@ -61,16 +61,19 @@ export default async function RoomInfoPage() {
     })
   })
 
-  // Fetch all active schedules
+  // 4. Fetch Active Schedules
   const { data: allSchedules } = await supabase
     .from("schedules")
     .select("*")
     .eq("is_active", true)
     .order("date", { ascending: true })
 
-  const approvedScheduleIds = Array.from(approvedScheduleMap.keys())
+  // 5. Diagnostics for Admin Site-wide
+  const { data: allSiteTeams } = isAdmin ? await supabase.from("teams").select("id, team_name, leader_id").limit(10) : { data: null }
+  const { data: allSiteRequests } = isAdmin ? await supabase.from("scrim_requests").select("*, teams(team_name)").limit(10) : { data: null }
+  const { data: dbAuthId } = await supabase.rpc('get_my_auth_id')
 
-  // Access Denial FIX: Only if user REALLY has no connection to teams AND is not Admin/Manager
+  // SECURITY REDIRECT: Only for non-admins/non-managers with no business here
   if (!isAdmin && !isManager && teamIds.length === 0 && (allRequests?.length || 0) === 0) {
      redirect("/")
   }

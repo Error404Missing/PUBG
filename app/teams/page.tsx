@@ -68,14 +68,15 @@ export default function TeamsPage() {
     setSelectedSchedule(schedule)
     setTeamsLoading(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
-
     // Fetch approved teams via scrim_requests for this schedule
-    const { data: requestsData } = await supabase
+    // We fetch everything first to bypass potential RLS join issues for now
+    const { data: requestsData, error: reqError } = await supabase
       .from("scrim_requests")
       .select(`
         slot_number,
-        teams!inner (
+        status,
+        team_id,
+        teams (
           id,
           team_name,
           team_tag,
@@ -83,21 +84,35 @@ export default function TeamsPage() {
           status,
           is_vip,
           logo_url,
-          created_at,
-          profiles:leader_id (
-            id,
-            username,
-            avatar_url
-          )
+          created_at
         )
       `)
       .eq("schedule_id", schedule.id)
-      .eq("status", "approved")
 
-    const teamsData = requestsData?.map((r: any) => ({
+    if (reqError) {
+      console.error("Error fetching teams for schedule:", reqError)
+    }
+
+    // Filter for 'approved' status case-insensitively
+    const filteredRequests = requestsData?.filter(r => 
+      r.status?.toLowerCase() === 'approved' && r.teams
+    ) || []
+
+    // Fetch profiles for those teams (secondary fetch if needed, to be safe)
+    const leaderIds = [...new Set(filteredRequests.map(r => (r.teams as any)?.leader_id).filter(Boolean))] as string[]
+    
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, username, avatar_url")
+      .in("id", leaderIds)
+
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]))
+
+    const teamsData = filteredRequests.map((r: any) => ({
       ...r.teams,
-      slot_number: r.slot_number || r.teams.slot_number
-    })) || []
+      slot_number: r.slot_number || r.teams.slot_number,
+      profiles: profilesMap.get(r.teams.leader_id) || null
+    }))
 
     setTeams(teamsData)
     setTeamsLoading(false)
