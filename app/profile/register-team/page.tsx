@@ -225,13 +225,23 @@ function RegisterTeamContent() {
         }
       }
 
-      // 4. Send admin notifications via the API route
+      // 4. Send admin notifications directly
       try {
-        await fetch('/api/scrim-request/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ teamName: formData.teamName })
-        })
+        const { data: admins } = await supabase
+          .from("profiles")
+          .select("id")
+          .or("is_admin.eq.true,role.eq.admin")
+        if (admins && admins.length > 0) {
+          await supabase.from("notifications").insert(
+            admins.map(a => ({
+              user_id: a.id,
+              title: "ახალი თამაშის მოთხოვნა 🎮",
+              message: `გუნდმა '${formData.teamName}' გამოგზავნა თამაშის მოთხოვნა.`,
+              type: "info",
+              is_read: false,
+            }))
+          )
+        }
       } catch (_) {}
 
       // 5. Notify the user

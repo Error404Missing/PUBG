@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { Calendar, KeyRound, Lock, Map as MapIcon, Hash, Info, Shield, Target, Bug, ClipboardCopy, Trophy, Zap, Radio, Activity, Mail, UserCircle } from "lucide-react"
+import { Calendar, KeyRound, Lock, MapIcon, Hash, Info, Shield, Target, Trophy, Zap, Radio, Activity } from "lucide-react"
 import { format } from "date-fns"
 import { ka } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
@@ -55,74 +55,7 @@ export default async function RoomInfoPage() {
       {/* Background Decor */}
       <div className="fixed inset-0 bg-mesh opacity-30 -z-10" />
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 -z-10 animate-pulse-soft" />
-
       <div className="container mx-auto max-w-5xl relative">
-        {/* DIAGNOSTIC PANEL FOR ALL USERS (FOR NOW) */}
-        {(isAdmin || true) && (
-           <div className="mb-12 animate-reveal">
-              <div className="glass-darker p-6 rounded-[2.5rem] border border-white/5 space-y-4">
-                 <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <Bug className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-black text-white/40 uppercase tracking-widest italic">USER_CONTEXT_DIAGNOSTIC</div>
-                        <div className="flex items-center gap-3 text-sm font-black text-white italic tracking-tighter uppercase">
-                           <UserCircle className="w-4 h-4 text-primary" /> {user.email?.split('@')[0]}
-                           <span className="w-1 h-1 rounded-full bg-white/10" />
-                           <Mail className="w-4 h-4 text-primary" /> {user.email}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 text-[11px] font-black text-white/40 uppercase tracking-[0.2em] italic">
-                       Status: {isAdmin ? 'ADMIN_MODE' : isManager ? 'MANAGER_MODE' : 'PLAYER_MODE'}
-                    </div>
-                 </div>
-                 
-                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-6 bg-black/40 rounded-3xl border border-white/5">
-                    {[
-                        { label: "Profile_UUID", value: user.id },
-                        { label: "DB_Auth_ID", value: dbAuthId || 'NULL (Auth Failed)' },
-                        { label: "Teams_Found", value: teamIds.length },
-                        { label: "Requests_Found", value: allRequests?.length || 0 },
-                        { label: "Approved_Regs", value: approvedRequests.length }
-                    ].map((s, i) => (
-                      <div key={i} className="space-y-1 text-center border-r border-white/5 last:border-0 pr-4 last:pr-0">
-                         <div className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">{s.label}</div>
-                         <div className={`text-[10px] font-black text-primary italic break-all ${s.label.includes('ID') ? 'text-[7px] font-mono' : ''}`}>{s.value}</div>
-                      </div>
-                    ))}
-                 </div>
-
-                 {isAdmin && (
-                   <div className="mt-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-2xl space-y-3">
-                      <div className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Admin Site-Wide Sample Data (Diagnostics)</div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div className="space-y-1">
-                            <div className="text-[8px] text-white/20">Site Teams (Leader/Name):</div>
-                            {(allSiteTeams as any[])?.map(t => (
-                              <div key={t.id} className="text-[7px] font-mono text-white/40">
-                                 {t.leader_id.slice(0,10)}.. | {t.team_name}
-                              </div>
-                            ))}
-                         </div>
-                         <div className="space-y-1">
-                            <div className="text-[8px] text-white/20">Site Requests Status + Team:</div>
-                            {(allSiteRequests as any[])?.map(r => (
-                              <div key={r.id} className="text-[7px] font-mono text-white/40">
-                                 {r.teams?.team_name || '??'} | Status: {r.status}
-                              </div>
-                            ))}
-                         </div>
-                      </div>
-                   </div>
-                 )}
-              </div>
-           </div>
-        )}
-
-        {/* Hero Section */}
         <div className="mb-24 text-center animate-reveal">
           <div className="relative inline-block mb-10">
             <div className="w-24 h-24 rounded-[2.5rem] glass border border-primary/20 flex items-center justify-center relative group">
