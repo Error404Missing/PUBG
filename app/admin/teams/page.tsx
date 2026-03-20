@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import {
   Check, X, Ban, Crown, Trash2, Users,
   MapPin, ChevronLeft, Target, Shield,
-  Search, Filter, Activity, Save, RefreshCcw, ArrowRight, Settings2, Loader2, CheckCircle2, AlertCircle, Zap
+  Search, Filter, Activity, Save, RefreshCcw, ArrowRight, Settings2, Loader2, CheckCircle2, AlertCircle, Zap, Calendar
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -43,6 +43,9 @@ type Team = {
   ban_reason?: string
   ban_until?: string
   logo_url?: string
+  schedules?: {
+    title: string
+  }
 }
 
 export default function AdminTeamsPage() {
@@ -134,7 +137,8 @@ export default function AdminTeamsPage() {
     // Robust fetch using explicit relationship syntax
     let query = supabase.from("teams").select(`
       *,
-      profiles(username)
+      profiles(username),
+      schedules(title)
     `).order("created_at", {
       ascending: false,
     })
@@ -492,13 +496,21 @@ export default function AdminTeamsPage() {
                             <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">{team.team_name}</h2>
                             <span className="text-xl font-black text-white/20 italic tracking-[0.2em]">[{team.team_tag}]</span>
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
-                            <Users className="w-3 h-3 text-primary" />
-                            ლიდერი: <span className="text-white">{
-                              team.leader?.username ||
-                              team.profiles?.username ||
-                              "Anonymous"
-                            }</span>
+                          <div className="flex flex-wrap items-center gap-4 mt-1">
+                            {team.schedules?.title && (
+                              <div className="flex items-center gap-2 text-[10px] font-black text-blue-400 uppercase tracking-widest italic bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20 shadow-[0_0_10px_rgba(0,180,255,0.1)]">
+                                <Calendar className="w-3 h-3" />
+                                Mission_Schedule: <span className="text-white">{team.schedules.title}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
+                              <Users className="w-3 h-3 text-primary" />
+                              ლიდერი: <span className="text-white">{
+                                team.leader?.username ||
+                                team.profiles?.username ||
+                                "Anonymous"
+                              }</span>
+                            </div>
                           </div>
                         </div>
                       </div>
