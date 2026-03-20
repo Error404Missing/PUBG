@@ -30,12 +30,14 @@ export default async function RoomInfoPage() {
   const isAdmin = profile?.is_admin
 
   // 1. Fetch user's profile and teams (DIAGNOSTIC)
-  const [{ data: userTeams }, { data: allRequests }] = await Promise.all([
+  const [{ data: userTeams }, { data: allRequests }, { data: allSiteTeams }, { data: allSiteRequests }] = await Promise.all([
     supabase.from("teams").select("*").eq("leader_id", user.id),
     supabase.from("scrim_requests").select(`
         *,
         teams!inner(id, team_name, leader_id)
-    `).eq("teams.leader_id", user.id)
+    `).eq("teams.leader_id", user.id),
+    isAdmin ? supabase.from("teams").select("id, team_name, leader_id").limit(10) : Promise.resolve({ data: null }),
+    isAdmin ? supabase.from("scrim_requests").select("id, team_id, status").limit(10) : Promise.resolve({ data: null })
   ])
 
   // Diagnostic values
@@ -101,17 +103,41 @@ export default async function RoomInfoPage() {
                  
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-black/40 rounded-3xl border border-white/5">
                     {[
-                        { label: "Profile_UUID", value: user.id.slice(0, 10) + '...' },
+                        { label: "Full_Profile_UUID", value: user.id },
                         { label: "Teams_Found", value: teamIds.length },
                         { label: "Requests_Found", value: allRequests?.length || 0 },
                         { label: "Approved_Regs", value: approvedRequests.length }
                     ].map((s, i) => (
                       <div key={i} className="space-y-1 text-center border-r border-white/5 last:border-0 pr-4 last:pr-0">
                          <div className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">{s.label}</div>
-                         <div className="text-[11px] font-black text-primary italic">{s.value}</div>
+                         <div className={`text-[11px] font-black text-primary italic break-all ${s.label.includes('UUID') ? 'text-[8px] font-mono' : ''}`}>{s.value}</div>
                       </div>
                     ))}
                  </div>
+
+                 {isAdmin && (
+                   <div className="mt-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-2xl space-y-3">
+                      <div className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Admin Site-Wide Sample Data (Diagnostics)</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="space-y-1">
+                            <div className="text-[8px] text-white/20">Site Teams (Leader/Name):</div>
+                            {(allSiteTeams as any[])?.map(t => (
+                              <div key={t.id} className="text-[7px] font-mono text-white/40">
+                                 {t.leader_id.slice(0,10)}.. | {t.team_name}
+                              </div>
+                            ))}
+                         </div>
+                         <div className="space-y-1">
+                            <div className="text-[8px] text-white/20">Site Requests Status:</div>
+                            {(allSiteRequests as any[])?.map(r => (
+                              <div key={r.id} className="text-[7px] font-mono text-white/40">
+                                 {r.id.slice(0,5)}.. | Status: {r.status}
+                              </div>
+                            ))}
+                         </div>
+                      </div>
+                   </div>
+                 )}
               </div>
            </div>
         )}

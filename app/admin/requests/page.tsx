@@ -152,16 +152,21 @@ export default async function AdminRequestsPage() {
                                     <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{req.teams?.team_name || "უცნობი გუნდი"}</h3>
                                     <span className="text-lg font-black text-white/20 italic tracking-widest">[{req.teams?.team_tag}]</span>
                                  </div>
-                                 <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic flex items-center gap-2">
-                                    <Users className="w-3 h-3 text-primary" />
-                                    ლიდერი: <span className="text-white">{req.teams?.leader_id ? leaderMap[req.teams.leader_id] || "უცნობი" : "უცნობი"}</span>
-                                    {req.teams?.leader_id && leaderVipMap[req.teams.leader_id] && (
-                                       <span className="flex items-center gap-1 text-secondary animate-pulse-soft">
-                                         <Zap className="w-2.5 h-2.5 fill-current" />
-                                         <span className="text-[8px] font-black">VIP_ACTIVE</span>
-                                       </span>
-                                     )}
-                                 </div>
+                                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1 italic flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                       <Users className="w-3 h-3 text-primary" />
+                                       ლიდერი: <span className="text-white">{req.teams?.leader_id ? leaderMap[req.teams.leader_id] || "უცნობი" : "უცნობი"}</span>
+                                       {req.teams?.leader_id && leaderVipMap[req.teams.leader_id] && (
+                                          <span className="flex items-center gap-1 text-secondary animate-pulse-soft">
+                                            <Zap className="w-2.5 h-2.5 fill-current" />
+                                            <span className="text-[8px] font-black">VIP_ACTIVE</span>
+                                          </span>
+                                        )}
+                                    </div>
+                                    <div className="text-[8px] font-mono text-white/30 truncate max-w-md">
+                                       LEADER_UUID: {req.teams?.leader_id} | TEAM_ID: {req.teams?.id}
+                                    </div>
+                                  </div>
                               </div>
                            </div>
 
