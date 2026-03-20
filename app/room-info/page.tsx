@@ -28,40 +28,45 @@ export default async function RoomInfoPage() {
   const isManager = profile?.role === "manager"
   const isAdmin = profile?.is_admin
 
-  // 1. Fetch ALL active schedules
+  // 1. Fetch user's teams directly to bypass any JOIN RLS issues
+  const { data: userTeams } = await supabase
+    .from("teams")
+    .select("id, slot_number, team_name")
+    .eq("leader_id", user.id)
+
+  const teamIds = userTeams?.map(t => t.id) || []
+
+  // 2. Fetch approved requests for these teams
+  let approvedRequestsData: any[] = []
+  if (teamIds.length > 0) {
+    const { data: requests } = await supabase
+      .from("scrim_requests")
+      .select("schedule_id, team_id, status")
+      .in("team_id", teamIds)
+      .in("status", ["approved", "Approved"])
+    
+    approvedRequestsData = requests || []
+  }
+
+  // 3. Map schedule_id to team data
+  const approvedScheduleMap = new Map()
+  approvedRequestsData.forEach((req: any) => {
+    const team = userTeams?.find(t => t.id === req.team_id)
+    if (team) {
+       approvedScheduleMap.set(req.schedule_id, team)
+    }
+  })
+
+  // 4. Admin sees everything - fetch all active schedules
   const { data: allSchedules } = await supabase
     .from("schedules")
     .select("*")
     .eq("is_active", true)
     .order("date", { ascending: true })
 
-  // 2. Fetch ALL approved requests for THIS user (using leader_id across any team)
-  // We fetch directly from scrim_requests joined with teams
-  const { data: userApprovedRequests } = await supabase
-    .from("scrim_requests")
-    .select(`
-      schedule_id, 
-      team_id,
-      status,
-      teams!inner (
-        id,
-        leader_id,
-        slot_number,
-        team_name
-      )
-    `)
-    .eq("teams.leader_id", user.id)
-    .in("status", ["approved", "Approved"]) // Handle potential case mismatch
-
-  // Create a map for easy lookup
-  const approvedScheduleMap = new Map()
-  userApprovedRequests?.forEach((req: any) => {
-    approvedScheduleMap.set(req.schedule_id, req.teams)
-  })
-
   const approvedScheduleIds = Array.from(approvedScheduleMap.keys())
 
-  // Check access: Admin OR Manager OR has ANY approved request
+  // Access check
   if (!isAdmin && !isManager && approvedScheduleIds.length === 0) {
      redirect("/")
   }
@@ -92,14 +97,12 @@ export default async function RoomInfoPage() {
             return (
               <div key={schedule.id} className="animate-reveal" style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className={`glass-card p-1 border-white/5 relative overflow-hidden ${isApproved ? 'shadow-[0_0_80px_-12px_rgba(0,180,255,0.2)] scale-[1.02] border-primary/30' : 'opacity-60 grayscale-[0.5] grayscale hover:grayscale-0 transition-all'}`}>
-                  {/* Status Indicator for Approved matches */}
                   {isApproved && (
                     <div className="absolute top-0 right-0 px-6 py-2 bg-emerald-500 text-black font-black text-[10px] uppercase tracking-widest italic rounded-bl-2xl z-20">
                       {isAdmin && !teamInfo ? 'Admin_Overwatch' : 'Approved_Unit_Active'}
                     </div>
                   )}
 
-                  {/* Match Header */}
                   <div className={`p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 ${isApproved ? 'bg-primary/10' : 'bg-white/2'}`}>
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${isApproved ? 'bg-primary/20 border-primary/30' : 'bg-white/5 border-white/10'}`}>
@@ -123,7 +126,6 @@ export default async function RoomInfoPage() {
 
                   <div className="p-8 lg:p-12">
                     {isApproved ? (
-                      /* Show Room Info */
                       <div className="space-y-8">
                         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                           <div className="glass p-6 rounded-2xl border border-white/10 space-y-2 group hover:border-primary/50 transition-colors bg-black/40">
@@ -176,31 +178,30 @@ export default async function RoomInfoPage() {
                          </div>
                       </div>
                     ) : (
-                      /* Restricted Message */
                       <div className="flex items-center gap-6 p-8 rounded-2xl bg-white/2 border border-white/5 italic opacity-40">
                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center shrink-0">
                             <Lock className="w-6 h-6 text-white/20" />
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest text-[10px]">Access_Denied</p>
-                            <p className="text-xs text-white/40">ამ ოპერაციის მონაცემები თქვენთვის დახურულია.</p>
-                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+                          </div>
+                          <div className="space-y-1">
+                             <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest text-[10px]">Access_Denied</p>
+                             <p className="text-xs text-white/40">ამ ოპერაციის მონაცემები თქვენთვის დახურულია.</p>
+                          </div>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               </div>
+             )
+           })}
 
-          {(!allSchedules || allSchedules.length === 0) && (
-            <div className="glass-card p-32 text-center opacity-50">
-               <Calendar className="w-16 h-16 text-white/10 mx-auto mb-6" />
-               <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic font-bold">აქტიური განრიგი ვერ მოიძებნა</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
+           {(!allSchedules || allSchedules.length === 0) && (
+             <div className="glass-card p-32 text-center opacity-50">
+                <Calendar className="w-16 h-16 text-white/10 mx-auto mb-6" />
+                <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic font-bold">აქტიური განრიგი ვერ მოიძებნა</p>
+             </div>
+           )}
+         </div>
+       </div>
+     </div>
+   )
+ }
