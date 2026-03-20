@@ -67,56 +67,71 @@ export default function TeamsPage() {
   const selectSchedule = async (schedule: Schedule) => {
     setSelectedSchedule(schedule)
     setTeamsLoading(true)
+    setTeams([])
 
-    // Fetch approved teams via scrim_requests for this schedule
-    // We fetch everything first to bypass potential RLS join issues for now
-    const { data: requestsData, error: reqError } = await supabase
+    console.log("Fetching for schedule:", schedule.id)
+
+    // 1. Fetch ALL requests for this schedule (Join-less)
+    const { data: rawRequests, error: reqError } = await supabase
       .from("scrim_requests")
-      .select(`
-        slot_number,
-        status,
-        team_id,
-        teams (
-          id,
-          team_name,
-          team_tag,
-          leader_id,
-          status,
-          is_vip,
-          logo_url,
-          created_at
-        )
-      `)
+      .select("*")
       .eq("schedule_id", schedule.id)
 
     if (reqError) {
-      console.error("Error fetching teams for schedule:", reqError)
+      alert(`SQL Error (Requests): ${reqError.message}`)
+      setTeamsLoading(false)
+      return
     }
 
-    // Filter for 'approved' status case-insensitively
-    const filteredRequests = requestsData?.filter(r => 
-      r.status?.toLowerCase() === 'approved' && r.teams
-    ) || []
+    if (!rawRequests || rawRequests.length === 0) {
+      // Diagnostic alert for admin
+      const { data: allReqSample } = await supabase.from("scrim_requests").select("schedule_id, status").limit(5)
+      console.log("No requests found. Sample from DB:", allReqSample)
+      setTeamsLoading(false)
+      return
+    }
 
-    // Fetch profiles for those teams (secondary fetch if needed, to be safe)
-    const leaderIds = [...new Set(filteredRequests.map(r => (r.teams as any)?.leader_id).filter(Boolean))] as string[]
-    
-    const { data: profilesData } = await supabase
+    // 2. Fetch Teams for these requests
+    const teamIds = rawRequests.map(r => r.team_id)
+    const { data: rawTeams, error: teamsError } = await supabase
+      .from("teams")
+      .select("*")
+      .in("id", teamIds)
+
+    if (teamsError) {
+      alert(`SQL Error (Teams): ${teamsError.message}`)
+      setTeamsLoading(false)
+      return
+    }
+
+    // 3. Fetch Profiles
+    const leaderIds = rawTeams?.map(t => t.leader_id) || []
+    const { data: rawProfiles } = await supabase
       .from("profiles")
-      .select("id, username, avatar_url")
+      .select("*")
       .in("id", leaderIds)
 
-    const profilesMap = new Map(profilesData?.map(p => [p.id, p]))
+    const teamsMap = new Map(rawTeams?.map(t => [t.id, t]))
+    const profilesMap = new Map(rawProfiles?.map(p => [p.id, p]))
 
-    const teamsData = filteredRequests.map((r: any) => ({
-      ...r.teams,
-      slot_number: r.slot_number || r.teams.slot_number,
-      profiles: profilesMap.get(r.teams.leader_id) || null
-    }))
+    // 4. Assemble with case-insensitive check
+    const assembledTeams = rawRequests
+      .filter(r => r.status?.toLowerCase() === 'approved' || r.status?.toLowerCase() === 'verified')
+      .map(r => {
+        const team = teamsMap.get(r.team_id)
+        if (!team) return null
+        return {
+          ...team,
+          slot_number: r.slot_number || team.slot_number,
+          profiles: profilesMap.get(team.leader_id) || null
+        }
+      })
+      .filter(Boolean) as Team[]
 
-    setTeams(teamsData)
+    console.log("Assembled Teams:", assembledTeams)
+    setTeams(assembledTeams)
     setTeamsLoading(false)
-    setVerifiedTeams(teamsData)
+    setVerifiedTeams(assembledTeams)
   }
 
   const TeamCard = ({ team, i }: { team: Team, i: number }) => (
