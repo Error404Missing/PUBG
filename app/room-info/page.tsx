@@ -40,7 +40,7 @@ export default async function RoomInfoPage() {
   approvedRequests.forEach((req: any) => {
     approvedScheduleMap.set(req.schedule_id, {
         team_name: req.teams?.team_name,
-        slot_number: req.slot_number,
+        slot_number: req.slot_number ?? req.teams?.slot_number, // prefer scrim_requests, fallback to teams
         preferred_maps: req.preferred_maps
     })
   })

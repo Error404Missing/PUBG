@@ -37,7 +37,7 @@ export async function getRoomInfoData(userId: string) {
           status,
           slot_number,
           preferred_maps,
-          teams (id, team_name, leader_id)
+          teams (id, team_name, leader_id, slot_number)
       `)
       .in("team_id", teamIds)
     allRequests = data || []
