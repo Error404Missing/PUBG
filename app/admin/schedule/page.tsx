@@ -35,6 +35,8 @@ type Schedule = {
   logo_required: boolean
   room_id?: string | null
   room_password?: string | null
+  room_map?: string | null
+  room_time?: string | null
 }
 
 export default function AdminSchedulePage() {
@@ -55,6 +57,8 @@ export default function AdminSchedulePage() {
     registrationStatus: "open" as 'open' | 'vip_only' | 'closed',
     roomId: "",
     roomPassword: "",
+    roomMap: "",
+    roomTime: "",
   })
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, scheduleId: string | null }>({
     isOpen: false,
@@ -115,6 +119,8 @@ export default function AdminSchedulePage() {
       registration_status: formData.registrationStatus,
       room_id: formData.roomId || null,
       room_password: formData.roomPassword || null,
+      room_map: formData.roomMap || null,
+      room_time: formData.roomTime || null,
     }
 
     let error;
@@ -172,6 +178,8 @@ export default function AdminSchedulePage() {
         registrationStatus: "open",
         roomId: "",
         roomPassword: "",
+        roomMap: "",
+        roomTime: "",
       })
       fetchSchedules()
     }
@@ -200,6 +208,8 @@ export default function AdminSchedulePage() {
       registrationStatus: schedule.registration_status || "open",
       roomId: schedule.room_id || "",
       roomPassword: schedule.room_password || "",
+      roomMap: (schedule as any).room_map || "",
+      roomTime: (schedule as any).room_time || "",
     })
     setIsEditing(true)
     setEditId(schedule.id)
@@ -224,6 +234,8 @@ export default function AdminSchedulePage() {
       registrationStatus: "open",
       roomId: "",
       roomPassword: "",
+      roomMap: "",
+      roomTime: "",
     })
   }
 
@@ -306,14 +318,16 @@ export default function AdminSchedulePage() {
     }
   }
 
-  const handleQuickRoomUpdate = async (id: string, roomId: string, roomPass: string, mapName: string, timeStr: string) => {
+  const handleQuickRoomUpdate = async (id: string, roomId: string, roomPass: string, mapSector: string, timeStr: string, roomMap: string, roomTime: string) => {
     const supabase = createClient()
     
     // Process time update if provided
     let updateData: any = { 
       room_id: roomId, 
       room_password: roomPass,
-      map_name: mapName
+      map_name: mapSector,
+      room_map: roomMap,
+      room_time: roomTime
     }
 
     if (timeStr) {
@@ -528,6 +542,34 @@ export default function AdminSchedulePage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Specific Room Map & Time */}
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Room Map (Specific)</Label>
+                      <div className="relative">
+                        <Input
+                          value={formData.roomMap}
+                          onChange={(e) => setFormData({ ...formData, roomMap: e.target.value })}
+                          placeholder="მაგ: Match 1: Erangel"
+                          className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                        />
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Room Start Time (Specific)</Label>
+                      <div className="relative">
+                        <Input
+                          value={formData.roomTime}
+                          onChange={(e) => setFormData({ ...formData, roomTime: e.target.value })}
+                          placeholder="მაგ: 22:15"
+                          className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                        />
+                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Logo & Status Settings */}
@@ -687,12 +729,14 @@ function ScheduleListItem({
   onEdit: (s: Schedule) => void, 
   onDelete: (id: string) => void,
   onUpdateStatus: (id: string, status: 'open' | 'vip_only' | 'closed') => void,
-  onQuickUpdate: (id: string, roomId: string, roomPass: string, mapName: string, time: string) => void
+  onQuickUpdate: (id: string, roomId: string, roomPass: string, mapSector: string, time: string, roomMap: string, roomTime: string) => void
 }) {
   const [roomId, setRoomId] = useState(schedule.room_id || "")
   const [roomPass, setRoomPass] = useState(schedule.room_password || "")
-  const [mapName, setMapName] = useState(schedule.map_name || "")
+  const [mapSector, setMapSector] = useState(schedule.map_name || "")
   const [timeStr, setTimeStr] = useState("")
+  const [roomMap, setRoomMap] = useState((schedule as any).room_map || "")
+  const [roomTime, setRoomTime] = useState((schedule as any).room_time || "")
 
   const [isUpdating, setIsUpdating] = useState(false)
 
@@ -700,7 +744,9 @@ function ScheduleListItem({
   useEffect(() => {
     setRoomId(schedule.room_id || "")
     setRoomPass(schedule.room_password || "")
-    setMapName(schedule.map_name || "")
+    setMapSector(schedule.map_name || "")
+    setRoomMap((schedule as any).room_map || "")
+    setRoomTime((schedule as any).room_time || "")
     
     const date = new Date(schedule.date)
     setTimeStr(date.getHours().toString().padStart(2, "0") + ":" + date.getMinutes().toString().padStart(2, "0"))
@@ -708,13 +754,15 @@ function ScheduleListItem({
 
   const handleSave = async () => {
     setIsUpdating(true)
-    await onQuickUpdate(schedule.id, roomId, roomPass, mapName, timeStr)
+    await onQuickUpdate(schedule.id, roomId, roomPass, mapSector, timeStr, roomMap, roomTime)
     setIsUpdating(false)
   }
 
   const hasChanges = roomId !== (schedule.room_id || "") || 
                      roomPass !== (schedule.room_password || "") ||
-                     mapName !== (schedule.map_name || "") ||
+                     mapSector !== (schedule.map_name || "") ||
+                     roomMap !== ((schedule as any).room_map || "") ||
+                     roomTime !== ((schedule as any).room_time || "") ||
                      timeStr !== (new Date(schedule.date).getHours().toString().padStart(2, "0") + ":" + new Date(schedule.date).getMinutes().toString().padStart(2, "0"))
 
   return (
@@ -798,8 +846,8 @@ function ScheduleListItem({
                      </Button>
                   )}
                </div>
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1">
+               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-1 text-white">
                      <div className="text-[8px] font-black text-white/20 uppercase ml-2">Room_ID</div>
                      <Input 
                         value={roomId}
@@ -808,7 +856,7 @@ function ScheduleListItem({
                         className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
                      />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1 text-white">
                      <div className="text-[8px] font-black text-white/20 uppercase ml-2">Room_Pass</div>
                      <Input 
                         value={roomPass}
@@ -817,17 +865,35 @@ function ScheduleListItem({
                         className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
                      />
                   </div>
-                  <div className="space-y-1">
-                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Map_Sector</div>
+                  <div className="space-y-1 text-white">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Match_Map</div>
                      <Input 
-                        value={mapName}
-                        onChange={(e) => setMapName(e.target.value)}
+                        value={roomMap}
+                        onChange={(e) => setRoomMap(e.target.value)}
                         placeholder="Map"
                         className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
                      />
                   </div>
-                  <div className="space-y-1">
-                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Start_Time</div>
+                  <div className="space-y-1 text-white">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Match_Time</div>
+                     <Input 
+                        value={roomTime}
+                        onChange={(e) => setRoomTime(e.target.value)}
+                        placeholder="22:15"
+                        className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
+                     />
+                  </div>
+                  <div className="space-y-1 text-white">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Sector_Map</div>
+                     <Input 
+                        value={mapSector}
+                        onChange={(e) => setMapSector(e.target.value)}
+                        placeholder="Map"
+                        className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
+                     />
+                  </div>
+                  <div className="space-y-1 text-white">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Sector_Time</div>
                      <Input 
                         value={timeStr}
                         onChange={(e) => setTimeStr(e.target.value)}

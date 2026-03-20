@@ -142,7 +142,13 @@ export default async function RoomInfoPage() {
                           </div>
                           <div className="glass p-6 rounded-2xl border border-white/10 space-y-2 group hover:border-primary/30 transition-colors">
                             <div className="text-[10px] font-black text-sky-400 uppercase tracking-widest italic">Sector (Map)</div>
-                            <div className="text-2xl font-black text-white italic tracking-tighter uppercase">{schedule.map_name || "N/A"}</div>
+                            <div className="text-2xl font-black text-white italic tracking-tighter uppercase">{(schedule as any).room_map || schedule.map_name || "N/A"}</div>
+                          </div>
+                          <div className="glass p-6 rounded-2xl border border-amber-500/10 bg-amber-500/5 space-y-2 group hover:border-amber-500/30 transition-colors">
+                             <div className="text-[10px] font-black text-amber-400 uppercase tracking-widest italic">Room Start Time</div>
+                             <div className="text-2xl font-black text-white italic tracking-tighter uppercase">
+                                {(schedule as any).room_time || (schedule.date ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(schedule.date)) : "N/A")}
+                             </div>
                           </div>
                           <div className="glass p-6 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 space-y-2">
                              <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Your Slot</div>
