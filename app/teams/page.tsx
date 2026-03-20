@@ -27,7 +27,7 @@ export default async function TeamsPage({
   const schedules = schedulesData.map(s => ({
      id: s.id,
      title: s.title,
-     date: s.date.toISOString(),
+     date: new Date(s.date).toISOString(),
   }))
 
   let teams: any[] = []
