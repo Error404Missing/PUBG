@@ -306,18 +306,43 @@ export default function AdminSchedulePage() {
     }
   }
 
-  const handleQuickRoomUpdate = async (id: string, roomId: string | null, roomPassword: string | null) => {
+  const handleQuickRoomUpdate = async (id: string, roomId: string, roomPass: string, mapName: string, timeStr: string) => {
     const supabase = createClient()
+    
+    // Process time update if provided
+    let updateData: any = { 
+      room_id: roomId, 
+      room_password: roomPass,
+      map_name: mapName
+    }
+
+    if (timeStr) {
+      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
+      if (!timeRegex.test(timeStr)) {
+        setToast({ message: "გთხოვთ შეიყვანოთ დრო სწორი ფორმატიკით (მაგ: 22:00)", type: 'error' })
+        return
+      }
+
+      // Get existing date and swap time
+      const schedule = schedules.find(s => s.id === id)
+      if (schedule) {
+        const dateObj = new Date(schedule.date)
+        const [hours, minutes] = timeStr.split(':')
+        dateObj.setHours(parseInt(hours), parseInt(minutes), 0)
+        updateData.date = dateObj.toISOString()
+      }
+    }
+
     const { error } = await supabase
       .from("schedules")
-      .update({ room_id: roomId, room_password: roomPassword })
+      .update(updateData)
       .eq("id", id)
 
     if (error) {
        console.error("Quick update error:", error)
-       setToast({ message: "შეცდომა ოთახის მონაცემების განახლებისას", type: 'error' })
+       setToast({ message: "შეცდომა მონაცემების განახლებისას", type: 'error' })
     } else {
-       setToast({ message: "ოთახის მონაცემები განახლდა", type: 'success' })
+       setToast({ message: "მონაცემები წარმატებით განახლდა", type: 'success' })
        fetchSchedules()
     }
   }
@@ -662,23 +687,35 @@ function ScheduleListItem({
   onEdit: (s: Schedule) => void, 
   onDelete: (id: string) => void,
   onUpdateStatus: (id: string, status: 'open' | 'vip_only' | 'closed') => void,
-  onQuickUpdate: (id: string, roomId: string, roomPass: string) => void
+  onQuickUpdate: (id: string, roomId: string, roomPass: string, mapName: string, time: string) => void
 }) {
   const [roomId, setRoomId] = useState(schedule.room_id || "")
   const [roomPass, setRoomPass] = useState(schedule.room_password || "")
+  const [mapName, setMapName] = useState(schedule.map_name || "")
+  const [timeStr, setTimeStr] = useState("")
+
   const [isUpdating, setIsUpdating] = useState(false)
 
   // Sync state with props when schedule changes (e.g. after refresh)
   useEffect(() => {
     setRoomId(schedule.room_id || "")
     setRoomPass(schedule.room_password || "")
+    setMapName(schedule.map_name || "")
+    
+    const date = new Date(schedule.date)
+    setTimeStr(date.getHours().toString().padStart(2, "0") + ":" + date.getMinutes().toString().padStart(2, "0"))
   }, [schedule])
 
   const handleSave = async () => {
     setIsUpdating(true)
-    await onQuickUpdate(schedule.id, roomId, roomPass)
+    await onQuickUpdate(schedule.id, roomId, roomPass, mapName, timeStr)
     setIsUpdating(false)
   }
+
+  const hasChanges = roomId !== (schedule.room_id || "") || 
+                     roomPass !== (schedule.room_password || "") ||
+                     mapName !== (schedule.map_name || "") ||
+                     timeStr !== (new Date(schedule.date).getHours().toString().padStart(2, "0") + ":" + new Date(schedule.date).getMinutes().toString().padStart(2, "0"))
 
   return (
     <div className="glass-card p-1 group">
@@ -746,22 +783,22 @@ function ScheduleListItem({
               </div>
             </div>
 
-            {/* Quick Room Intel Update */}
+            {/* Quick Control Panel (Room + Map + Time) */}
             <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 space-y-4">
                <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] italic">Quick_Room_Intel</h4>
-                  { (roomId !== (schedule.room_id || "") || roomPass !== (schedule.room_password || "")) && (
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] italic">Quick_Control_Panel</h4>
+                  { hasChanges && (
                      <Button 
                         size="sm" 
                         onClick={handleSave} 
                         disabled={isUpdating}
                         className="h-7 px-4 rounded-lg bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 text-[9px] font-black uppercase italic"
                      >
-                        {isUpdating ? "..." : "Save_Changes"}
+                        {isUpdating ? "..." : "Apply_Changes"}
                      </Button>
                   )}
                </div>
-               <div className="grid grid-cols-2 gap-4">
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-1">
                      <div className="text-[8px] font-black text-white/20 uppercase ml-2">Room_ID</div>
                      <Input 
@@ -778,6 +815,24 @@ function ScheduleListItem({
                         onChange={(e) => setRoomPass(e.target.value)}
                         placeholder="Pass"
                         className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
+                     />
+                  </div>
+                  <div className="space-y-1">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Map_Sector</div>
+                     <Input 
+                        value={mapName}
+                        onChange={(e) => setMapName(e.target.value)}
+                        placeholder="Map"
+                        className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
+                     />
+                  </div>
+                  <div className="space-y-1">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Start_Time</div>
+                     <Input 
+                        value={timeStr}
+                        onChange={(e) => setTimeStr(e.target.value)}
+                        placeholder="22:00"
+                        className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40 text-center"
                      />
                   </div>
                </div>

@@ -42,6 +42,7 @@ type Team = {
   }
   ban_reason?: string
   ban_until?: string
+  logo_url?: string
 }
 
 export default function AdminTeamsPage() {
@@ -466,9 +467,15 @@ export default function AdminTeamsPage() {
                   <div className="p-8 lg:p-10">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10">
                       <div className="flex items-center gap-6">
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border ${team.is_vip ? 'bg-secondary/10 border-secondary/20' : 'bg-blue-500/10 border-blue-500/20'
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border overflow-hidden ${team.is_vip ? 'bg-secondary/10 border-secondary/20' : 'bg-blue-500/10 border-blue-500/20'
                           }`}>
-                          {team.is_vip ? <Crown className="w-8 h-8 text-secondary animate-pulse-soft" /> : <Shield className="w-8 h-8 text-blue-400" />}
+                          {team.logo_url ? (
+                             <img src={team.logo_url} alt={team.team_name} className="w-full h-full object-cover" />
+                          ) : team.is_vip ? (
+                             <Crown className="w-8 h-8 text-secondary animate-pulse-soft" />
+                          ) : (
+                             <Shield className="w-8 h-8 text-blue-400" />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-3 mb-1">

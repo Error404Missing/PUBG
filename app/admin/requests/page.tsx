@@ -40,7 +40,7 @@ export default async function AdminRequestsPage() {
     .from("scrim_requests")
     .select(`
       *,
-      teams (id, team_name, team_tag, leader_id),
+      teams (id, team_name, team_tag, leader_id, logo_url),
       schedules (id, title, date)
     `)
     .order("created_at", { ascending: false })
@@ -140,8 +140,12 @@ export default async function AdminRequestsPage() {
                        <div className="flex-1 min-w-0">
                          <div className="flex flex-wrap items-center gap-4 mb-4">
                            <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-xl bg-${themeColor}-500/10 border border-${themeColor}-500/20 flex items-center justify-center`}>
-                                 <Shield className={`w-6 h-6 text-${themeColor}-400`} />
+                              <div className={`w-12 h-12 rounded-xl bg-${themeColor}-500/10 border border-${themeColor}-500/20 flex items-center justify-center overflow-hidden`}>
+                                 {req.teams?.logo_url ? (
+                                    <img src={req.teams.logo_url} alt={req.teams.team_name} className="w-full h-full object-cover" />
+                                 ) : (
+                                    <Shield className={`w-6 h-6 text-${themeColor}-400`} />
+                                 )}
                               </div>
                               <div>
                                  <div className="flex items-center gap-2">
