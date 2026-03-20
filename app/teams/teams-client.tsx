@@ -141,7 +141,13 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
 
       {/* Team Details Intelligence Modal */}
       <Dialog open={!!selectedTeam} onOpenChange={(open) => !open && setSelectedTeam(null)}>
-        <DialogContent className={`max-w-3xl bg-[#020204] border-white/5 p-0 overflow-hidden rounded-[3rem] shadow-2xl ${selectedTeam?.is_vip ? 'shadow-secondary/20 border-secondary/20' : 'shadow-primary/20'}`}>
+        <DialogContent className={`sm:max-w-[90vw] md:max-w-4xl lg:max-w-6xl w-full bg-[#020204] border-white/5 p-0 overflow-hidden rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl ${selectedTeam?.is_vip ? 'shadow-secondary/20 border-secondary/20' : 'shadow-primary/20'}`}>
+          <button 
+             onClick={() => setSelectedTeam(null)}
+             className="absolute top-8 right-8 z-[60] w-12 h-12 rounded-2xl glass-darker border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all text-white/40 hover:text-white group"
+          >
+             <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+          </button>
           {selectedTeam && (
             <div className="relative">
               {/* Luxury Background mesh */}
@@ -164,7 +170,11 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
                       src={selectedTeam.logo_url || (selectedTeam.is_vip ? 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg' : 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png')} 
                       className={`w-full h-full object-cover rounded-[2.2rem] ${selectedTeam.is_vip ? 'shadow-2xl' : ''}`} 
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = selectedTeam.is_vip ? 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg' : 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png'
+                        const target = e.target as HTMLImageElement;
+                        const fallback = selectedTeam.is_vip ? 'https://i.ibb.co/vYm0C2M/default-banner-dark.jpg' : 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png';
+                        if (target.src !== fallback) {
+                          target.src = fallback;
+                        }
                       }}
                     />
                     {selectedTeam.is_vip && (
@@ -193,8 +203,8 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
 
               <div className="p-10 lg:p-14 pt-10 space-y-16">
                  {/* Commander Briefing */}
-                 <div className="grid lg:grid-cols-5 gap-12">
-                    <div className="lg:col-span-3 space-y-8">
+                 <div className="grid md:grid-cols-5 gap-12">
+                    <div className="md:col-span-3 space-y-8">
                        <div className="flex items-center justify-between mb-4">
                           <h3 className="text-xs font-black text-white/20 uppercase tracking-[0.5em] italic">Operation_Manager_Brief</h3>
                           <div className="h-px flex-1 bg-white/5 ml-6" />
@@ -209,7 +219,10 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
                                         src={selectedTeam.profiles?.avatar_url || "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"} 
                                         className="w-full h-full object-cover" 
                                         onError={(e) => {
-                                          (e.target as HTMLImageElement).src = "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"
+                                          const target = e.target as HTMLImageElement;
+                                          if (!target.src.includes('default-avatar-dark')) {
+                                            target.src = "https://i.ibb.co/vzD7Z0M/default-avatar-dark.png"
+                                          }
                                         }}
                                       />
                                    </div>
@@ -256,7 +269,7 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
                        </div>
                     </div>
 
-                    <div className="lg:col-span-2 space-y-8">
+                    <div className="md:col-span-2 space-y-8">
                        <h3 className="text-xs font-black text-white/20 uppercase tracking-[0.5em] italic">Deployment_Stats</h3>
                        <div className="grid gap-6">
                           {[
