@@ -1,15 +1,21 @@
 "use server"
 
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@supabase/supabase-js"
+
+// Initialize a privileged client that bypasses RLS
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function getScheduleTeams(scheduleId: string) {
-  const supabase = await createServerClient()
-  
-  // 1. Fetch all requests for this schedule
-  const { data: requests, error: reqError } = await supabase
+  // 1. Fetch all requests for this schedule (Using Service Role to bypass RLS)
+  const { data: requests, error: reqError, count } = await supabaseAdmin
     .from("scrim_requests")
-    .select("*")
+    .select("*", { count: 'exact' })
     .eq("schedule_id", scheduleId)
+
+  console.log(`Server Action (Admin Client): Found ${count} requests for ${scheduleId}`)
 
   if (reqError) {
     console.error("Server Action Error (Requests):", reqError)
@@ -17,19 +23,14 @@ export async function getScheduleTeams(scheduleId: string) {
   }
 
   if (!requests || requests.length === 0) {
-    return { data: [] }
+    return { data: [], debug: "Zero rows found with Service Role client." }
   }
 
   // 2. Fetch Teams and Profiles
   const teamIds = requests.map(r => r.team_id)
-  const [{ data: teams }, { data: profiles }] = await Promise.all([
-    supabase.from("teams").select("*").in("id", teamIds),
-    supabase.from("profiles").select("*").in("id", requests.map(r => r.team_id)) // Wait, join logic
-  ])
-
-  // Get leader IDs for profiles
+  const { data: teams } = await supabaseAdmin.from("teams").select("*").in("id", teamIds)
   const leaderIds = teams?.map(t => t.leader_id) || []
-  const { data: profilesData } = await supabase.from("profiles").select("*").in("id", leaderIds)
+  const { data: profilesData } = await supabaseAdmin.from("profiles").select("*").in("id", leaderIds)
 
   const teamsMap = new Map(teams?.map(t => [t.id, t]))
   const profilesMap = new Map(profilesData?.map(p => [p.id, p]))
@@ -47,11 +48,13 @@ export async function getScheduleTeams(scheduleId: string) {
     })
     .filter(Boolean)
 
-  return { data: assembled }
+  return { data: assembled, count: count }
 }
 
 export async function getSiteRequestsDump() {
-    const supabase = await createServerClient()
-    const { data } = await supabase.from('scrim_requests').select('status, schedule_id, team_id').limit(50)
-    return { data }
+    const { data, count } = await supabaseAdmin
+        .from('scrim_requests')
+        .select('status, schedule_id, team_id', { count: 'exact' })
+        .limit(50)
+    return { data, totalCount: count }
 }

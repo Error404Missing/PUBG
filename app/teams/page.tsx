@@ -435,10 +435,12 @@ export default function TeamsPage() {
                         className="mt-4 text-[8px] h-8"
                         onClick={async () => {
                            const result = await getSiteRequestsDump();
-                           const data = result.data;
+                           const { data, totalCount } = result;
                            const body = document.getElementById('db-dump-body');
+                           const header = document.querySelector('h4');
+                           if (header) header.innerText = `Nuclear DB Debug (Rows: ${totalCount || 0})`;
                            if (body && data) {
-                              body.innerHTML = data.map(r => `
+                              body.innerHTML = data.map((r: any) => `
                                  <tr class="border-b border-white/5">
                                     <td class="p-1">${r.status}</td>
                                     <td class="p-1">${r.schedule_id}</td>
@@ -448,7 +450,7 @@ export default function TeamsPage() {
                            }
                         }}
                       >
-                         Reveal DB Data
+                         Reveal DB Data (Service Role Bypass)
                       </Button>
                    </div>
                 </div>
