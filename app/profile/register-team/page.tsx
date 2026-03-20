@@ -176,35 +176,6 @@ function RegisterTeamContent() {
     }
 
     try {
-      // 0. Check for existing registrations at the same time
-      if (scheduleId) {
-        const { data: currentSchedule } = await supabase
-          .from("schedules")
-          .select("date")
-          .eq("id", scheduleId)
-          .single()
-
-        if (currentSchedule) {
-          const { data: existingRequests } = await supabase
-            .from("scrim_requests")
-            .select("schedule_id, schedules(date, title)")
-            .eq("team_id", (await supabase.from("teams").select("id").eq("leader_id", user.id).single()).data?.id)
-            .neq("schedule_id", scheduleId)
-
-          if (existingRequests) {
-            const currentHours = new Date(currentSchedule.date).getHours()
-            const currentMinutes = new Date(currentSchedule.date).getMinutes()
-
-            for (const req of existingRequests) {
-               const reqDate = new Date((req.schedules as any).date)
-               if (reqDate.getHours() === currentHours && reqDate.getMinutes() === currentMinutes) {
-                 throw new Error(`თქვენ უკვე გაქვთ რეგისტრაცია ${currentHours}:${currentMinutes < 10 ? '0' + currentMinutes : currentMinutes} საათზე მატჩში: ${(req.schedules as any).title}`)
-               }
-            }
-          }
-        }
-      }
-
       // 1. Upload logo if provided
       let logoUrl: string | null = null
       if (logoFile) {
@@ -215,10 +186,7 @@ function RegisterTeamContent() {
           .from("team-logos")
           .upload(filePath, logoFile, { upsert: true })
 
-        if (uploadError) {
-          console.error("[v0] Logo upload error:", uploadError)
-          // Don't block registration if logo upload fails, just skip
-        } else {
+        if (!uploadError) {
           const { data: publicUrlData } = supabase.storage
             .from("team-logos")
             .getPublicUrl(filePath)
@@ -226,8 +194,8 @@ function RegisterTeamContent() {
         }
       }
 
-      // 2. Create team
-      const { data: newTeam, error } = await supabase.from("teams").insert({
+      // 2. Create team in teams table
+      const { data: newTeam, error: teamError } = await supabase.from("teams").insert({
         team_name: formData.teamName,
         team_tag: formData.teamTag,
         leader_id: user.id,
@@ -238,16 +206,39 @@ function RegisterTeamContent() {
         logo_url: logoUrl,
       }).select().single()
 
-      if (error) {
-        if (error.code === '23505') throw new Error("ეს სახელი უკვე დაკავებულია")
-        throw error
+      if (teamError) {
+        if (teamError.code === '23505') throw new Error("ეს სახელი უკვე დაკავებულია")
+        throw teamError
       }
 
-      // 3. Send notification
+      // 3. CRITICAL: Create scrim_request (this is what the whole system depends on!)
+      if (scheduleId && newTeam) {
+        const { error: reqError } = await supabase.from("scrim_requests").insert({
+          team_id: newTeam.id,
+          schedule_id: scheduleId,
+          status: "pending",
+          preferred_maps: Number.parseInt(formData.maps_count),
+        })
+        if (reqError) {
+          console.error("Scrim request creation failed:", reqError)
+          // Don't block — team was created, admin can manually link
+        }
+      }
+
+      // 4. Send admin notifications via the API route
+      try {
+        await fetch('/api/scrim-request/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamName: formData.teamName })
+        })
+      } catch (_) {}
+
+      // 5. Notify the user
       await supabase.from("notifications").insert({
         user_id: user.id,
         title: "მოთხოვნა გაგზავნილია ⚔️",
-        message: `თქვენი გუნდი "${formData.teamName}" რეგისტრირებულია და მოთხოვნა განხილვაშია. გაითვალისწინეთ, რომ გუნდი და მოთხოვნა წაიშლება 10 საათში.`,
+        message: `თქვენი გუნდი "${formData.teamName}" რეგისტრირებულია და ადმინისტრაციის განხილვაშია.`,
         type: "info",
       })
 
