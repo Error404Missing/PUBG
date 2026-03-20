@@ -160,4 +160,20 @@
   .border-glow:hover::after {
     @apply opacity-100 blur-sm;
   }
+
+  .vip-card-premium {
+    @apply relative border-secondary/30 bg-secondary/5 shadow-[0_0_40px_-15px_rgba(234,179,8,0.3)];
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.1), transparent);
+  }
+
+  .vip-badge-glow {
+    @apply shadow-[0_0_15px_rgba(234,179,8,0.5)] border-secondary/50 bg-secondary/20 text-secondary;
+  }
+
+  .vip-border-shimmer {
+    @apply absolute inset-0 -z-10;
+    background: linear-gradient(90deg, transparent, rgba(234, 179, 8, 0.2), transparent);
+    background-size: 200% 100%;
+    animation: shimmer-fast 3s infinite linear;
+  }
 }

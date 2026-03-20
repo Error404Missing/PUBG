@@ -111,11 +111,17 @@ export default async function TeamsPage({
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {teams.length > 0 ? (
             teams.map((team, i) => (
-              <div key={team.id} className={`glass-card p-1 relative overflow-hidden group animate-reveal ${team.is_vip ? 'border-secondary/20 bg-secondary/5' : ''}`} style={{ animationDelay: `${i * 0.05}s` }}>
+              <Link 
+                key={team.id} 
+                href={`/profile/${team.leader_id}`}
+                className={`glass-card p-1 relative overflow-hidden group animate-reveal ${team.is_vip ? 'vip-card-premium' : ''}`} 
+                style={{ animationDelay: `${i * 0.05}s` }}
+              >
+                {team.is_vip && <div className="vip-border-shimmer" />}
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-8">
                     <div className="flex items-center gap-5">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 ${team.is_vip ? 'border-secondary bg-secondary/10 shadow-[0_0_20px_-5px_secondary]' : 'border-white/10 bg-white/5'}`}>
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 ${team.is_vip ? 'border-secondary/50 bg-secondary/10 shadow-[0_0_20px_-5px_secondary]' : 'border-white/10 bg-white/5'}`}>
                         {team.logo_url ? (
                           <img src={team.logo_url} className="w-full h-full object-cover rounded-2xl" />
                         ) : (
@@ -167,7 +173,7 @@ export default async function TeamsPage({
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))
           ) : (
             <div className="col-span-full py-32 text-center glass-card border-dashed border-white/5 opacity-50">
