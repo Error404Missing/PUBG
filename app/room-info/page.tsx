@@ -28,28 +28,38 @@ export default async function RoomInfoPage() {
   const isManager = profile?.role === "manager"
   const isAdmin = profile?.is_admin
 
-  // Fetch all approved requests for the current user's teams directly
-  const { data: approvedRequestsData } = await supabase
-    .from("scrim_requests")
-    .select(`
-      schedule_id, 
-      team_id,
-      teams!inner (
-        id,
-        leader_id,
-        slot_number,
-        team_name
-      )
-    `)
-    .eq("teams.leader_id", user.id)
-    .eq("status", "approved")
+  // Step 1: Fetch all teams led by this user (including non-approved teams)
+  const { data: userTeams } = await supabase
+    .from("teams")
+    .select("id, slot_number, team_name")
+    .eq("leader_id", user.id)
+
+  const teamIds = userTeams?.map(t => t.id) || []
+
+  // Step 2: Fetch all approved requests for these teams
+  let approvedRequestsData: any[] = []
+  if (teamIds.length > 0) {
+    const { data: requests } = await supabase
+      .from("scrim_requests")
+      .select(`
+        schedule_id, 
+        team_id
+      `)
+      .in("team_id", teamIds)
+      .eq("status", "approved")
+    
+    approvedRequestsData = requests || []
+  }
 
   const approvedScheduleIds = approvedRequestsData?.map(r => r.schedule_id) || []
   
-  // Create a map of schedule_id -> team_data for quick lookup
+  // Step 3: Create a map of schedule_id -> team_data
   const scheduleToTeamMap = new Map()
   approvedRequestsData?.forEach((r: any) => {
-    scheduleToTeamMap.set(r.schedule_id, r.teams)
+    const team = userTeams?.find(t => t.id === r.team_id)
+    if (team) {
+      scheduleToTeamMap.set(r.schedule_id, team)
+    }
   })
 
   // Fetch all active schedules
