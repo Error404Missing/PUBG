@@ -12,11 +12,15 @@ export const revalidate = 0
 export default async function TeamsPage({
   searchParams,
 }: {
-  searchParams: { schedule?: string }
+  searchParams: any
 }) {
-  const scheduleId = searchParams.schedule
+  // In Next.js 14/15, searchParams might need to be awaited or accessed directly
+  const params = await searchParams
+  const scheduleId = params?.schedule
   const schedules = await fetchActiveSchedules()
-  const selectedSchedule = schedules.find(s => s.id === scheduleId)
+  const selectedSchedule = schedules.find(s => String(s.id) === String(scheduleId))
+  
+  console.log("TeamsPage Debug:", { scheduleId, schedulesCount: schedules.length, found: !!selectedSchedule })
   
   let teams: any[] = []
   if (scheduleId) {

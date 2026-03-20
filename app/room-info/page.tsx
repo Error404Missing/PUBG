@@ -9,6 +9,8 @@ import { CopyButton } from "@/components/copy-button"
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
+import { getRoomInfoData } from "./server-helper"
+
 export default async function RoomInfoPage() {
   const supabase = await createServerClient()
 
@@ -20,38 +22,20 @@ export default async function RoomInfoPage() {
     redirect("/auth/login")
   }
 
-  // 1. Fetch user data (Profiles table is key)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, is_admin")
-    .eq("id", user.id)
-    .single()
+  // 1. Fetch ALL data via Service Role bypass
+  const { 
+    profile, 
+    isAdmin, 
+    isManager, 
+    teamIds, 
+    allRequests, 
+    approvedRequests, 
+    allSchedules,
+    allSiteTeams,
+    allSiteRequests,
+    dbAuthId
+  } = await getRoomInfoData(user.id)
 
-  const isManager = profile?.role === "manager"
-  const isAdmin = profile?.is_admin
-
-  // 2. Fetch User's Teams (Leader ID primary check)
-  const { data: userTeams } = await supabase
-    .from("teams")
-    .select("id, team_name")
-    .eq("leader_id", user.id)
-
-  const teamIds = userTeams?.map(t => t.id) || []
-
-  // 3. Fetch User's Requests (Fetch by ID list to bypass join issues)
-  const { data: allRequests } = await supabase
-    .from("scrim_requests")
-    .select(`
-        *,
-        teams (id, team_name, leader_id)
-    `)
-    .or(`team_id.in.(${teamIds.length ? teamIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
-
-  // Filter approved and build map
-  const approvedRequests = allRequests?.filter(r => 
-    r.status?.toLowerCase() === 'approved' || r.status?.toLowerCase() === 'verified'
-  ) || []
-  
   const approvedScheduleMap = new Map()
   approvedRequests.forEach((req: any) => {
     approvedScheduleMap.set(req.schedule_id, {
@@ -61,19 +45,7 @@ export default async function RoomInfoPage() {
     })
   })
 
-  // 4. Fetch Active Schedules
-  const { data: allSchedules } = await supabase
-    .from("schedules")
-    .select("*")
-    .eq("is_active", true)
-    .order("date", { ascending: true })
-
-  // 5. Diagnostics for Admin Site-wide
-  const { data: allSiteTeams } = isAdmin ? await supabase.from("teams").select("id, team_name, leader_id").limit(10) : { data: null }
-  const { data: allSiteRequests } = isAdmin ? await supabase.from("scrim_requests").select("*, teams(team_name)").limit(10) : { data: null }
-  const { data: dbAuthId } = await supabase.rpc('get_my_auth_id')
-
-  // SECURITY REDIRECT: Only for non-admins/non-managers with no business here
+  // Security redirect for non-admins with no team/requests
   if (!isAdmin && !isManager && teamIds.length === 0 && (allRequests?.length || 0) === 0) {
      redirect("/")
   }
