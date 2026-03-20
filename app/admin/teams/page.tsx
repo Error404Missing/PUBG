@@ -202,7 +202,7 @@ export default function AdminTeamsPage() {
         .from("scrim_requests")
         .update({ status: requestStatus })
         .eq("team_id", teamId)
-        .eq("status", "pending")
+        // Removed .eq("status", "pending") so it updates rejected/pending/any others as well
 
       if (teamData) {
       // Send notification
@@ -505,12 +505,13 @@ export default function AdminTeamsPage() {
 
                       <div className="flex flex-wrap gap-3">
                          <Badge className={`px-4 py-1.5 uppercase italic font-black text-[9px] tracking-widest border ${
-                            team.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                            team.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                            team.status === 'blocked' ? 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
+                            team.status?.toLowerCase().trim() === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            (team.status?.toLowerCase().trim() === 'pending' || team.status?.toLowerCase().trim() === 'review') ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                            team.status?.toLowerCase().trim() === 'rejected' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                            team.status?.toLowerCase().trim() === 'blocked' ? 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
                             'bg-rose-500/10 text-rose-400 border-rose-500/20'
                           }`}>
-                          {team.status === 'approved' ? 'Active_Unit' : team.status === 'pending' ? 'In_Review' : team.status === 'blocked' ? 'Banned_Unit' : 'Rejected'}
+                          {team.status?.toLowerCase().trim() === 'approved' ? 'Active_Unit' : (team.status?.toLowerCase().trim() === 'pending' || team.status?.toLowerCase().trim() === 'review') ? 'In_Review' : team.status?.toLowerCase().trim() === 'blocked' ? 'Banned_Unit' : 'Rejected'}
                         </Badge>
                         {team.is_vip && <Badge variant="gold" className="px-4 py-1.5 font-black text-[9px] tracking-widest">Elite_Unit</Badge>}
                         {team.slot_number !== null && (

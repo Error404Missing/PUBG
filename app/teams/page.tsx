@@ -131,7 +131,7 @@ export default async function TeamsPage({
                             team.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
                             'bg-red-500/10 text-red-400 border-red-500/20'
                           }`}>
-                            {team.status === 'approved' ? 'Active' : team.status === 'pending' ? 'Review' : team.status === 'rejected' ? 'Rejected' : 'Banned'}
+                            {team.status?.toLowerCase().trim() === 'approved' ? 'Active' : (team.status?.toLowerCase().trim() === 'pending' || team.status?.toLowerCase().trim() === 'review') ? 'Review' : team.status?.toLowerCase().trim() === 'rejected' ? 'Rejected' : 'Banned'}
                           </Badge>
                         </div>
                       </div>
