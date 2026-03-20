@@ -23,53 +23,31 @@ export function AdminRequestActions({ requestId, teamId }: AdminRequestActionsPr
     setIsLoading(true)
 
     // 1. Update scrim_request status
-    const { error } = await supabase
+    const { error: initialError } = await supabase
       .from("scrim_requests")
       .update({ status })
       .eq("id", requestId)
 
-    if (error) {
-      console.error("Request update error:", error)
+    if (initialError) {
+      console.error("Request update error:", initialError)
       setIsLoading(false)
-      alert("შეცდომა: " + error.message)
+      alert("შეცდომა: " + initialError.message)
       return
     }
 
-    // 2. If approved, also update the team status + optionally set slot
+    // 2. If approved, also set slot number on the request
     if (status === "approved") {
       const slot = slotNumber && !isNaN(Number(slotNumber)) ? Number(slotNumber) : null
       
       if (slot !== null) {
-        // Find schedule_id for this request
-        const { data: reqData } = await supabase
+        await supabase
           .from("scrim_requests")
-          .select("schedule_id")
+          .update({ slot_number: slot })
           .eq("id", requestId)
-          .single()
-
-        if (reqData?.schedule_id) {
-          // Check if slot is taken in this schedule
-          const { data: existingSlotTeam } = await supabase
-            .from("teams")
-            .select("team_name")
-            .eq("schedule_id", reqData.schedule_id)
-            .eq("slot_number", slot)
-            .neq("id", teamId)
-            .maybeSingle()
-
-          if (existingSlotTeam) {
-            setIsLoading(false)
-            alert(`სლოტი #${slot} უკვე დაკავებულია გუნდის მიერ: "${existingSlotTeam.team_name}"`)
-            return
-          }
-        }
       }
 
-      const teamUpdate: any = { status: "approved" }
-      if (slot !== null) {
-        teamUpdate.slot_number = slot
-      }
-      await supabase.from("teams").update(teamUpdate).eq("id", teamId)
+      // Also update team status to approved (global verification)
+      await supabase.from("teams").update({ status: "approved" }).eq("id", teamId)
     }
 
     // 3. Send notification to team leader + Update Role

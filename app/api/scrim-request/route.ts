@@ -149,11 +149,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create scrim request - minimal fields only to avoid column issues
+    // Create scrim request - with preferred_maps
     const insertData: any = {
       team_id,
       schedule_id,
       status: "pending",
+      preferred_maps: preferred_maps || schedule.maps_count || 4
     }
 
     // Use pre-calculated isVip
@@ -197,15 +198,6 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
-
-    // Update team status and sync schedule_id
-    await supabase
-      .from("teams")
-      .update({ 
-        status: team.status === "draft" ? "pending" : team.status,
-        schedule_id: schedule_id 
-      })
-      .eq("id", team_id)
 
     // Notify admins via admin client (bypasses RLS)
     await notifyAdminsViaServiceRole(team.team_name)

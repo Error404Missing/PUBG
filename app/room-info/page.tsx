@@ -37,32 +37,26 @@ export default async function RoomInfoPage() {
 
   const teamIds = userTeams?.map(t => t.id) || []
 
-  // 2. Fetch all requests for these teams
+  // 2. Fetch all requests for these teams (The single source of truth for match approval)
   const { data: requests } = await supabase
     .from("scrim_requests")
-    .select("schedule_id, team_id, status")
+    .select("schedule_id, team_id, status, slot_number, preferred_maps")
     .in("team_id", teamIds)
   
   const approvedRequests = requests?.filter(r => r.status?.toLowerCase() === "approved") || []
 
-  // 3. Create a map of schedule_id -> team_data
+  // 3. Create a map of schedule_id -> request_info (contains slot and team)
   const approvedScheduleMap = new Map()
   
-  // From Approved Requests
   approvedRequests.forEach((req: any) => {
     const team = userTeams?.find(t => t.id === req.team_id)
     if (team) {
-       approvedScheduleMap.set(req.schedule_id, team)
+       approvedScheduleMap.set(req.schedule_id, {
+          ...team,
+          slot_number: req.slot_number || team.slot_number, // Favors request slot
+          preferred_maps: req.preferred_maps
+       })
     }
-  })
-
-  // Fallback
-  userTeams?.forEach(team => {
-      if (team.schedule_id && team.status === 'approved') {
-          if (!approvedScheduleMap.has(team.schedule_id)) {
-             approvedScheduleMap.set(team.schedule_id, team)
-          }
-      }
   })
 
   // Fetch all active schedules
@@ -247,7 +241,7 @@ export default async function RoomInfoPage() {
                            {teamInfo && (
                              <div className="flex-1 glass p-8 rounded-[2.5rem] border border-emerald-500/10 bg-emerald-500/[0.02] flex items-center justify-between group hover:border-emerald-500/30 transition-all">
                                 <div>
-                                   <div className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em] italic mb-2">Deployed_Unit_Slot</div>
+                                   <div className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.4em] italic mb-2">თქვენი გუნდის სლოტია:</div>
                                    <div className="text-sm font-bold text-white/50 tracking-wider">REG: {teamInfo.team_name}</div>
                                 </div>
                                 <div className="text-6xl font-black text-emerald-400 italic tracking-tighter group-hover:scale-110 transition-transform duration-500">

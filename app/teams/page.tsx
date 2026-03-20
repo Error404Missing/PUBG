@@ -70,18 +70,38 @@ export default function TeamsPage() {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Fetch both approved teams and the user's own pending/draft teams for this schedule
-    const { data: teamsData } = await supabase
-      .from("teams")
-      .select("*, profiles!inner(id, username, avatar_url)")
+    // Fetch approved teams via scrim_requests for this schedule
+    const { data: requestsData } = await supabase
+      .from("scrim_requests")
+      .select(`
+        slot_number,
+        teams!inner (
+          id,
+          team_name,
+          team_tag,
+          leader_id,
+          status,
+          is_vip,
+          logo_url,
+          created_at,
+          profiles:leader_id (
+            id,
+            username,
+            avatar_url
+          )
+        )
+      `)
       .eq("schedule_id", schedule.id)
-      .or(`status.eq.approved${user ? `,leader_id.eq.${user.id}` : ''}`)
-      .order("is_vip", { ascending: false })
-      .order("created_at", { ascending: false })
+      .eq("status", "approved")
 
-    setTeams((teamsData as any[]) || [])
+    const teamsData = requestsData?.map((r: any) => ({
+      ...r.teams,
+      slot_number: r.slot_number || r.teams.slot_number
+    })) || []
+
+    setTeams(teamsData)
     setTeamsLoading(false)
-    setVerifiedTeams((teamsData as any[])?.filter((t: any) => t.status === 'approved') || [])
+    setVerifiedTeams(teamsData)
   }
 
   const TeamCard = ({ team, i }: { team: Team, i: number }) => (
