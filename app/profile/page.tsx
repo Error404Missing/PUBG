@@ -6,7 +6,8 @@ import {
    User, Mail, Shield, Edit3, Camera,
    Award, Zap, Hash, MessageSquare,
    ChevronRight, Save, LogOut, ExternalLink, X,
-   AlertTriangle, CheckCircle2, Trash2, Instagram, Music2, Wallet
+   AlertTriangle, CheckCircle2, Trash2, Instagram, Music2, Wallet,
+   Check, Ban, Crown, Loader2, Calendar, Info, MapPin, Users
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +16,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CustomConfirm } from "@/components/ui/custom-confirm"
 import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
-import { formatDistanceToNow } from "date-fns"
+import { format, formatDistanceToNow } from "date-fns"
 import { ka } from "date-fns/locale"
 
 export default function ProfilePage() {
@@ -24,6 +25,7 @@ export default function ProfilePage() {
    const [loading, setLoading] = useState(true)
    const [profile, setProfile] = useState<any>(null)
    const [userTeam, setUserTeam] = useState<any>(null)
+   const [allRegistrations, setAllRegistrations] = useState<any[]>([])
    const [vipStatus, setVipStatus] = useState<any>(null)
    const [isEditing, setIsEditing] = useState(false)
    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
@@ -62,10 +64,6 @@ export default function ProfilePage() {
          .eq("id", user.id)
          .maybeSingle()
 
-      console.log("DEBUG: Current User ID:", user.id)
-      console.log("DEBUG: Profile Data:", profileData)
-      console.log("DEBUG: Profile Error:", profileError)
-
       if (profileData) {
          setProfile(profileData)
          setEditData({
@@ -77,20 +75,35 @@ export default function ProfilePage() {
             avatar_url: profileData.avatar_url || "",
             banner_url: profileData.banner_url || ""
          })
-      } else {
-         console.warn("No profile found for this ID in 'profiles' table")
       }
 
-      // Fetch Team
-      const { data: teamData } = await supabase
+      // Fetch All Teams and Registrations
+      const { data: teamsData } = await supabase
          .from("teams")
-         .select("*")
+         .select("*, scrim_requests(*, schedules(*))")
          .eq("leader_id", user.id)
          .order("created_at", { ascending: false })
-         .limit(1)
-         .single()
 
-      setUserTeam(teamData)
+      if (teamsData && teamsData.length > 0) {
+         setUserTeam(teamsData[0])
+         
+         // Flatten registrations for easy listing
+         const regs: any[] = []
+         teamsData.forEach(t => {
+            if (t.scrim_requests) {
+               t.scrim_requests.forEach((r: any) => {
+                  regs.push({
+                     id: r.id,
+                     status: r.status,
+                     schedule_title: r.schedules?.title,
+                     schedule_date: r.schedules?.date,
+                     team_name: t.team_name
+                   })
+                })
+             }
+          })
+          setAllRegistrations(regs)
+       }
 
       // Fetch VIP
       const { data: vipData } = await supabase
@@ -99,7 +112,7 @@ export default function ProfilePage() {
          .eq("user_id", user.id)
          .maybeSingle()
 
-      if (vipData && new Date(vipData.vip_until) > new Date()) {
+      if (vipData && new Date(vipStatus.vip_until) > new Date()) {
          setVipStatus(vipData)
       }
 
@@ -181,6 +194,7 @@ export default function ProfilePage() {
    }
 
    const handleDeleteTeam = async () => {
+      if (!userTeam) return
       setLoading(true)
       const { error } = await supabase
          .from("teams")
@@ -189,23 +203,13 @@ export default function ProfilePage() {
 
       if (error) {
          console.error("Delete Error:", error)
-         let errorMsg = "შეცდომა წაშლისას: " + error.message;
-         if (error.message.includes("policy")) {
-            errorMsg = "თქვენ არ გაქვთ ამ გუნდის წაშლის უფლება. გთხოვთ მიმართოთ ადმინისტრაციას.";
-         }
-         setToast({ message: errorMsg, type: 'error' })
+         setToast({ message: "შეცდომა წაშლისას", type: 'error' })
          setLoading(false)
       } else {
-         // Revoke manager role if they had it
          const { data: { user } } = await supabase.auth.getUser()
          if (user) {
-            await supabase
-               .from("profiles")
-               .update({ role: "guest" })
-               .eq("id", user.id)
-               .eq("role", "manager")
+            await supabase.from("profiles").update({ role: "guest" }).eq("id", user.id).eq("role", "manager")
          }
-         
          setToast({ message: "გუნდი წარმატებით წაიშალა", type: 'success' })
          setUserTeam(null)
          setLoading(false)
@@ -223,7 +227,7 @@ export default function ProfilePage() {
          <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="space-y-4 text-center">
                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-               <p className="text-muted-foreground animate-pulse font-black text-[10px] tracking-widest uppercase italic">მონაცემების კოდიფიკაცია...</p>
+               <p className="font-black text-[10px] tracking-widest uppercase italic">მონაცემების კოდიფიკაცია...</p>
             </div>
          </div>
       )
@@ -231,16 +235,6 @@ export default function ProfilePage() {
 
    return (
       <div className="min-h-screen pb-20 bg-background relative selection:bg-primary/30">
-         {/* Messages */}
-         {message && (
-            <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[110] px-6 py-4 rounded-2xl border backdrop-blur-xl animate-reveal flex items-center gap-3 ${message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
-               }`}>
-               {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-               <span className="text-sm font-bold italic tracking-tight">{message.text}</span>
-            </div>
-         )}
-
-         {/* Banner Section */}
          <div className="relative h-64 md:h-80 w-full overflow-hidden">
             <div
                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
@@ -257,101 +251,46 @@ export default function ProfilePage() {
                         <Camera className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-white italic">ბანერის შეცვლა</span>
                      </div>
-                     <input
-                        type="file"
-                        className="hidden"
-                        accept="image/png, image/jpeg, image/jpg, image/gif"
-                        onChange={(e) => handleFileUpload(e, 'banner')}
-                        disabled={isUploading.type !== null}
-                     />
+                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner')} />
                   </label>
                </div>
             )}
 
-            {/* Profile Info Overlay */}
             <div className="absolute -bottom-1 left-0 w-full p-8 md:p-12">
                <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-end gap-6 md:gap-10">
-                  {/* Avatar */}
                   <div className="relative group overflow-hidden">
                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] glass border-4 border-background overflow-hidden relative z-10 transition-transform hover:scale-105 duration-500">
                         <img
                            src={isEditing ? (editData.avatar_url || 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png') : (profile?.avatar_url || 'https://i.ibb.co/vzD7Z0M/default-avatar-dark.png')}
-                           alt="Avatar"
-                           className={`w-full h-full object-cover ${isUploading.type === 'avatar' ? 'opacity-30 blur-sm' : ''} transition-all duration-300`}
+                           className={`w-full h-full object-cover ${isUploading.type === 'avatar' ? 'opacity-30 blur-sm' : ''}`}
                         />
-
                         {isEditing && (
                            <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-20">
                               <Camera className="w-8 h-8 text-white" />
-                              <input
-                                 type="file"
-                                 className="hidden"
-                                 accept="image/png, image/jpeg, image/jpg, image/gif"
-                                 onChange={(e) => handleFileUpload(e, 'avatar')}
-                                 disabled={isUploading.type !== null}
-                              />
+                              <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar')} />
                            </label>
                         )}
-
-                        {isUploading.type === 'avatar' && (
-                           <div className="absolute inset-0 flex items-center justify-center z-30">
-                              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                           </div>
-                        )}
                      </div>
-                     <div className="absolute inset-0 rounded-[2.5rem] bg-primary/20 blur-xl -z-0 animate-pulse-soft" />
                   </div>
 
-                  {/* Text Info */}
                   <div className="flex-1 pb-2">
                      <div className="flex flex-wrap items-center gap-3 mb-3">
                         <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">{profile?.username || 'ოპერატორი'}</h1>
-                         {vipStatus && (
-                            <div className="flex items-center gap-1.5 bg-secondary/20 px-3 py-1 rounded-full text-secondary text-[10px] font-black tracking-widest border border-secondary/30">
-                               <Zap className="w-3 h-3" />
-                               VIP_ELITE
-                            </div>
-                         )}
-                         <div className="flex items-center gap-1.5 bg-green-500/10 px-3 py-1 rounded-full text-green-400 text-[10px] font-black tracking-widest border border-green-500/20">
-                            <Wallet className="w-3 h-3" />
+                         {vipStatus && <Badge variant="gold" className="px-3 py-1">VIP_ELITE</Badge>}
+                         <div className="bg-green-500/10 px-3 py-1 rounded-full text-green-400 text-[10px] font-black tracking-widest border border-green-500/20">
                             {profile?.balance || 0} GEL
                          </div>
-                         {profile?.badge && (
-                           <div className="flex items-center gap-1.5 bg-primary/20 px-3 py-1 rounded-full text-primary text-[10px] font-black tracking-widest border border-primary/30">
-                              <Award className="w-3 h-3" />
-                              {profile.badge}
-                           </div>
-                        )}
                      </div>
                      <div className="flex flex-col gap-2">
                         <p className="text-muted-foreground text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2 italic">
                            <Shield className="w-3 h-3 text-primary" />
                            {profile?.role === 'admin' ? 'კომენდანტი' : profile?.role === 'manager' ? 'სექტორის მენეჯერი' : 'ოპერატორი'}
                         </p>
-                        <div className="flex items-center gap-2">
-                           <span className={`w-2 h-2 rounded-full ${
-                              profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
-                                 ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]'
-                                 : 'bg-zinc-600'
-                           }`} />
-                           <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
-                              {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
-                                 ? 'ხაზზეა'
-                                 : (profile?.last_seen_at && new Date(profile.last_seen_at).getFullYear() > 2024)
-                                    ? `ბოლოს ნანახია: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true, locale: ka })}`
-                                    : 'ხაზგარეშე'}
-                           </span>
-                        </div>
                      </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-3 pb-2">
-                     <Button
-                        onClick={() => setIsEditing(!isEditing)}
-                        variant={isEditing ? "outline" : "premium"}
-                        className="h-12 px-6 rounded-2xl"
-                     >
+                     <Button onClick={() => setIsEditing(!isEditing)} variant={isEditing ? "outline" : "premium"} className="h-12 px-6 rounded-2xl">
                         {isEditing ? <X className="w-4 h-4 mr-2" /> : <Edit3 className="w-4 h-4 mr-2" />}
                         {isEditing ? "გაუქმება" : "მონაცემები"}
                      </Button>
@@ -365,298 +304,95 @@ export default function ProfilePage() {
 
          <div className="container mx-auto max-w-6xl mt-12 px-8">
             <div className="grid lg:grid-cols-3 gap-12">
-               {/* Left Column: Stats & Role */}
                <div className="space-y-8">
-                  {/* Role Card */}
-                  <div className="glass-card p-1">
-                     <div className="p-8 space-y-6">
-                        <div className="flex items-center justify-between">
-                           <div className="text-[10px] font-black text-primary uppercase tracking-widest italic">Permission_Level</div>
-                           <Shield className="w-4 h-4 text-primary" />
-                        </div>
-
-                        <div className="space-y-4">
-                           <div className="p-4 rounded-2xl glass border border-white/5 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <Award className="w-4 h-4 text-primary" />
-                                 </div>
-                                 <span className="text-sm font-bold text-white uppercase tracking-wider">{String(profile?.role || 'USER').toUpperCase()}</span>
-                              </div>
-                              <Badge variant="outline" className="text-[8px] border-white/10 opacity-50 italic">Verified</Badge>
-                           </div>
-
-                           {profile?.is_admin && (
-                              <Link href="/admin" className="p-4 rounded-2xl bg-secondary/10 border border-secondary/20 flex items-center justify-between group hover:bg-secondary/20 transition-all">
-                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
-                                       <Shield className="w-4 h-4 text-secondary" />
-                                    </div>
-                                    <span className="text-sm font-bold text-secondary uppercase tracking-wider">მართვის პანელი</span>
-                                 </div>
-                                 <ChevronRight className="w-4 h-4 text-secondary group-hover:translate-x-1 transition-transform" />
-                              </Link>
-                           )}
-                        </div>
+                  <div className="glass-card p-8 space-y-6">
+                     <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                        <div className="text-[10px] font-black text-primary uppercase tracking-widest italic">Permission_Level</div>
+                        <Shield className="w-4 h-4 text-primary" />
                      </div>
-                  </div>
-
-                  {/* Socials & Logs */}
-                  <div className="glass-card p-1">
-                     <div className="p-8">
-                        <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-6 italic">პერსონალური_ლოგი</h3>
-
-                        <div className="space-y-6">
-                           <div className="flex items-center gap-4 group">
-                              <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                                 <Hash className="w-4 h-4" />
-                              </div>
-                              <div>
-                                 <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Discord_ჰენდლი</div>
-                                 <div className="text-xs font-bold text-white tracking-wider italic">{profile?.discord_username || "დაუკავშირებელი"}</div>
-                              </div>
-                           </div>
-
-                           <div className="flex items-center gap-4 group">
-                              <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                                 <Instagram className="w-4 h-4" />
-                              </div>
-                              <div>
-                                 <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Instagram</div>
-                                 {profile?.instagram_url ? (
-                                    <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-white tracking-wider italic hover:text-primary transition-colors hover:underline">
-                                       ნახვა
-                                    </a>
-                                 ) : (
-                                    <div className="text-xs font-bold text-white tracking-wider italic">დაუკავშირებელი</div>
-                                 )}
-                              </div>
-                           </div>
-
-                           <div className="flex items-center gap-4 group">
-                              <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                                 <Music2 className="w-4 h-4" />
-                              </div>
-                              <div>
-                                 <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">TikTok</div>
-                                 {profile?.tiktok_url ? (
-                                    <a href={profile.tiktok_url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-white tracking-wider italic hover:text-primary transition-colors hover:underline">
-                                       ნახვა
-                                    </a>
-                                 ) : (
-                                    <div className="text-xs font-bold text-white tracking-wider italic">დაუკავშირებელი</div>
-                                 )}
-                              </div>
-                           </div>
-
-                           <div className="flex items-center gap-4 group">
-                              <div className="w-10 h-10 rounded-xl glass border border-white/5 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                                 <Mail className="w-4 h-4" />
-                              </div>
-                              <div>
-                                 <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">კავშირის_არხი</div>
-                                 <div className="text-xs font-bold text-white tracking-wider truncate max-w-[150px]">{profile?.email}</div>
-                              </div>
-                           </div>
-                        </div>
+                     <div className="p-4 rounded-2xl glass border border-white/5 flex items-center justify-between">
+                        <span className="text-sm font-bold text-white uppercase tracking-wider">{String(profile?.role || 'USER').toUpperCase()}</span>
+                        <Badge variant="outline" className="text-[8px] opacity-50 italic">Verified</Badge>
                      </div>
+                     {profile?.is_admin && (
+                        <Link href="/admin" className="p-4 rounded-2xl bg-secondary/10 border border-secondary/20 flex items-center justify-between group hover:bg-secondary/20 transition-all">
+                           <span className="text-sm font-bold text-secondary uppercase tracking-wider">მართვის პანელი</span>
+                           <ChevronRight className="w-4 h-4 text-secondary group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                     )}
                   </div>
                </div>
 
-               {/* Right Column: Content & Editing */}
                <div className="lg:col-span-2 space-y-8">
                   {isEditing ? (
-                     <div className="glass-card p-1 animate-reveal">
-                        <div className="p-8 lg:p-12 space-y-8">
-                           <div className="flex items-center justify-between">
-                              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">მონაცემების რედაქტირება</h2>
-                              <Badge variant="outline" className="border-primary/20 text-primary">Edit_Mode</Badge>
-                           </div>
-
-                           <div className="grid md:grid-cols-2 gap-8">
-                              <div className="space-y-3">
-                                 <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">მომხმარებლის სახელი</label>
-                                 <Input
-                                    value={editData.username}
-                                    onChange={(e) => setEditData({ ...editData, username: e.target.value })}
-                                    placeholder="შეიყვანეთ სახელი"
-                                    className="h-14 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 transition-all font-bold"
-                                 />
-                              </div>
-                              <div className="space-y-3">
-                                 <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Discord ID</label>
-                                 <Input
-                                    value={editData.discord_username}
-                                    onChange={(e) => setEditData({ ...editData, discord_username: e.target.value })}
-                                    placeholder="Username#0000"
-                                    className="h-14 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 transition-all font-bold"
-                                 />
-                              </div>
-                           </div>
-
-                           <div className="grid md:grid-cols-2 gap-8">
-                              <div className="space-y-3">
-                                 <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Instagram ლინკი</label>
-                                 <Input
-                                    value={editData.instagram_url}
-                                    onChange={(e) => setEditData({ ...editData, instagram_url: e.target.value })}
-                                    placeholder="https://instagram.com/..."
-                                    className="h-14 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 transition-all font-bold"
-                                 />
-                              </div>
-                              <div className="space-y-3">
-                                 <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">TikTok ლინკი</label>
-                                 <Input
-                                    value={editData.tiktok_url}
-                                    onChange={(e) => setEditData({ ...editData, tiktok_url: e.target.value })}
-                                    placeholder="https://tiktok.com/@..."
-                                    className="h-14 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 transition-all font-bold"
-                                 />
-                              </div>
-                           </div>
-
-                           <div className="grid md:grid-cols-2 gap-8">
-                              <div className="space-y-4">
-                                 <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">სწრაფი ატვირთვა</label>
-                                 <div className="grid grid-cols-2 gap-4">
-                                    <label className="cursor-pointer group">
-                                       <div className="h-28 glass border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 group-hover:border-primary/50 transition-all bg-primary/5">
-                                          <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                                          <span className="text-[9px] font-black uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">ავატარი</span>
-                                       </div>
-                                       <input
-                                          type="file"
-                                          className="hidden"
-                                          accept="image/png, image/jpeg, image/jpg, image/gif"
-                                          onChange={(e) => handleFileUpload(e, 'avatar')}
-                                          disabled={isUploading.type !== null}
-                                       />
-                                    </label>
-                                    <label className="cursor-pointer group">
-                                       <div className="h-28 glass border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 group-hover:border-primary/50 transition-all bg-primary/5">
-                                          <Camera className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                                          <span className="text-[9px] font-black uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">ბანერი</span>
-                                       </div>
-                                       <input
-                                          type="file"
-                                          className="hidden"
-                                          accept="image/png, image/jpeg, image/jpg, image/gif"
-                                          onChange={(e) => handleFileUpload(e, 'banner')}
-                                          disabled={isUploading.type !== null}
-                                       />
-                                    </label>
-                                 </div>
-                              </div>
-
-                              <div className="space-y-4">
-                                 <label className="text-[10px) font-black text-white/40 uppercase tracking-[0.2em] ml-2 italic">მონაცემების სტატუსი</label>
-                                 <div className="space-y-2 opacity-50">
-                                    <div className="text-[9px] font-bold text-muted-foreground truncate italic">AVATAR_{editData.avatar_url ? "READY" : "MISSING"}</div>
-                                    <div className="text-[9px] font-bold text-muted-foreground truncate italic">BANNER_{editData.banner_url ? "READY" : "MISSING"}</div>
-                                    <div className="text-[8px] text-primary font-black uppercase tracking-[0.2em] mt-2 italic">* ფოტოები აიტვირთება პირდაპირ სერვერზე</div>
-                                 </div>
-                              </div>
-                           </div>
-
-                           <div className="space-y-3">
-                              <label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">ბიოგრაფია / სტატუსი</label>
-                              <textarea
-                                 value={editData.bio}
-                                 onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                                 placeholder="დაწერეთ თქვენი სტატუსი..."
-                                 className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-sm focus:border-primary/50 outline-none transition-all font-medium italic"
-                              />
-                           </div>
-
-                           <Button onClick={handleUpdate} variant="premium" className="h-16 w-full rounded-2xl text-md font-black uppercase tracking-widest transition-transform active:scale-[0.98]">
-                              <Save className="w-5 h-5 mr-3" />
-                              ცვლილებების შენახვა
-                           </Button>
+                     <div className="glass-card p-8 lg:p-12 space-y-8 animate-reveal">
+                        <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">მონაცემების რედაქტირება</h2>
+                        <div className="grid md:grid-cols-2 gap-8">
+                           <Input value={editData.username} onChange={(e) => setEditData({ ...editData, username: e.target.value })} placeholder="Username" />
+                           <Input value={editData.discord_username} onChange={(e) => setEditData({ ...editData, discord_username: e.target.value })} placeholder="Discord" />
                         </div>
+                        <Button onClick={handleUpdate} variant="premium" className="h-16 w-full rounded-2xl font-black uppercase tracking-widest">
+                           <Save className="w-5 h-5 mr-3" /> შენახვა
+                        </Button>
                      </div>
                   ) : (
-                     <div className="space-y-8 animate-reveal" style={{ animationDelay: '0.1s' }}>
-                        {/* Bio Section */}
-                        <div className="glass-card p-1">
-                           <div className="p-8 lg:p-12">
-                              <div className="flex items-center justify-between mb-8">
-                                 <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic">ტაქტიკური_ბიო</h2>
-                                 <div className="w-12 h-1 bg-primary/20 rounded-full" />
-                              </div>
-                              <p className="text-muted-foreground font-light leading-relaxed whitespace-pre-wrap italic text-lg leading-relaxed">
-                                 {profile?.bio || "ამ ოპერატორის შესახებ ტაქტიკური მონაცემები არ არის მოწოდებული. მონაცემთა ბაზა ცარიელია."}
-                              </p>
-                           </div>
-                        </div>
-
-                        {/* Unit Status Card */}
-                        <div className="glass-card p-1">
-                           <div className="p-8 lg:p-12 relative overflow-hidden group">
-                              <div className="absolute top-0 right-0 p-8">
-                                 <Zap className="w-20 h-20 text-white/5 group-hover:text-primary/10 transition-colors duration-500" />
-                              </div>
-
-                              <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-10 italic">გუნდის_სტატუსი</h2>
-
-                              {userTeam ? (
-                                 <div className="space-y-10">
-                                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                                       <div>
-                                          <div className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-2 italic">დეზიგნაცია</div>
-                                          <h3 className="text-5xl lg:text-6xl font-black text-white italic tracking-tighter leading-none">{userTeam.team_name}</h3>
-                                          <div className="text-xl font-black text-white/20 italic tracking-widest mt-4">[{userTeam.team_tag}]</div>
-                                       </div>
-                                       <div className="flex items-center gap-3">
-                                          <Badge className={`px-4 py-1.5 uppercase italic font-black text-[10px] tracking-widest ${userTeam.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' : userTeam.status === 'blocked' ? 'bg-rose-500/20 text-rose-400 border-rose-500/20' : 'bg-secondary/20 text-secondary border-secondary/20'
-                                             }`}>
-                                             {userTeam.status === 'approved' ? 'ავტორიზებული' : userTeam.status === 'pending' ? 'განხილვაში' : userTeam.status === 'blocked' ? 'დაბლოკილი' : 'უარყოფილი'}
-                                          </Badge>
-                                          {userTeam.is_vip && <Badge variant="gold" className="px-4 py-1.5 font-black text-[10px] tracking-widest">ELITE_UNIT</Badge>}
-                                       </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-6">
-                                       <div className="p-6 glass border border-white/5 rounded-3xl transition-colors hover:border-white/10">
-                                          <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">სამხედრო_შემადგენლობა</div>
-                                          <div className="text-3xl font-black text-white italic">{userTeam.players_count || 4} OPS</div>
-                                       </div>
-                                       <div className="p-6 glass border border-white/5 rounded-3xl transition-colors hover:border-white/10">
-                                          <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1 italic">სლოტ_იდენტიფიკატორი</div>
-                                          <div className="text-3xl font-black text-primary italic">#{userTeam.slot_number || "N/A"}</div>
-                                       </div>
-                                    </div>
-
-                                    <div className="flex gap-4">
-                                       <Button asChild variant="outline" className="flex-1 h-14 rounded-2xl border-white/10 hover:bg-white/5 text-[10px] font-black uppercase tracking-widest group">
-                                          <Link href="/teams">
-                                             <ExternalLink className="w-4 h-4 mr-3 transition-transform group-hover:scale-110" />
-                                             ნახვა
-                                          </Link>
-                                       </Button>
-                                       <Button
-                                          onClick={() => {
-                                              if (userTeam.status === 'blocked') {
-                                                 setToast({ message: "დაბლოკილი გუნდის წაშლა შეუძლებელია", type: 'error' })
-                                              } else {
-                                                 setIsDeleteConfirmOpen(true)
-                                              }
-                                           }}
-                                          variant="outline"
-                                          disabled={userTeam.status === 'blocked'} className={`h-14 w-14 rounded-2xl border-rose-500/20 text-rose-500 hover:bg-rose-500/10 transition-colors ${userTeam.status === 'blocked' ? 'opacity-50 cursor-not-allowed border-rose-500/10' : ''}`}
-                                       >
-                                          <Trash2 className="w-5 h-5" />
-                                       </Button>
-                                    </div>
+                     <div className="space-y-8">
+                        <div className="glass-card p-8 lg:p-12 relative overflow-hidden group">
+                           <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-10 italic">გუნდის_სტატუსი</h2>
+                           {userTeam ? (
+                              <div className="space-y-10">
+                                 <div>
+                                    <h3 className="text-5xl lg:text-6xl font-black text-white italic tracking-tighter leading-none">{userTeam.team_name}</h3>
+                                    <div className="text-xl font-black text-white/20 italic tracking-widest mt-4">[{userTeam.team_tag}]</div>
                                  </div>
-                              ) : (
-                                 <div className="py-12 text-center space-y-8 glass border border-white/5 rounded-[3rem]">
-                                    <p className="text-muted-foreground font-light italic px-8">თამაშის დასაწყებად აირჩიეთ სასურველი მატჩი განრიგში. გუნდის რეგისტრაცია მოხდება თამაშის მოთხოვნისას.</p>
-                                    <Button asChild variant="premium" className="h-16 px-10 rounded-2xl uppercase tracking-widest text-[10px] font-black italic transition-transform hover:scale-105 active:scale-95">
-                                       <Link href="/schedule">განრიგის ნახვა</Link>
+
+                                 <div className="space-y-4 pt-4 border-t border-white/5">
+                                    <div className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] mb-4 italic">მატჩების_ისტორია</div>
+                                    {allRegistrations.length > 0 ? (
+                                       <div className="grid gap-3">
+                                          {allRegistrations.map((reg, idx) => (
+                                             <div key={idx} className="flex items-center justify-between p-4 rounded-2xl glass border border-white/5">
+                                                <div className="flex items-center gap-4">
+                                                   <Calendar className={`w-5 h-5 ${reg.status === 'approved' ? 'text-emerald-400' : reg.status === 'rejected' ? 'text-rose-400' : 'text-amber-500'}`} />
+                                                   <div>
+                                                      <div className="text-xs font-black text-white italic">{reg.schedule_title}</div>
+                                                      <div className="text-[9px] font-bold text-white/40 uppercase tracking-widest">
+                                                         {reg.schedule_date ? format(new Date(reg.schedule_date), "HH:mm") : "N/A"} - {reg.team_name}
+                                                      </div>
+                                                   </div>
+                                                </div>
+                                                <Badge className={`uppercase italic font-black text-[8px] tracking-widest ${
+                                                   reg.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' :
+                                                   reg.status === 'rejected' ? 'bg-rose-500/20 text-rose-400 border-rose-500/20' :
+                                                   'bg-amber-500/20 text-amber-500 border-amber-500/20'
+                                                }`}>
+                                                   {reg.status === 'approved' ? 'Active' : reg.status === 'rejected' ? 'Rejected' : 'Review'}
+                                                </Badge>
+                                             </div>
+                                          ))}
+                                       </div>
+                                    ) : (
+                                       <div className="text-center py-6 opacity-30 text-[9px] font-black uppercase tracking-widest">ჩანაწერები არ მოიძებნა</div>
+                                    )}
+                                 </div>
+
+                                 <div className="flex gap-4">
+                                    <Button asChild variant="outline" className="flex-1 h-14 rounded-2xl border-white/10 hover:bg-white/5">
+                                       <Link href="/teams">ნახვა</Link>
+                                    </Button>
+                                    <Button onClick={() => setIsDeleteConfirmOpen(true)} variant="outline" className="h-14 w-14 rounded-2xl border-rose-500/20 text-rose-500">
+                                       <Trash2 className="w-5 h-5" />
                                     </Button>
                                  </div>
-                              )}
-                           </div>
+                              </div>
+                           ) : (
+                              <div className="py-12 text-center space-y-8 glass border border-white/5 rounded-[3rem]">
+                                 <p className="text-muted-foreground font-light italic px-8">თამაშის დასაწყებად აირჩიეთ სასურველი მატჩი განრიგში.</p>
+                                 <Button asChild variant="premium" className="h-16 px-10 rounded-2xl">
+                                    <Link href="/schedule">განრიგის ნახვა</Link>
+                                 </Button>
+                              </div>
+                           )}
                         </div>
                      </div>
                   )}
@@ -669,18 +405,12 @@ export default function ProfilePage() {
             onClose={() => setIsDeleteConfirmOpen(false)}
             onConfirm={handleDeleteTeam}
             title="გუნდის წაშლა"
-            description="დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა? ეს ქმედება შეუქცევადია და გუნდის აღდგენა შეუძლებელი იქნება."
+            description="დარწმუნებული ხართ რომ გსურთ გუნდის წაშლა?"
             confirmText="გუნდის წაშლა"
             variant="danger"
          />
 
-         {toast && (
-            <LuxuryToast
-               message={toast.message}
-               type={toast.type}
-               onClose={() => setToast(null)}
-            />
-         )}
+         {toast && <LuxuryToast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
    )
 }

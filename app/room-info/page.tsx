@@ -83,16 +83,23 @@ export default async function RoomInfoPage() {
                     </div>
                   )}
 
-                  <div className={`p-8 md:p-10 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 ${isApproved ? 'bg-primary/5' : 'bg-black/20'}`}>
+                  <div className={`p-8 md:p-10 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 ${isApproved ? 'bg-emerald-500/5' : 'bg-rose-500/[0.02]'}`}>
                     <div className="flex items-center gap-6">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all ${isApproved ? 'bg-primary/20 border-primary/40' : 'bg-white/5 border-white/10'}`}>
-                        <Target className={`w-7 h-7 ${isApproved ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all ${isApproved ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-white/5 border-white/10 text-white/20'}`}>
+                        {isApproved ? <Activity className="w-7 h-7 animate-pulse" /> : <Lock className="w-7 h-7" />}
                       </div>
                       <div>
-                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none">{schedule.title}</h2>
+                        <div className="flex items-center gap-3 mb-1">
+                           <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter leading-none">{schedule.title}</h2>
+                           {isApproved ? (
+                              <Badge className="bg-emerald-500 text-white font-black text-[9px] px-3 py-1 rounded-sm italic animate-reveal">MATCH_READY_AUTHORIZED</Badge>
+                           ) : (
+                              <Badge variant="destructive" className="font-black text-[9px] px-3 py-1 rounded-sm italic opacity-50">PERMISSION_DENIED</Badge>
+                           )}
+                        </div>
                         <div className="flex items-center gap-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.25em] mt-2 italic">
                           <span>{format(new Date(schedule.date), "PPP", { locale: ka })}</span>
-                          <span className="text-primary">{new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(schedule.date))}</span>
+                          <span className={isApproved ? "text-emerald-400" : "text-primary"}>{new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(schedule.date))}</span>
                         </div>
                       </div>
                     </div>

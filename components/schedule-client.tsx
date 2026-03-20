@@ -3,7 +3,11 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CheckCircle2, Zap, ArrowRight, AlertCircle, Loader2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { 
+  Check, X, Ban, Crown, Loader2, Calendar, Zap, AlertTriangle, Info, MapPin, Users,
+  AlertCircle, ArrowRight
+} from "lucide-react"
 import Link from "next/link"
 import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
@@ -18,6 +22,7 @@ interface ScheduleClientProps {
   isUserVip?: boolean
   scheduleTitle?: string
   hasTeamForThisSchedule?: boolean // true only if team has a request for THIS specific schedule
+  requestStatusForSchedule?: string
 }
 
 export function ScheduleClient({ 
@@ -30,7 +35,8 @@ export function ScheduleClient({
   mapsCount = 4,
   isUserVip = false,
   scheduleTitle = "მატჩი",
-  hasTeamForThisSchedule = false
+  hasTeamForThisSchedule = false,
+  requestStatusForSchedule
 }: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
@@ -101,6 +107,12 @@ export function ScheduleClient({
       return
     }
 
+    // Check for specific schedule rejection
+    if (requestStatusForSchedule === 'rejected') {
+      setToast({ message: "თქვენი გუნდის მოთხოვნა ამ განრიგზე უარყოფილია ადმინისტრაციის მიერ", type: 'error' })
+      return
+    }
+
     // Check for Ban
     if (userTeam.status === 'blocked') {
       const banUntil = userTeam.ban_until ? new Date(userTeam.ban_until) : null
@@ -121,12 +133,14 @@ export function ScheduleClient({
     <>
       <Button
         onClick={handleOpenMapModal}
-        disabled={isLoading || registrationStatus === 'closed' || (registrationStatus === 'vip_only' && !isUserVip)}
+        disabled={isLoading || registrationStatus === 'closed' || (registrationStatus === 'vip_only' && !isUserVip) || requestStatusForSchedule === 'rejected'}
         className={`whitespace-nowrap transition-all active:scale-95 ${
           registrationStatus === 'closed'
             ? "bg-neutral-800 text-neutral-400 cursor-not-allowed border border-white/5"
             : registrationStatus === 'vip_only' && !isUserVip
             ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 cursor-not-allowed"
+            : requestStatusForSchedule === 'rejected'
+            ? "bg-rose-500/10 text-rose-500 border border-rose-500/20 cursor-not-allowed opacity-50 grayscale"
             : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
         }`}
       >
@@ -137,10 +151,23 @@ export function ScheduleClient({
         ) : (
           <Zap className="w-4 h-4 mr-2" />
         )}
-        {registrationStatus === 'closed'
+        {requestStatusForSchedule && (
+        <Badge className={`uppercase italic font-black text-[9px] tracking-widest px-4 py-2 ${
+          requestStatusForSchedule === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' :
+          requestStatusForSchedule === 'rejected' ? 'bg-rose-500/20 text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
+          'bg-yellow-500/20 text-yellow-400 border-yellow-500/20'
+        }`}>
+          {requestStatusForSchedule === 'approved' ? 'Active_Confirmed' : 
+           requestStatusForSchedule === 'rejected' ? 'Denied_Access' : 'Pending_Review'}
+        </Badge>
+      )}
+
+      {registrationStatus === 'closed'
           ? "რეგისტრაცია დახურულია"
           : registrationStatus === 'vip_only' && !isUserVip
           ? "მხოლოდ VIP მომხმარებლებისთვის"
+          : requestStatusForSchedule === 'rejected'
+          ? "წვდომა უარყოფილია"
           : isLoading
           ? "იტვირთება..."
           : "მოითხოვე თამაში"}

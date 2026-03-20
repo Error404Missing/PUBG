@@ -57,11 +57,13 @@ export default async function SchedulePage() {
           .from("scrim_requests")
           .select("schedule_id, team_id, status, teams(*)")
           .in("team_id", teamIds)
-          .neq("status", "rejected")
 
-        // Build a map: schedule_id -> team data
+        // Build a map: schedule_id -> { team, status }
         requests?.forEach((r: any) => {
-          userTeamBySchedule[r.schedule_id] = r.teams
+          userTeamBySchedule[r.schedule_id] = {
+            team: r.teams,
+            status: r.status?.toLowerCase().trim()
+          }
         })
       }
     }
@@ -184,8 +186,9 @@ export default async function SchedulePage() {
                      <ScheduleClient
                       scheduleId={schedule.id}
                       scheduleTitle={schedule.title}
-                      userTeam={userTeamBySchedule[schedule.id] || userTeam}
+                      userTeam={userTeamBySchedule[schedule.id]?.team || userTeam}
                       hasTeamForThisSchedule={!!userTeamBySchedule[schedule.id]}
+                      requestStatusForSchedule={userTeamBySchedule[schedule.id]?.status}
                       user={user}
                       registrationStatus={schedule.registration_status}
                       logoRequired={schedule.logo_required}
