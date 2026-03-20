@@ -195,7 +195,16 @@ export default function AdminTeamsPage() {
 
     const { error } = await supabase.from("teams").update(updatePayload).eq("id", teamId)
 
-    if (!error && teamData) {
+    if (!error) {
+      // 🔄 Sync with scrim_requests: If team is approved/rejected/blocked, update pending requests too
+      const requestStatus = status === "approved" ? "approved" : status === "rejected" ? "rejected" : "blocked"
+      await supabase
+        .from("scrim_requests")
+        .update({ status: requestStatus })
+        .eq("team_id", teamId)
+        .eq("status", "pending")
+
+      if (teamData) {
       // Send notification
       const isApproved = status === "approved"
       const isRejected = status === "rejected"
@@ -229,11 +238,12 @@ export default function AdminTeamsPage() {
         })
       }
 
+      } // closing teamData
       setToast({ message: "სტატუსი წარმატებით განახლდა", type: 'success' })
       fetchTeams()
     } else if (error) {
       console.error("Status update error:", error)
-      setToast({ message: "შეცდომა სტატუსის განახლებისას: " + error.message, type: 'error' })
+      setToast({ message: "შეცდომა სტატუსის განახლებისას: " + (error as any).message, type: 'error' })
     }
   }
 

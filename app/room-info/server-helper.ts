@@ -42,11 +42,10 @@ export async function getRoomInfoData(userId: string) {
     allRequests = data || []
   }
 
-  // 4. Filter approved with trimming/casing robustness
+  // 4. Filter approved with trimming/casing robustness (Strict again as we have sync)
   const approvedRequests = allRequests.filter(r => {
     const s = r.status?.toLowerCase().trim()
-    // Allow approved, verified, and also pending/review since they appear on the teams list
-    return s === 'approved' || s === 'verified' || s === 'pending' || s === 'review' || s === 'active'
+    return s === 'approved' || s === 'verified'
   })
 
   // 5. Fetch Active Schedules
