@@ -61,7 +61,9 @@ export default async function TeamsPage({
                       <div className="flex items-center gap-3 text-[10px] font-black text-white/30 uppercase tracking-widest mt-1">
                         <span>{format(new Date(s.date), "PPP", { locale: ka })}</span>
                         <span className="w-1 h-1 rounded-full bg-primary" />
-                        <span className="text-primary">{format(new Date(s.date), "p", { locale: ka })}</span>
+                        <span className="text-primary">
+                          {new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(s.date))}
+                        </span>
                       </div>
                     </div>
                     <div className="hidden sm:flex items-center gap-3 px-6 py-3 rounded-2xl glass border border-white/5 opacity-0 group-hover:opacity-100 transition-all">
@@ -98,7 +100,11 @@ export default async function TeamsPage({
           <div className="flex items-center justify-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-white/40 italic">
              <span>{format(new Date(selectedSchedule.date), "PPP", { locale: ka })}</span>
              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-             <span className="text-primary">{teams.length} UNITS_CONFIRMED</span>
+             <span className="text-primary">
+               {new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(selectedSchedule.date))}
+             </span>
+             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+             <span className="text-primary">{teams.length} UNITS_LOGGED</span>
           </div>
         </div>
 
@@ -118,7 +124,16 @@ export default async function TeamsPage({
                       </div>
                       <div>
                         <h3 className={`text-2xl font-black italic tracking-tighter uppercase ${team.is_vip ? 'text-secondary' : 'text-white'}`}>{team.team_name}</h3>
-                        <Badge variant="outline" className="border-white/10 text-[9px] font-black uppercase tracking-widest text-white/40 py-1">{team.team_tag}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="border-white/10 text-[9px] font-black uppercase tracking-widest text-white/40 py-1">{team.team_tag}</Badge>
+                          <Badge className={`text-[8px] font-black uppercase tracking-widest py-0.5 px-2 rounded-sm border ${
+                            team.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            team.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                            'bg-red-500/10 text-red-400 border-red-500/20'
+                          }`}>
+                            {team.status === 'approved' ? 'Active' : team.status === 'pending' ? 'Review' : team.status}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                     {team.slot_number && (

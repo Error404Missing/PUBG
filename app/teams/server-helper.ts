@@ -26,14 +26,14 @@ export async function getTeamsBySchedule(scheduleId: string) {
   const teamsMap = new Map(teams?.map(t => [t.id, t]))
   const profilesMap = new Map(profiles?.map(p => [p.id, p]))
 
-  // 4. Assemble
+  // 4. Assemble ALL (even pending)
   return requests
-    .filter(r => r.status?.toLowerCase() === 'approved' || r.status?.toLowerCase() === 'verified')
     .map(r => {
       const team = teamsMap.get(r.team_id)
       if (!team) return null
       return {
         ...team,
+        status: r.status, // Use request status override
         slot_number: r.slot_number || team.slot_number,
         profiles: profilesMap.get(team.leader_id) || null
       }
