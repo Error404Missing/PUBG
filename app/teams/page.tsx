@@ -448,6 +448,50 @@ export default function TeamsPage() {
               <div className="glass-card p-20 text-center col-span-full border-dashed border-white/10 opacity-50">
                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground lowercase font-black tracking-widest">no teams registered yet</p>
+                {/* Visual DB Dump for Admin Debugging */}
+                <div className="mt-12 p-6 bg-red-500/5 rounded-3xl border border-red-500/20 text-left overflow-auto max-h-96">
+                   <h4 className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-4">Nuclear DB Debug (Admin Only View)</h4>
+                   <p className="text-[8px] text-white/40 mb-2">Current Schedule ID: {selectedSchedule.id}</p>
+                   <div className="space-y-2">
+                      <p className="text-[10px] text-white/60 mb-1">Total Table Rows Found (Any Schedule):</p>
+                      <table className="w-full text-[8px] font-mono text-white/40 border-collapse">
+                         <thead>
+                            <tr className="border-b border-white/10">
+                               <th className="text-left p-1">Status</th>
+                               <th className="text-left p-1">Schedule_ID</th>
+                               <th className="text-left p-1">Team_ID</th>
+                            </tr>
+                         </thead>
+                         <tbody id="db-dump-body">
+                            {/* We will fill this via a quick fetch in useEffect or similar, 
+                                but for now let's just add a button to reveal it */}
+                            <tr>
+                               <td colSpan={3} className="p-2 text-center italic">დააჭირეთ "Reveal DB Data" ღილაკს ქვემოთ</td>
+                            </tr>
+                         </tbody>
+                      </table>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="mt-4 text-[8px] h-8"
+                        onClick={async () => {
+                           const { data } = await supabase.from('scrim_requests').select('status, schedule_id, team_id').limit(50);
+                           const body = document.getElementById('db-dump-body');
+                           if (body && data) {
+                              body.innerHTML = data.map(r => `
+                                 <tr class="border-b border-white/5">
+                                    <td class="p-1">${r.status}</td>
+                                    <td class="p-1">${r.schedule_id}</td>
+                                    <td class="p-1">${r.team_id}</td>
+                                 </tr>
+                              `).join('');
+                           }
+                        }}
+                      >
+                         Reveal DB Data
+                      </Button>
+                   </div>
+                </div>
               </div>
             )}
           </div>
