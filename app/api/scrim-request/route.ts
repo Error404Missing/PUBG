@@ -32,14 +32,55 @@ export async function POST(request: Request) {
     // Check if schedule permits registration
     const { data: schedule } = await supabase
       .from("schedules")
-      .select("registration_status, logo_required, maps_count")
+      .select("registration_status, logo_required, maps_count, date")
       .eq("id", schedule_id)
       .single()
+
+    if (!schedule) {
+      return NextResponse.json({ error: "განრიგი ვერ მოიძებნა" }, { status: 404 })
+    }
 
     const regStatus = schedule?.registration_status || 'open'
     
     if (regStatus === 'closed') {
       return NextResponse.json({ error: "რეგისტრაცია დახურულია ამ მატჩზე" }, { status: 403 })
+    }
+
+    // NEW: Check for time conflicts with other APPROVED matches for this user
+    try {
+      // 1. Get all teams owned by this user
+      const { data: userTeams } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("leader_id", user.id)
+
+      const teamIds = userTeams?.map(t => t.id) || []
+
+      if (teamIds.length > 0) {
+        // 2. Find any approved requests for these teams
+        const { data: approvedRequests } = await supabase
+          .from("scrim_requests")
+          .select("schedule_id, schedules(date)")
+          .in("team_id", teamIds)
+          .eq("status", "approved")
+
+        if (approvedRequests && approvedRequests.length > 0) {
+          const targetDate = schedule.date
+          
+          const hasConflict = approvedRequests.some((req: any) => {
+            // Compare the full ISO date string (includes time)
+            return req.schedules.date === targetDate
+          })
+
+          if (hasConflict) {
+            return NextResponse.json({ 
+              error: "თქვენ უკვე გაქვთ დადასტურებული თამაში მოცემულ დროს (სხვა ოთახში). ერთსა და იმავე დროს ორ სხვადასხვა მატჩში მონაწილეობა დაუშვებელია." 
+            }, { status: 403 })
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Time conflict check error (ignoring for resilience):", e)
     }
 
     // Check VIP status if needed
@@ -83,7 +124,7 @@ export async function POST(request: Request) {
     }
 
     if (!team) {
-      return NextResponse.json({ error: "Team not found or unauthorized" }, { status: 403 })
+      return NextResponse.json({ error: "გუნდი ვერ მოიძებნა ან თქვენ არ ხართ მისი ლიდერი" }, { status: 403 })
     }
 
     // Check Logo requirement
@@ -103,7 +144,7 @@ export async function POST(request: Request) {
 
     if (existingRequest) {
       return NextResponse.json(
-        { error: "თამაშის მოთხოვნა უკვე გაწერილია" },
+        { error: "ამ მატჩზე მოთხოვნა უკვე გაგზავნილია" },
         { status: 409 }
       )
     }

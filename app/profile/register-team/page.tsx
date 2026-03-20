@@ -176,6 +176,35 @@ function RegisterTeamContent() {
     }
 
     try {
+      // 0. Check for existing registrations at the same time
+      if (scheduleId) {
+        const { data: currentSchedule } = await supabase
+          .from("schedules")
+          .select("date")
+          .eq("id", scheduleId)
+          .single()
+
+        if (currentSchedule) {
+          const { data: existingRequests } = await supabase
+            .from("scrim_requests")
+            .select("schedule_id, schedules(date, title)")
+            .eq("team_id", (await supabase.from("teams").select("id").eq("leader_id", user.id).single()).data?.id)
+            .neq("schedule_id", scheduleId)
+
+          if (existingRequests) {
+            const currentHours = new Date(currentSchedule.date).getHours()
+            const currentMinutes = new Date(currentSchedule.date).getMinutes()
+
+            for (const req of existingRequests) {
+               const reqDate = new Date((req.schedules as any).date)
+               if (reqDate.getHours() === currentHours && reqDate.getMinutes() === currentMinutes) {
+                 throw new Error(`თქვენ უკვე გაქვთ რეგისტრაცია ${currentHours}:${currentMinutes < 10 ? '0' + currentMinutes : currentMinutes} საათზე მატჩში: ${(req.schedules as any).title}`)
+               }
+            }
+          }
+        }
+      }
+
       // 1. Upload logo if provided
       let logoUrl: string | null = null
       if (logoFile) {

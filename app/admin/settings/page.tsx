@@ -104,55 +104,27 @@ export default function AdminSettingsPage() {
         </div>
 
         <div className="grid gap-12 animate-reveal" style={{ animationDelay: '0.1s' }}>
-          {/* Room Info */}
-          <div className="glass-card p-1">
+          {/* Room Info (LEGACY/REPLACED) */}
+          <div className="glass-card p-1 opacity-60">
             <div className="p-8 lg:p-12">
-              <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                    <Target className="w-6 h-6 text-purple-400" />
+                  <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                    <Target className="w-6 h-6 text-orange-400" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic leading-none">Room Intel</h2>
-                    <p className="text-xs text-muted-foreground italic mt-1 uppercase tracking-widest font-bold">Global_Broadcast_Data</p>
+                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic leading-none">Match Intel Notice</h2>
+                    <p className="text-xs text-muted-foreground italic mt-1 uppercase tracking-widest font-bold">Migration_Status: Per-Schedule</p>
                   </div>
                 </div>
-                <Badge variant="outline" className="border-purple-500/20 text-purple-400">Tactical_Broadcast</Badge>
+                <Badge variant="outline" className="border-orange-500/20 text-orange-400">System_Update</Badge>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8">
-                {roomSettings.map((setting) => (
-                  <div key={setting.id} className="space-y-3">
-                    <Label htmlFor={setting.key} className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">
-                      {setting.description}
-                    </Label>
-                    {setting.key === "start_time" ? (
-                      <div className="relative">
-                        <Input
-                          id={setting.key}
-                          value={setting.value || ""}
-                          onChange={(e) => updateSetting(setting.key, e.target.value)}
-                          className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold pl-12"
-                          placeholder="მხოლოდ დრო (მაგ: 22:00)"
-                        />
-                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <Input
-                          id={setting.key}
-                          value={setting.value}
-                          onChange={(e) => updateSetting(setting.key, e.target.value)}
-                          className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold pl-12"
-                          placeholder={
-                            setting.key === "room_id" ? "ROOM ID" : setting.key === "room_password" ? "PASSWORD" : "DETAILS"
-                          }
-                        />
-                        <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="p-6 rounded-2xl bg-orange-500/5 border border-orange-500/10 italic">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  ოთახის ინფორმაცია (ID, პაროლი) ახლა იმართება ინდივიდუალურად თითოეული მატჩისთვის. 
+                  გთხოვთ გამოიყენოთ <b><Link href="/admin/schedule" className="text-primary hover:underline font-black uppercase tracking-widest">განრიგის მართვა</Link></b> სასურველ მატჩზე ID-ს დასამატებლად.
+                </p>
               </div>
             </div>
           </div>

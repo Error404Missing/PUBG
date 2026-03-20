@@ -33,6 +33,8 @@ type Schedule = {
   registration_open?: boolean
   registration_status: 'open' | 'vip_only' | 'closed'
   logo_required: boolean
+  room_id?: string | null
+  room_password?: string | null
 }
 
 export default function AdminSchedulePage() {
@@ -51,6 +53,8 @@ export default function AdminSchedulePage() {
     mapsCount: "4",
     logoRequired: false,
     registrationStatus: "open" as 'open' | 'vip_only' | 'closed',
+    roomId: "",
+    roomPassword: "",
   })
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, scheduleId: string | null }>({
     isOpen: false,
@@ -109,6 +113,8 @@ export default function AdminSchedulePage() {
       is_active: true,
       logo_required: formData.logoRequired,
       registration_status: formData.registrationStatus,
+      room_id: formData.roomId || null,
+      room_password: formData.roomPassword || null,
     }
 
     let error;
@@ -143,6 +149,8 @@ export default function AdminSchedulePage() {
             max_teams: formData.maxTeams,
             logo_required: formData.logoRequired,
             registration_status: formData.registrationStatus,
+            room_id: formData.roomId,
+            room_password: formData.roomPassword,
             is_edit: isEditing
           }
         })
@@ -162,6 +170,8 @@ export default function AdminSchedulePage() {
         mapsCount: "4",
         logoRequired: false,
         registrationStatus: "open",
+        roomId: "",
+        roomPassword: "",
       })
       fetchSchedules()
     }
@@ -188,6 +198,8 @@ export default function AdminSchedulePage() {
       mapsCount: String(schedule.maps_count || 4),
       logoRequired: schedule.logo_required || false,
       registrationStatus: schedule.registration_status || "open",
+      roomId: schedule.room_id || "",
+      roomPassword: schedule.room_password || "",
     })
     setIsEditing(true)
     setEditId(schedule.id)
@@ -210,6 +222,8 @@ export default function AdminSchedulePage() {
       mapsCount: "4",
       logoRequired: false,
       registrationStatus: "open",
+      roomId: "",
+      roomPassword: "",
     })
   }
 
@@ -289,6 +303,22 @@ export default function AdminSchedulePage() {
         type: 'success'
       })
       fetchSchedules()
+    }
+  }
+
+  const handleQuickRoomUpdate = async (id: string, roomId: string | null, roomPassword: string | null) => {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from("schedules")
+      .update({ room_id: roomId, room_password: roomPassword })
+      .eq("id", id)
+
+    if (error) {
+       console.error("Quick update error:", error)
+       setToast({ message: "შეცდომა ოთახის მონაცემების განახლებისას", type: 'error' })
+    } else {
+       setToast({ message: "ოთახის მონაცემები განახლდა", type: 'success' })
+       fetchSchedules()
     }
   }
 
@@ -435,6 +465,46 @@ export default function AdminSchedulePage() {
                   </div>
                 </div>
 
+                {/* Room Info Section */}
+                <div className="p-8 rounded-3xl bg-primary/5 border border-primary/10 space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                       <Shield className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-white italic uppercase tracking-widest">Match Room Intel</h3>
+                      <p className="text-[10px] text-muted-foreground italic uppercase tracking-widest leading-none mt-1">ეს ინფორმაცია მხოლოდ ტესტირებულ და დადასტურებულ გუნდებს გამოუჩნდებათ</p>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Room ID</Label>
+                      <div className="relative">
+                        <Input
+                          value={formData.roomId}
+                          onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
+                          placeholder="კონკრეტული ოთახის ID"
+                          className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                        />
+                        <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Room Password</Label>
+                      <div className="relative">
+                        <Input
+                          value={formData.roomPassword}
+                          onChange={(e) => setFormData({ ...formData, roomPassword: e.target.value })}
+                          placeholder="კონკრეტული ოთახის პაროლი"
+                          className="h-16 bg-black/40 border-white/10 rounded-2xl focus:border-primary/50 text-md font-bold pl-12"
+                        />
+                        <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Logo & Status Settings */}
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Logo Requirement */}
@@ -540,123 +610,15 @@ export default function AdminSchedulePage() {
         )}
 
         <div className="space-y-6 animate-reveal" style={{ animationDelay: '0.1s' }}>
-          {schedules.map((schedule, i) => (
-            <div key={schedule.id} className="glass-card p-1 group">
-              <div className="p-8 lg:p-10">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                  <div className="flex-1 space-y-6">
-                    <div className="flex items-center gap-6">
-                      <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center relative">
-                        <Shield className="w-7 h-7 text-sky-400" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
-                      </div>
-                      <div>
-                        <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">{schedule.title}</h3>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-white/5 text-muted-foreground bg-white/5 text-[9px] font-black uppercase tracking-widest italic italic">Match_ID: {schedule.id.slice(0, 8)}</Badge>
-                        </div>
-                      </div>
-                    </div>
-
-                    {schedule.description && (
-                      <p className="text-muted-foreground font-light italic leading-relaxed border-l-2 border-sky-500/20 pl-6 py-2">
-                        {schedule.description}
-                      </p>
-                    )}
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Deployment</div>
-                        <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "PPP", { locale: ka })}</div>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Time_H-M</div>
-                        <div className="text-sm font-bold text-white italic">
-                          {new Intl.DateTimeFormat('ka-GE', { 
-                            timeZone: 'Asia/Tbilisi', 
-                            hour: '2-digit', 
-                            minute: '2-digit', 
-                            hour12: false 
-                          }).format(new Date(schedule.date))}
-                        </div>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Sector</div>
-                        <div className="text-sm font-bold text-secondary italic font-black uppercase">{schedule.map_name || "Unknown"}</div>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
-                        <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Max_Units</div>
-                        <div className="text-sm font-bold text-white italic">{schedule.max_teams} Teams</div>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-primary/10 space-y-1">
-                        <div className="text-[9px] font-black text-primary/60 uppercase tracking-widest italic">Maps_Count</div>
-                        <div className="text-sm font-bold text-primary italic">{schedule.maps_count || 4} Maps</div>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-rose-500/10 space-y-1">
-                        <div className="text-[9px] font-black text-rose-500/60 uppercase tracking-widest italic">Logo_Req</div>
-                        <div className={`text-sm font-bold italic ${schedule.logo_required ? 'text-rose-400' : 'text-emerald-400'}`}>
-                          {schedule.logo_required ? 'დიახ' : 'არა'}
-                        </div>
-                      </div>
-                      <div className="glass p-4 rounded-2xl border border-sky-500/10 space-y-1">
-                        <div className="text-[9px] font-black text-sky-500/60 uppercase tracking-widest italic">Reg_Status</div>
-                        <div className="text-sm font-bold text-sky-400 italic uppercase">
-                          {schedule.registration_status === 'open' ? 'ღიაა' : schedule.registration_status === 'vip_only' ? 'VIP UNit' : 'დახურული'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex lg:flex-col gap-3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => updateRegistrationStatus(schedule.id, 'open')}
-                          variant="outline"
-                          className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'open' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-white/5 text-white/20'}`}
-                          title="რეგისტრაციის გახსნა ყველასთვის"
-                        >
-                          <Activity className="w-5 h-5" />
-                        </Button>
-                        <Button
-                          onClick={() => updateRegistrationStatus(schedule.id, 'vip_only')}
-                          variant="outline"
-                          className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'vip_only' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'border-white/5 text-white/20'}`}
-                          title="რეგისტრაციის გახსნა მხოლოდ VIP-თვის"
-                        >
-                          <Zap className="w-5 h-5" />
-                        </Button>
-                        <Button
-                          onClick={() => updateRegistrationStatus(schedule.id, 'closed')}
-                          variant="outline"
-                          className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'closed' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'border-white/5 text-white/20'}`}
-                          title="რეგისტრაციის დახურვა ყველასთვის"
-                        >
-                          <X className="w-5 h-5" />
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleEdit(schedule)}
-                          variant="outline"
-                          className="w-14 h-14 rounded-2xl border-sky-500/20 text-sky-400 hover:bg-sky-500/10 p-0 transition-all active:scale-95"
-                          title="რედაქტირება"
-                        >
-                          <Save className="w-6 h-6" />
-                        </Button>
-                        <Button
-                          onClick={() => setDeleteConfirm({ isOpen: true, scheduleId: schedule.id })}
-                          variant="outline"
-                          className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
-                        >
-                          <Trash2 className="w-6 h-6" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {schedules.map((schedule) => (
+            <ScheduleListItem 
+              key={schedule.id} 
+              schedule={schedule} 
+              onEdit={handleEdit}
+              onDelete={(id) => setDeleteConfirm({ isOpen: true, scheduleId: id })}
+              onUpdateStatus={updateRegistrationStatus}
+              onQuickUpdate={handleQuickRoomUpdate}
+            />
           ))}
 
           {schedules.length === 0 && (
@@ -688,3 +650,190 @@ export default function AdminSchedulePage() {
     </div>
   )
 }
+
+function ScheduleListItem({ 
+  schedule, 
+  onEdit, 
+  onDelete, 
+  onUpdateStatus,
+  onQuickUpdate 
+}: { 
+  schedule: Schedule, 
+  onEdit: (s: Schedule) => void, 
+  onDelete: (id: string) => void,
+  onUpdateStatus: (id: string, status: 'open' | 'vip_only' | 'closed') => void,
+  onQuickUpdate: (id: string, roomId: string, roomPass: string) => void
+}) {
+  const [roomId, setRoomId] = useState(schedule.room_id || "")
+  const [roomPass, setRoomPass] = useState(schedule.room_password || "")
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  // Sync state with props when schedule changes (e.g. after refresh)
+  useEffect(() => {
+    setRoomId(schedule.room_id || "")
+    setRoomPass(schedule.room_password || "")
+  }, [schedule])
+
+  const handleSave = async () => {
+    setIsUpdating(true)
+    await onQuickUpdate(schedule.id, roomId, roomPass)
+    setIsUpdating(false)
+  }
+
+  return (
+    <div className="glass-card p-1 group">
+      <div className="p-8 lg:p-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="flex-1 space-y-6">
+            <div className="flex items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center relative">
+                <Shield className="w-7 h-7 text-sky-400" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">{schedule.title}</h3>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-white/5 text-muted-foreground bg-white/5 text-[9px] font-black uppercase tracking-widest italic italic">Match_ID: {schedule.id.slice(0, 8)}</Badge>
+                </div>
+              </div>
+            </div>
+
+            {schedule.description && (
+              <p className="text-muted-foreground font-light italic leading-relaxed border-l-2 border-sky-500/20 pl-6 py-2">
+                {schedule.description}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Deployment</div>
+                <div className="text-sm font-bold text-white italic">{format(new Date(schedule.date), "PPP", { locale: ka })}</div>
+              </div>
+              <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Time_H-M</div>
+                <div className="text-sm font-bold text-white italic">
+                  {new Intl.DateTimeFormat('ka-GE', { 
+                    timeZone: 'Asia/Tbilisi', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: false 
+                  }).format(new Date(schedule.date))}
+                </div>
+              </div>
+              <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Sector</div>
+                <div className="text-sm font-bold text-secondary italic font-black uppercase">{schedule.map_name || "Unknown"}</div>
+              </div>
+              <div className="glass p-4 rounded-2xl border border-white/5 space-y-1">
+                <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic">Max_Units</div>
+                <div className="text-sm font-bold text-white italic">{schedule.max_teams} Teams</div>
+              </div>
+              <div className="glass p-4 rounded-2xl border border-primary/10 space-y-1">
+                <div className="text-[9px] font-black text-primary/60 uppercase tracking-widest italic">Maps_Count</div>
+                <div className="text-sm font-bold text-primary italic">{schedule.maps_count || 4} Maps</div>
+              </div>
+              <div className="glass p-4 rounded-2xl border border-rose-500/10 space-y-1">
+                <div className="text-[9px] font-black text-rose-500/60 uppercase tracking-widest italic">Logo_Req</div>
+                <div className={`text-sm font-bold italic ${schedule.logo_required ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {schedule.logo_required ? 'დიახ' : 'არა'}
+                </div>
+              </div>
+              <div className="glass p-4 rounded-2xl border border-sky-500/10 space-y-1">
+                <div className="text-[9px] font-black text-sky-500/60 uppercase tracking-widest italic">Reg_Status</div>
+                <div className="text-sm font-bold text-sky-400 italic uppercase">
+                  {schedule.registration_status === 'open' ? 'ღიაა' : schedule.registration_status === 'vip_only' ? 'VIP UNit' : 'დახურული'}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Room Intel Update */}
+            <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 space-y-4">
+               <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] italic">Quick_Room_Intel</h4>
+                  { (roomId !== (schedule.room_id || "") || roomPass !== (schedule.room_password || "")) && (
+                     <Button 
+                        size="sm" 
+                        onClick={handleSave} 
+                        disabled={isUpdating}
+                        className="h-7 px-4 rounded-lg bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 text-[9px] font-black uppercase italic"
+                     >
+                        {isUpdating ? "..." : "Save_Changes"}
+                     </Button>
+                  )}
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Room_ID</div>
+                     <Input 
+                        value={roomId}
+                        onChange={(e) => setRoomId(e.target.value)}
+                        placeholder="ID"
+                        className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
+                     />
+                  </div>
+                  <div className="space-y-1">
+                     <div className="text-[8px] font-black text-white/20 uppercase ml-2">Room_Pass</div>
+                     <Input 
+                        value={roomPass}
+                        onChange={(e) => setRoomPass(e.target.value)}
+                        placeholder="Pass"
+                        className="h-10 bg-black/60 border-white/5 rounded-xl text-xs font-bold focus:border-primary/40"
+                     />
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          <div className="flex lg:flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => onUpdateStatus(schedule.id, 'open')}
+                  variant="outline"
+                  className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'open' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-white/5 text-white/20'}`}
+                  title="რეგისტრაციის გახსნა ყველასთვის"
+                >
+                  <Activity className="w-5 h-5" />
+                </Button>
+                <Button
+                  onClick={() => onUpdateStatus(schedule.id, 'vip_only')}
+                  variant="outline"
+                  className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'vip_only' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'border-white/5 text-white/20'}`}
+                  title="რეგისტრაციის გახსნა მხოლოდ VIP-თვის"
+                >
+                  <Zap className="w-5 h-5" />
+                </Button>
+                <Button
+                  onClick={() => onUpdateStatus(schedule.id, 'closed')}
+                  variant="outline"
+                  className={`w-10 h-10 rounded-xl border p-0 transition-all active:scale-95 ${schedule.registration_status === 'closed' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'border-white/5 text-white/20'}`}
+                  title="რეგისტრაციის დახურვა ყველასთვის"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => onEdit(schedule)}
+                  variant="outline"
+                  className="w-14 h-14 rounded-2xl border-sky-500/20 text-sky-400 hover:bg-sky-500/10 p-0 transition-all active:scale-95"
+                  title="რედაქტირება"
+                >
+                  <Save className="w-6 h-6" />
+                </Button>
+                <Button
+                  onClick={() => onDelete(schedule.id)}
+                  variant="outline"
+                  className="w-14 h-14 rounded-2xl border-rose-500/20 text-rose-400 hover:bg-rose-500/10 p-0 transition-all active:scale-95"
+                >
+                  <Trash2 className="w-6 h-6" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
