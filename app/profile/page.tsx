@@ -330,7 +330,15 @@ export default function ProfilePage() {
                         <div className="grid md:grid-cols-2 gap-8">
                            <Input value={editData.username} onChange={(e) => setEditData({ ...editData, username: e.target.value })} placeholder="Username" />
                            <Input value={editData.discord_username} onChange={(e) => setEditData({ ...editData, discord_username: e.target.value })} placeholder="Discord" />
+                           <Input value={editData.instagram_url} onChange={(e) => setEditData({ ...editData, instagram_url: e.target.value })} placeholder="Instagram URL" />
+                           <Input value={editData.tiktok_url} onChange={(e) => setEditData({ ...editData, tiktok_url: e.target.value })} placeholder="TikTok URL" />
                         </div>
+                        <textarea 
+                           className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white focus:border-primary transition-all outline-none"
+                           value={editData.bio} 
+                           onChange={(e) => setEditData({ ...editData, bio: e.target.value })} 
+                           placeholder="Bio / მოკლე ინფორმაცია" 
+                        />
                         <Button onClick={handleUpdate} variant="premium" className="h-16 w-full rounded-2xl font-black uppercase tracking-widest">
                            <Save className="w-5 h-5 mr-3" /> შენახვა
                         </Button>
