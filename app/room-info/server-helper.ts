@@ -13,35 +13,25 @@ export async function getRoomInfoData(userId: string) {
     .eq("id", userId)
     .single()
 
-  const isAdmin = profile?.is_admin
-  const isManager = profile?.role === "manager"
+  const isAdmin = profile?.is_admin === true || profile?.role === 'admin'
+  const isManager = profile?.role === "manager" || isAdmin // admins are also managers
 
-  // 2. Fetch User's Teams
-  const { data: userTeams } = await supabaseAdmin
-    .from("teams")
-    .select("id, team_name")
-    .eq("leader_id", userId)
+  // 2. Fetch User's Requests directly (Bypassing RLS)
+  // We join with teams on leader_id = userId
+  const { data: allRequests } = await supabaseAdmin
+    .from("scrim_requests")
+    .select(`
+        id,
+        team_id,
+        schedule_id,
+        status,
+        slot_number,
+        preferred_maps,
+        teams!inner (id, team_name, leader_id, slot_number)
+    `)
+    .eq("teams.leader_id", userId)
 
-  const teamIds = userTeams?.map(t => t.id) || []
-
-  // 3. Fetch ALL of the user's scrim_requests (Bypassing RLS)
-  // slot_number is on scrim_requests, not teams
-  let allRequests: any[] = []
-  if (teamIds.length > 0) {
-    const { data } = await supabaseAdmin
-      .from("scrim_requests")
-      .select(`
-          id,
-          team_id,
-          schedule_id,
-          status,
-          slot_number,
-          preferred_maps,
-          teams (id, team_name, leader_id, slot_number)
-      `)
-      .in("team_id", teamIds)
-    allRequests = data || []
-  }
+  const teamIds = (allRequests as any[])?.map(r => r.team_id) || []
 
   // 4. Filter approved
   const approvedRequests = allRequests.filter(r => 
