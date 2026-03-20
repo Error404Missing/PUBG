@@ -1,3 +1,5 @@
+"use client"
+
 import { Activity } from "lucide-react"
 
 export default function TeamsLoading() {
