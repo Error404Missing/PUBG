@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createBrowserClient } from "@/lib/supabase/client"
-import { Settings, Save, Loader2, Clock, Globe, Shield, MessageSquare, ChevronLeft, Zap, Target } from "lucide-react"
+import { Settings, Save, Loader2, Clock, Globe, Shield, MessageSquare, ChevronLeft, Zap, Target, Activity } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { LuxuryToast } from "@/components/ui/luxury-toast"
@@ -33,7 +33,23 @@ export default function AdminSettingsPage() {
     try {
       const { data, error } = await supabase.from("site_settings").select("*").order("key")
       if (error) throw error
-      setSettings(data || [])
+      
+      let fetchedSettings = data || []
+      
+      // Ensure live settings exist in the state
+      const liveKeys = [
+        { key: "is_live", value: "false", description: "Live Status (true/false)" },
+        { key: "live_url", value: "", description: "Live Stream URL (TikTok/YouTube)" },
+        { key: "live_platform", value: "youtube", description: "Live Platform (youtube/tiktok)" }
+      ]
+      
+      liveKeys.forEach(lk => {
+        if (!fetchedSettings.find(s => s.key === lk.key)) {
+          fetchedSettings.push({ id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2), ...lk })
+        }
+      })
+
+      setSettings(fetchedSettings)
     } catch (error) {
       console.error("Error fetching settings:", error)
     } finally {
@@ -45,10 +61,17 @@ export default function AdminSettingsPage() {
     setSaving(true)
     try {
       for (const setting of settings) {
-        const { error } = await supabase.from("site_settings").update({ value: setting.value }).eq("key", setting.key)
+        const { error } = await supabase
+          .from("site_settings")
+          .upsert({ 
+            key: setting.key, 
+            value: setting.value, 
+            description: setting.description 
+          }, { onConflict: 'key' })
         if (error) throw error
       }
       setToast({ message: "პარამეტრები წარმატებით შეინახა! ✅", type: 'success' })
+      fetchSettings()
     } catch (error: any) {
       console.error("Error saving settings:", error)
       setToast({ message: `შეცდომა: ${error?.message || "უცნობი შეცდომა"}`, type: 'error' })
@@ -125,6 +148,82 @@ export default function AdminSettingsPage() {
                   ოთახის ინფორმაცია (ID, პაროლი) ახლა იმართება ინდივიდუალურად თითოეული მატჩისთვის. 
                   გთხოვთ გამოიყენოთ <b><Link href="/admin/schedule" className="text-primary hover:underline font-black uppercase tracking-widest">განრიგის მართვა</Link></b> სასურველ მატჩზე ID-ს დასამატებლად.
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Streaming Control */}
+          <div className="glass-card p-1">
+            <div className="p-8 lg:p-12">
+              <div className="flex items-center justify-between mb-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                    <Activity className="w-6 h-6 text-rose-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter italic leading-none">Live Stream Intel</h2>
+                    <p className="text-xs text-muted-foreground italic mt-1 uppercase tracking-widest font-bold">Broadcast_Mode_Config</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                   <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${settings.find(s => s.key === 'is_live')?.value === 'true' ? 'bg-rose-500 text-white animate-pulse' : 'bg-white/5 text-muted-foreground'}`}>
+                      {settings.find(s => s.key === 'is_live')?.value === 'true' ? 'Live_Now' : 'Offline'}
+                   </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-12">
+                <div className="space-y-8">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Broadcast Status</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => updateSetting('is_live', 'true')}
+                        className={`h-14 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${settings.find(s => s.key === 'is_live')?.value === 'true' ? 'bg-rose-500 border-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10'}`}
+                      >
+                        Go Live
+                      </button>
+                      <button
+                        onClick={() => updateSetting('is_live', 'false')}
+                        className={`h-14 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${settings.find(s => s.key === 'is_live')?.value === 'false' ? 'bg-white/20 border border-white/20 text-white' : 'bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10'}`}
+                      >
+                        Turn Off
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Platform Selection</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {['tiktok', 'youtube', 'other'].map(platform => (
+                        <button
+                          key={platform}
+                          onClick={() => updateSetting('live_platform', platform)}
+                          className={`h-14 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${settings.find(s => s.key === 'live_platform')?.value === platform ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10'}`}
+                        >
+                          {platform}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="space-y-3">
+                    <Label htmlFor="live_url" className="text-[10px] font-black text-primary uppercase tracking-[0.2em] ml-2 italic">Stream Destination URL</Label>
+                    <div className="relative group">
+                      <Input
+                        id="live_url"
+                        value={settings.find(s => s.key === 'live_url')?.value || ""}
+                        onChange={(e) => updateSetting('live_url', e.target.value)}
+                        className="h-14 bg-black/40 border-white/10 rounded-xl focus:border-primary/50 text-xs font-bold pl-12"
+                        placeholder="https://tiktok.com/@user/live or youtube.com/..."
+                      />
+                      <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors" />
+                    </div>
+                    <p className="text-[8px] text-muted-foreground italic ml-2 mt-2">Enter the direct link to the broadcast.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

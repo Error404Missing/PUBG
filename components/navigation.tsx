@@ -23,8 +23,23 @@ export function Navigation() {
     start_time: string | null
     map: string | null
   } | null>(null)
+  const [liveInfo, setLiveInfo] = useState<{ isLive: boolean; url: string } | null>(null)
 
   const supabase = createClient()
+
+  const fetchLiveStatus = async () => {
+    const { data } = await supabase
+      .from("site_settings")
+      .select("key, value")
+      .in("key", ["is_live", "live_url"])
+    
+    if (data) {
+      setLiveInfo({
+        isLive: data.find(s => s.key === "is_live")?.value === "true",
+        url: data.find(s => s.key === "live_url")?.value || ""
+      })
+    }
+  }
 
   const checkUserStatus = async () => {
     const {
@@ -72,6 +87,7 @@ export function Navigation() {
 
   useEffect(() => {
     checkUserStatus()
+    fetchLiveStatus()
 
     const {
       data: { subscription },
@@ -88,7 +104,22 @@ export function Navigation() {
       }
     })
 
-    return () => subscription.unsubscribe()
+    // Subscribe to site_settings for live status
+    const channel = supabase
+      .channel('site-settings-nav')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'site_settings' 
+      }, () => {
+        fetchLiveStatus()
+      })
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleLogout = async () => {
@@ -120,12 +151,24 @@ export function Navigation() {
       <div className="glass-darker border border-white/10 rounded-2xl px-6 py-3 shadow-2xl backdrop-blur-3xl">
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="text-2xl font-black tracking-tighter text-white group-hover:scale-105 transition-transform duration-300 flex items-center gap-2">
-              PUBG<span className="text-primary italic">ARENA</span>
-              <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/20">V2.0</span>
-            </div>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="text-2xl font-black tracking-tighter text-white group-hover:scale-105 transition-transform duration-300 flex items-center gap-2">
+                PUBG<span className="text-primary italic">ARENA</span>
+                <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/20">V2.0</span>
+              </div>
+            </Link>
+            {liveInfo?.isLive && (
+              <Link
+                href={liveInfo.url}
+                target="_blank"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-500 text-white text-[8px] font-black uppercase tracking-widest animate-pulse border border-rose-400/50 hover:bg-rose-600 transition-all hover:scale-110 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_5px_white]" />
+                Live Now
+              </Link>
+            )}
+          </div>
 
           {/* Nav Items - Desktop */}
           <div className="hidden lg:flex items-center gap-1">
