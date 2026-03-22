@@ -55,6 +55,7 @@ export default function AdminTeamsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingSlot, setEditingSlot] = useState<string | null>(null)
   const [slotValue, setSlotValue] = useState<string>("")
+  const [leaderVipMap, setLeaderVipMap] = useState<Record<string, boolean>>({})
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean, teamId: string | null }>({
     isOpen: false,
     teamId: null
@@ -164,7 +165,28 @@ export default function AdminTeamsPage() {
       console.log("Warning: Query returned 0 teams. Filter:", filter)
     }
 
-    setTeams((data as any[]) || [])
+    const teamsData = (data as any[]) || []
+    setTeams(teamsData)
+
+    // Fetch VIP status for leaders
+    const leaderIds = [...new Set(teamsData.map((t: any) => t.leader_id).filter(Boolean))]
+    if (leaderIds.length > 0) {
+      const { data: vipData } = await supabase
+        .from("user_vip_status")
+        .select("user_id, vip_until")
+        .in("user_id", leaderIds)
+      
+      if (vipData) {
+        const vips: Record<string, boolean> = {}
+        vipData.forEach((v: any) => {
+          if (new Date(v.vip_until) > new Date()) {
+            vips[v.user_id] = true
+          }
+        })
+        setLeaderVipMap(vips)
+      }
+    }
+
     setIsLoading(false)
   }
 
@@ -472,12 +494,19 @@ export default function AdminTeamsPage() {
         ) : (
           <div className="grid gap-8 animate-reveal" style={{ animationDelay: '0.1s' }}>
             {teams.length > 0 ? (
-              teams.map((team) => (
-                <div
-                  key={team.id}
-                  className={`glass-card p-1 transition-all duration-500 hover:scale-[1.01] ${team.is_vip ? 'shadow-[0_0_50px_-12px_rgba(255,180,0,0.15)]' : ''
+              teams.map((team) => {
+                const isVipLeader = team.leader_id ? leaderVipMap[team.leader_id] : false
+                const isEffectiveVip = team.is_vip || isVipLeader
+
+                return (
+                  <div
+                    key={team.id}
+                    className={`glass-card p-1 transition-all duration-500 hover:scale-[1.01] ${
+                      isEffectiveVip 
+                        ? 'border-yellow-400/40 bg-yellow-400/[0.02] shadow-[0_0_50px_-15px_rgba(255,180,0,0.2)]' 
+                        : ''
                     }`}
-                >
+                  >
                   <div className="p-8 lg:p-10">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10">
                       <div className="flex items-center gap-6">
@@ -510,6 +539,11 @@ export default function AdminTeamsPage() {
                                 team.profiles?.username ||
                                 "Anonymous"
                               }</span>
+                              {isVipLeader && (
+                                <Badge variant="gold" className="ml-2 px-1.5 py-0 h-4 text-[7px] font-black border-yellow-400/30 animate-pulse-soft">
+                                  MANAGER_VIP
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -525,7 +559,7 @@ export default function AdminTeamsPage() {
                           }`}>
                           {team.status?.toLowerCase().trim() === 'approved' ? 'Active_Unit' : (team.status?.toLowerCase().trim() === 'pending' || team.status?.toLowerCase().trim() === 'review') ? 'In_Review' : team.status?.toLowerCase().trim() === 'blocked' ? 'Banned_Unit' : 'Rejected'}
                         </Badge>
-                        {team.is_vip && <Badge variant="gold" className="px-4 py-1.5 font-black text-[9px] tracking-widest">Elite_Unit</Badge>}
+                          {isEffectiveVip && <Badge variant="gold" className="px-4 py-1.5 font-black text-[9px] tracking-widest bg-yellow-400/20 border-yellow-400/30 shadow-[0_0_10px_rgba(255,180,0,0.1)]">Elite_Unit</Badge>}
                         {team.slot_number !== null && (
                           <Badge variant="outline" className="border-blue-500/20 text-blue-400 italic font-black text-[9px] tracking-widest bg-blue-500/5">
                             Slot #{team.slot_number}
@@ -653,8 +687,9 @@ export default function AdminTeamsPage() {
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
+              )
+            })
+          ) : (
               <div className="glass-card p-20 text-center animate-reveal">
                 <Search className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
                 <p className="text-muted-foreground font-black text-[10px] tracking-widest uppercase italic">გუნდები არ მოიძებნა</p>

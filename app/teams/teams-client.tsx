@@ -33,11 +33,17 @@ interface Team {
 export function TeamsClient({ teams }: { teams: Team[] }) {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
 
+  const sortedTeams = [...teams].sort((a, b) => {
+    if (a.is_vip && !b.is_vip) return -1;
+    if (!a.is_vip && b.is_vip) return 1;
+    return 0;
+  });
+
   return (
     <>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {teams.length > 0 ? (
-          teams.map((team, i) => (
+        {sortedTeams.length > 0 ? (
+          sortedTeams.map((team, i) => (
             <div 
               key={team.id} 
               onClick={() => setSelectedTeam(team)}
