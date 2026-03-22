@@ -50,20 +50,27 @@ export default async function AdminRequestsPage() {
   let leaderMap: Record<string, string> = {}
   let leaderVipMap: Record<string, boolean> = {}
   if (leaderIds.length > 0) {
-    const { data: leaders } = await supabase
+    const { data: profilesData } = await supabase
       .from("profiles")
-      .select(`
-        id, 
-        username,
-        user_vip_status(vip_until)
-      `)
+      .select("id, username")
       .in("id", leaderIds)
+    
+    const { data: vipStatusesData } = await supabase
+      .from("user_vip_status")
+      .select("user_id, vip_until")
+      .in("user_id", leaderIds)
 
-    if (leaders) {
-      for (const l of (leaders as any[])) {
-        leaderMap[l.id] = l.username || "უცნობი"
-        const vipUntil = l.user_vip_status?.[0]?.vip_until
-        leaderVipMap[l.id] = vipUntil ? new Date(vipUntil) > new Date() : false
+    if (profilesData) {
+      for (const p of profilesData) {
+        leaderMap[p.id] = p.username || "უცნობი"
+      }
+    }
+
+    if (vipStatusesData) {
+      for (const v of (vipStatusesData as any[])) {
+        if (new Date(v.vip_until) > new Date()) {
+          leaderVipMap[v.user_id] = true
+        }
       }
     }
   }
@@ -124,6 +131,9 @@ export default async function AdminRequestsPage() {
         <div className="space-y-6 animate-reveal" style={{ animationDelay: '0.2s' }}>
           {requests && requests.length > 0 ? (
             requests.map((req) => {
+              const isVipLeader = req.teams?.leader_id ? leaderVipMap[req.teams.leader_id] : false
+              const isVipRequest = req.has_vip || isVipLeader
+
               const themeColor =
                 req.status === "approved"
                   ? "emerald"
@@ -131,10 +141,12 @@ export default async function AdminRequestsPage() {
                     ? "rose"
                     : "yellow"
 
-              return (
-                <div key={req.id} className={`glass-card p-1 transition-all duration-500 hover:scale-[1.005] ${
-                   req.has_vip ? 'shadow-[0_0_50px_-12px_rgba(255,180,0,0.1)]' : ''
-                }`}>
+                return (
+                  <div key={req.id} className={`glass-card p-1 transition-all duration-500 hover:scale-[1.005] ${
+                     isVipRequest 
+                      ? 'border-yellow-400/50 bg-yellow-400/[0.03] shadow-[0_0_50px_-15px_rgba(255,180,0,0.25)]' 
+                      : ''
+                  }`}>
                    <div className="p-6 md:p-8">
                      <div className="flex flex-col lg:flex-row lg:items-center gap-8">
                        <div className="flex-1 min-w-0">
@@ -156,11 +168,10 @@ export default async function AdminRequestsPage() {
                                     <div className="flex items-center gap-2">
                                        <Users className="w-3 h-3 text-primary" />
                                        ლიდერი: <span className="text-white">{req.teams?.leader_id ? leaderMap[req.teams.leader_id] || "უცნობი" : "უცნობი"}</span>
-                                       {req.teams?.leader_id && leaderVipMap[req.teams.leader_id] && (
-                                          <span className="flex items-center gap-1 text-secondary animate-pulse-soft">
-                                            <Zap className="w-2.5 h-2.5 fill-current" />
-                                            <span className="text-[8px] font-black">VIP_ACTIVE</span>
-                                          </span>
+                                       {isVipLeader && (
+                                          <Badge variant="gold" className="ml-1 px-1.5 py-0 h-4 text-[7px] font-black border-secondary/30 animate-pulse-soft">
+                                            MANAGER_VIP
+                                          </Badge>
                                         )}
                                     </div>
                                     <div className="text-[8px] font-mono text-white/30 truncate max-w-md">
@@ -171,10 +182,10 @@ export default async function AdminRequestsPage() {
                            </div>
 
                            <div className="flex items-center gap-2">
-                              {req.has_vip && (
-                                <Badge variant="gold" className="px-3 py-1 font-black text-[9px] tracking-widest">
+                              {isVipRequest && (
+                                <Badge variant="gold" className="px-3 py-1 font-black text-[9px] tracking-widest bg-secondary/20 border-secondary/40 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
                                   <Zap className="w-3 h-3 mr-1" />
-                                  ELITE_UNIT
+                                  PRIORITY_UNIT
                                 </Badge>
                               )}
                               <Badge className={`px-3 py-1 uppercase italic font-black text-[9px] tracking-widest border ${
