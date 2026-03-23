@@ -275,17 +275,20 @@ export default function ProfilePage() {
 
                   <div className="flex-1 pb-2">
                      <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">{profile?.username || 'ოპერატორი'}</h1>
-                         {vipStatus && <Badge variant="gold" className="px-3 py-1">VIP_ELITE</Badge>}
+                         <h1 className={`text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none ${profile?.is_owner ? 'text-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.3)] animate-pulse-soft' : 'text-white'}`}>
+                            {profile?.username || 'ოპერატორი'}
+                         </h1>
+                         {profile?.is_owner && <Badge className="bg-red-600 text-white border-red-500 animate-glow">FOUNDER_ELITE</Badge>}
+                         {vipStatus && !profile?.is_owner && <Badge variant="gold" className="px-3 py-1">VIP_ELITE</Badge>}
                          <div className="bg-green-500/10 px-3 py-1 rounded-full text-green-400 text-[10px] font-black tracking-widest border border-green-500/20">
                             {profile?.balance || 0} GEL
                          </div>
                      </div>
                       <div className="flex flex-col gap-4">
-                        <p className="text-muted-foreground text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2 italic">
-                           <Shield className="w-3 h-3 text-primary" />
-                           {profile?.role === 'admin' ? 'Kommander' : profile?.role === 'manager' ? 'Sector Manager' : 'Operator'}
-                        </p>
+                         <p className={`text-[10px] font-black tracking-[0.3em] uppercase flex items-center gap-2 italic ${profile?.is_owner ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            <Shield className={`w-3 h-3 ${profile?.is_owner ? 'text-red-500' : 'text-primary'}`} />
+                            {profile?.is_owner ? (profile?.owner_title || 'საიტის მფლობელი და დამფუძნებელი') : (profile?.role === 'admin' ? 'Kommander' : profile?.role === 'manager' ? 'Sector Manager' : 'Operator')}
+                         </p>
                         
                         <div className="flex flex-wrap items-center gap-3">
                            {profile?.instagram_url && (

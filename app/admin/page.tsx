@@ -5,7 +5,8 @@ import {
   Users, Calendar, Trophy, Ban, Gamepad2, 
   UserCog, Shield, Zap, Target, Activity,
   ChevronRight, LayoutDashboard, Settings, Layers,
-  CheckCircle2, MessageSquare, Terminal
+  CheckCircle2, MessageSquare, Terminal,
+  PlusCircle, BookOpen
 } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -102,6 +103,13 @@ export default async function AdminPage() {
       desc: "ნახეთ ყველა მომხმარებლისა და ადმინის აქტივობა", 
       icon: Terminal, 
       color: "zinc" 
+    },
+    { 
+      href: "/admin/news", 
+      label: "სიახლეების მართვა", 
+      desc: "სიახლეების, ტურნირების და განახლებების დამატება", 
+      icon: BookOpen, 
+      color: "emerald" 
     },
   ]
 

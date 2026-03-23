@@ -9,6 +9,7 @@ import { createBrowserClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { LiveSection } from "@/components/live-section"
+import { NewsSection } from "@/components/news-section"
 
 export default function HomePage() {
   const [discordLink, setDiscordLink] = useState("https://discord.gg/your-invite-link")
@@ -108,6 +109,9 @@ export default function HomePage() {
 
       {/* Live Stream Section */}
       <LiveSection />
+
+      {/* News Section */}
+      <NewsSection />
 
       {/* Stats Section */}
       <section className="py-20 border-y border-white/5 relative bg-white/2">

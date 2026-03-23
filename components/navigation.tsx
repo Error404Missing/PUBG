@@ -14,6 +14,7 @@ export function Navigation() {
   const [user, setUser] = useState<any>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [balance, setBalance] = useState<number>(0)
   const [hasApprovedTeam, setHasApprovedTeam] = useState(false)
@@ -48,8 +49,9 @@ export function Navigation() {
     setUser(user)
     if (user) {
       setUserId(user.id)
-      const { data } = await supabase.from("profiles").select("is_admin, role, balance").eq("id", user.id).single()
+      const { data } = await supabase.from("profiles").select("is_admin, is_owner, role, balance").eq("id", user.id).single()
       setIsAdmin(data?.is_admin || false)
+      setIsOwner(data?.is_owner || false)
       setUserRole(data?.role || null)
       setBalance(data?.balance || 0)
 
@@ -97,6 +99,7 @@ export function Navigation() {
         checkUserStatus()
       } else {
         setIsAdmin(false)
+        setIsOwner(false)
         setUserRole(null)
         setBalance(0)
         setHasApprovedTeam(false)
@@ -136,6 +139,7 @@ export function Navigation() {
     { href: "/blocked", label: "დაბლოკილები" },
     { href: "/case-opening", label: "კეისები", special: "case" },
     { href: "/vip", label: "VIP", special: "vip" },
+    { href: "/news", label: "სიახლეები" },
     { href: "/rules", label: "წესები" },
     { href: "/contact", label: "კონტაქტი" },
   ]
@@ -234,8 +238,8 @@ export function Navigation() {
                     </Link>
                  </div>
 
-                 <Link href="/profile" className="w-10 h-10 rounded-full border border-white/10 glass flex items-center justify-center hover:border-primary/50 transition-all group overflow-hidden">
-                    <Users className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                 <Link href="/profile" className={`w-10 h-10 rounded-full border glass flex items-center justify-center transition-all group overflow-hidden ${isOwner ? 'border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-white/10 hover:border-primary/50'}`}>
+                    <Users className={`w-5 h-5 transition-colors ${isOwner ? 'text-red-500' : 'text-muted-foreground group-hover:text-primary'}`} />
                  </Link>
                  <button 
                    onClick={handleLogout}
