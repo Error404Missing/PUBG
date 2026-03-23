@@ -13,7 +13,8 @@ import { LuxuryToast, ToastType } from "@/components/ui/luxury-toast"
 
 interface ScheduleClientProps {
   scheduleId: string
-  userTeam: any
+  allUserTeams: any[]
+  scheduleRequests: Array<{ team: any, status: string }>
   user: any
   registrationOpen?: boolean
   registrationStatus?: 'open' | 'vip_only' | 'closed'
@@ -21,13 +22,12 @@ interface ScheduleClientProps {
   mapsCount?: number
   isUserVip?: boolean
   scheduleTitle?: string
-  hasTeamForThisSchedule?: boolean // true only if team has a request for THIS specific schedule
-  requestStatusForSchedule?: string
 }
 
 export function ScheduleClient({ 
   scheduleId, 
-  userTeam, 
+  allUserTeams = [], 
+  scheduleRequests = [],
   user, 
   registrationOpen = true, 
   registrationStatus = 'open',
@@ -35,14 +35,13 @@ export function ScheduleClient({
   mapsCount = 4,
   isUserVip = false,
   scheduleTitle = "მატჩი",
-  hasTeamForThisSchedule = false,
-  requestStatusForSchedule
 }: ScheduleClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showMapModal, setShowMapModal] = useState(false)
   const [preferredMaps, setPreferredMaps] = useState<number>(mapsCount)
   const [showBanModal, setShowBanModal] = useState(false)
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string, type: ToastType } | null>(null)
 
   const handleRequestGame = async () => {
@@ -51,7 +50,9 @@ export function ScheduleClient({
       return
     }
 
-    if (!userTeam) {
+    const teamToUse = allUserTeams.find(t => t.id === selectedTeamId) || allUserTeams[0]
+
+    if (!teamToUse) {
       setShowTeamModal(true)
       return
     }
@@ -63,7 +64,7 @@ export function ScheduleClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          team_id: userTeam.id, 
+          team_id: teamToUse.id, 
           schedule_id: scheduleId,
           preferred_maps: preferredMaps
         }),
@@ -73,7 +74,7 @@ export function ScheduleClient({
 
       if (!res.ok) {
         if (res.status === 409) {
-          setToast({ message: "მოთხოვნა უკვე გამოგზავნილია", type: 'info' })
+          setToast({ message: "მოთხოვნა უკვე გამოგზავნილია ამ გუნდით", type: 'info' })
           return
         }
         throw new Error(data.error || "შეცდომა")
@@ -81,6 +82,8 @@ export function ScheduleClient({
 
       setShowMapModal(false)
       setToast({ message: "მოთხოვნა წარმატებით გაიგზავნა ადმინისტრაციისთვის", type: 'success' })
+      // Refresh page to see new request
+      setTimeout(() => window.location.reload(), 1500)
     } catch (error: any) {
       console.error("[v0] Error requesting game:", error)
       setToast({ message: "შეცდომა: " + (error.message || "მოთხოვნა ვერ გაიგზავნა"), type: 'error' })
@@ -95,27 +98,29 @@ export function ScheduleClient({
       return
     }
 
-    // If user has no team at all → show team creation modal
-    if (!userTeam) {
+    if (allUserTeams.length === 0) {
       setShowTeamModal(true)
       return
     }
 
-    // If user has a team but NOT linked to THIS schedule → redirect to create a new team for this schedule
-    if (!hasTeamForThisSchedule) {
+    // Filter out teams that already have a request for this schedule
+    const registeredTeamIds = scheduleRequests.map(r => r.team.id)
+    const availableTeams = allUserTeams.filter(t => !registeredTeamIds.includes(t.id))
+
+    if (availableTeams.length === 0) {
+      // If no teams available of existing ones, offer to create new one
       window.location.href = `/profile/register-team?schedule_id=${scheduleId}`
       return
     }
 
-    // Check for specific schedule rejection
-    if (requestStatusForSchedule === 'rejected') {
-      setToast({ message: "თქვენი გუნდის მოთხოვნა ამ განრიგზე უარყოფილია ადმინისტრაციის მიერ", type: 'error' })
-      return
-    }
+    // If more than 1 available team, we might want to let them pick, 
+    // but for now let's just pick the first available and set it
+    setSelectedTeamId(availableTeams[0].id)
 
-    // Check for Ban
-    if (userTeam.status === 'blocked') {
-      const banUntil = userTeam.ban_until ? new Date(userTeam.ban_until) : null
+    // Check for Ban on the selected team
+    const teamToUse = availableTeams[0]
+    if (teamToUse.status === 'blocked') {
+      const banUntil = teamToUse.ban_until ? new Date(teamToUse.ban_until) : null
       const now = new Date()
       
       if (!banUntil || banUntil > now) {
@@ -129,49 +134,63 @@ export function ScheduleClient({
     setShowMapModal(true)
   }
 
+  const maxRequests = isUserVip ? 2 : 1
+  const currentRequestsCount = scheduleRequests.length
+  const canRequestMore = currentRequestsCount < maxRequests
+  const isRejectedGlobally = scheduleRequests.some(r => r.status === 'rejected')
+
+  const currentTeamMatchingId = selectedTeamId ? allUserTeams.find(t => t.id === selectedTeamId) : allUserTeams[0]
+
   return (
     <>
-      <Button
-        onClick={handleOpenMapModal}
-        disabled={isLoading || registrationStatus === 'closed' || (registrationStatus === 'vip_only' && !isUserVip) || requestStatusForSchedule === 'rejected'}
-        className={`whitespace-nowrap transition-all active:scale-95 ${
-          registrationStatus === 'closed'
-            ? "bg-neutral-800 text-neutral-400 cursor-not-allowed border border-white/5"
-            : registrationStatus === 'vip_only' && !isUserVip
-            ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 cursor-not-allowed"
-            : requestStatusForSchedule === 'rejected'
-            ? "bg-rose-500/10 text-rose-500 border border-rose-500/20 cursor-not-allowed opacity-50 grayscale"
-            : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
-        }`}
-      >
-        {isLoading ? (
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-        ) : registrationStatus === 'vip_only' ? (
-          <Zap className="w-4 h-4 mr-2" />
-        ) : (
-          <Zap className="w-4 h-4 mr-2" />
-        )}
-        {requestStatusForSchedule && (
-        <Badge className={`uppercase italic font-black text-[9px] tracking-widest px-4 py-2 ${
-          requestStatusForSchedule === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' :
-          requestStatusForSchedule === 'rejected' ? 'bg-rose-500/20 text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-          'bg-yellow-500/20 text-yellow-400 border-yellow-500/20'
-        }`}>
-          {requestStatusForSchedule === 'approved' ? 'Active_Confirmed' : 
-           requestStatusForSchedule === 'rejected' ? 'Denied_Access' : 'Pending_Review'}
-        </Badge>
-      )}
+      <div className="flex flex-col items-end gap-3">
+        {/* Status Badges for each request */}
+        <div className="flex flex-wrap justify-end gap-2">
+          {scheduleRequests.map((req, idx) => (
+            <Badge key={idx} className={`uppercase italic font-black text-[9px] tracking-widest px-4 py-2 flex items-center gap-2 ${
+              req.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' :
+              req.status === 'rejected' ? 'bg-rose-500/20 text-rose-400 border-rose-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
+              'bg-yellow-500/20 text-yellow-400 border-yellow-500/20'
+            }`}>
+              <span className="opacity-50 text-[7px]">{req.team.team_name}:</span>
+              {req.status === 'approved' ? 'Active_Confirmed' : 
+               req.status === 'rejected' ? 'Denied_Access' : 'Pending_Review'}
+            </Badge>
+          ))}
+        </div>
 
-      {registrationStatus === 'closed'
-          ? "რეგისტრაცია დახურულია"
-          : registrationStatus === 'vip_only' && !isUserVip
-          ? "მხოლოდ VIP მომხმარებლებისთვის"
-          : requestStatusForSchedule === 'rejected'
-          ? "წვდომა უარყოფილია"
-          : isLoading
-          ? "იტვირთება..."
-          : "მოითხოვე თამაში"}
-      </Button>
+        <Button
+          onClick={handleOpenMapModal}
+          disabled={isLoading || registrationStatus === 'closed' || (registrationStatus === 'vip_only' && !isUserVip) || (currentRequestsCount > 0 && !canRequestMore)}
+          className={`whitespace-nowrap transition-all active:scale-95 ${
+            registrationStatus === 'closed'
+              ? "bg-neutral-800 text-neutral-400 cursor-not-allowed border border-white/5"
+              : registrationStatus === 'vip_only' && !isUserVip
+              ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 cursor-not-allowed"
+              : (currentRequestsCount > 0 && !canRequestMore)
+              ? "bg-neutral-800/50 text-neutral-500 cursor-not-allowed border border-white/5 opacity-50"
+              : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20"
+          }`}
+        >
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : registrationStatus === 'vip_only' ? (
+            <Zap className="w-4 h-4 mr-2" />
+          ) : (
+            <Zap className="w-4 h-4 mr-2" />
+          )}
+          
+          {registrationStatus === 'closed'
+            ? "რეგისტრაცია დახურულია"
+            : registrationStatus === 'vip_only' && !isUserVip
+            ? "მხოლოდ VIP მომხმარებლებისთვის"
+            : (currentRequestsCount > 0 && !canRequestMore)
+            ? (isUserVip ? "ლიმიტი შევსებულია (2/2)" : "მოთხოვნა გაგზავნილია")
+            : isLoading
+            ? "იტვირთება..."
+            : (currentRequestsCount > 0 ? "მეორე გუნდის დამატება" : "მოითხოვე თამაში")}
+        </Button>
+      </div>
 
       {/* Maps Confirmation Modal */}
       <Dialog open={showMapModal} onOpenChange={setShowMapModal}>
@@ -336,7 +355,7 @@ export function ScheduleClient({
                 <div className="space-y-1">
                   <div className="text-[10px] font-black text-rose-500/50 uppercase tracking-widest italic leading-none">დაბლოკვის მიზეზი</div>
                   <div className="text-white font-bold italic tracking-tight uppercase">
-                    {userTeam?.ban_reason || "წესების დარღვევა"}
+                    {currentTeamMatchingId?.ban_reason || "წესების დარღვევა"}
                   </div>
                 </div>
                 
@@ -344,11 +363,11 @@ export function ScheduleClient({
                   <div className="space-y-1">
                     <div className="text-[10px] font-black text-white/20 uppercase tracking-widest italic leading-none">ვადის ამოწურვა</div>
                     <div className="text-sm font-black text-rose-400 italic">
-                      {userTeam?.ban_until 
+                      {currentTeamMatchingId?.ban_until 
                         ? new Intl.DateTimeFormat('ka-GE', { 
                             dateStyle: 'medium', 
                             timeStyle: 'short' 
-                          }).format(new Date(userTeam.ban_until))
+                          }).format(new Date(currentTeamMatchingId.ban_until))
                         : "სამუდამოდ"}
                     </div>
                   </div>

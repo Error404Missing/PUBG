@@ -46,6 +46,55 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "რეგისტრაცია დახურულია ამ მატჩზე" }, { status: 403 })
     }
 
+    // Check VIP status early
+    let isVip = false
+    try {
+      const { data: vipStatus } = await supabase
+        .from("user_vip_status")
+        .select("vip_until")
+        .eq("user_id", user.id)
+        .maybeSingle()
+      if (vipStatus && new Date(vipStatus.vip_until) > new Date()) {
+        isVip = true
+      }
+    } catch (e) {
+      console.warn("VIP status check failed:", e)
+    }
+
+    if (regStatus === 'vip_only' && !isVip) {
+      return NextResponse.json({ error: "რეგისტრაცია ამჟამად მხოლოდ VIP მომხმარებლებისთვისაა ხელმისაწვდომი" }, { status: 403 })
+    }
+
+    // New: Count how many requests this user already has for THIS schedule
+    try {
+      const { data: userTeams } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("leader_id", user.id)
+      
+      const teamIds = userTeams?.map(t => t.id) || []
+
+      if (teamIds.length > 0) {
+        const { count: scheduleRequestsCount } = await supabase
+          .from("scrim_requests")
+          .select("id", { count: 'exact', head: true })
+          .in("team_id", teamIds)
+          .eq("schedule_id", schedule_id)
+          .neq("status", "rejected")
+
+        const maxAllowed = isVip ? 2 : 1
+        if (scheduleRequestsCount !== null && scheduleRequestsCount >= maxAllowed) {
+          return NextResponse.json({ 
+            error: isVip 
+              ? "თქვენ უკვე გაქვთ მაქსიმალური (2) მოთხოვნა ამ განრიგში." 
+              : "ამ განრიგში მხოლოდ 1 მოთხოვნის გამოგზავნაა შესაძლებელი. მეორე მოთხოვნისთვის საჭიროა VIP სტატუსი." 
+          }, { status: 403 })
+        }
+      }
+    } catch (e) {
+      console.warn("Schedule request count check error:", e)
+    }
+
     // NEW: Check for time conflicts with other APPROVED matches for this user
     try {
       // 1. Get all teams owned by this user
@@ -67,12 +116,21 @@ export async function POST(request: Request) {
         if (approvedRequests && approvedRequests.length > 0) {
           const targetDate = schedule.date
           
-          const hasConflict = approvedRequests.some((req: any) => {
+          const conflictMatch = approvedRequests.find((req: any) => {
+            // If it's the SAME schedule, it's only a conflict if we already have too many approved
+            // But we already checked scheduleRequestsCount above.
+            // However, the rule is about different rooms.
+            if (req.schedule_id === schedule_id) {
+               // If VIP, we allow 2 in the same schedule.
+               // We don't block based on 'approved' status for the SAME schedule here
+               // because the total count check above handles the limit.
+               return false
+            }
             // Compare the full ISO date string (includes time)
             return req.schedules.date === targetDate
           })
 
-          if (hasConflict) {
+          if (conflictMatch) {
             return NextResponse.json({ 
               error: "თქვენ უკვე გაქვთ დადასტურებული თამაში მოცემულ დროს (სხვა ოთახში). ერთსა და იმავე დროს ორ სხვადასხვა მატჩში მონაწილეობა დაუშვებელია." 
             }, { status: 403 })
@@ -81,25 +139,6 @@ export async function POST(request: Request) {
       }
     } catch (e) {
       console.warn("Time conflict check error (ignoring for resilience):", e)
-    }
-
-    // Check VIP status if needed
-    let isVip = false
-    try {
-      const { data: vipStatus } = await supabase
-        .from("user_vip_status")
-        .select("vip_until")
-        .eq("user_id", user.id)
-        .maybeSingle()
-      if (vipStatus && new Date(vipStatus.vip_until) > new Date()) {
-        isVip = true
-      }
-    } catch (e) {
-      console.warn("VIP status check failed:", e)
-    }
-
-    if (regStatus === 'vip_only' && !isVip) {
-      return NextResponse.json({ error: "რეგისტრაცია ამჟამად მხოლოდ VIP მომხმარებლებისთვისაა ხელმისაწვდომი" }, { status: 403 })
     }
 
     // Validate preferred maps

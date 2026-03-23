@@ -17,8 +17,9 @@ export default async function SchedulePage() {
   const schedules = schedulesRes.data
 
   let userTeam = null // kept for fallback
+  let allUserTeams: any[] = []
   let userVipStatus = null
-  let userTeamBySchedule: Record<string, any> = {} // map: schedule_id -> team
+  let userTeamBySchedule: Record<string, any[]> = {} // map: schedule_id -> team[]
 
   if (user) {
     const [teamRes, vipRes] = await Promise.all([
@@ -43,29 +44,35 @@ export default async function SchedulePage() {
       userVipStatus = vipStatus
     }
 
-    // Fetch all approved/pending scrim_requests for this user, to know which schedules they're in
-    if (userTeam) {
-      // Get all teams this user leads
-      const { data: allUserTeams } = await supabase
-        .from("teams")
-        .select("id")
-        .eq("leader_id", user.id)
+    // Fetch all requests for this user's teams to know which schedules they're in
+    // Get all teams this user leads
+    const { data: teamsData } = await supabase
+      .from("teams")
+      .select("*")
+      .eq("leader_id", user.id)
+    
+    allUserTeams = teamsData || []
 
-      if (allUserTeams && allUserTeams.length > 0) {
-        const teamIds = allUserTeams.map(t => t.id)
-        const { data: requests } = await supabase
-          .from("scrim_requests")
-          .select("schedule_id, team_id, status, teams(*)")
-          .in("team_id", teamIds)
+    if (allUserTeams && allUserTeams.length > 0) {
+      const teamIds = allUserTeams.map(t => t.id)
+      const { data: requests } = await supabase
+        .from("scrim_requests")
+        .select("schedule_id, team_id, status, teams(*)")
+        .in("team_id", teamIds)
 
-        // Build a map: schedule_id -> { team, status }
-        requests?.forEach((r: any) => {
-          userTeamBySchedule[r.schedule_id] = {
-            team: r.teams,
-            status: r.status?.toLowerCase().trim()
-          }
+      // Build a map: schedule_id -> array of { team, status }
+      requests?.forEach((r: any) => {
+        if (!userTeamBySchedule[r.schedule_id]) {
+          userTeamBySchedule[r.schedule_id] = []
+        }
+        userTeamBySchedule[r.schedule_id].push({
+          team: r.teams,
+          status: r.status?.toLowerCase().trim()
         })
-      }
+      })
+      
+      // Default userTeam to the first one found or null
+      userTeam = allUserTeams[0]
     }
   }
 
@@ -183,18 +190,17 @@ export default async function SchedulePage() {
                         +12
                       </div>
                     </div>
-                     <ScheduleClient
-                      scheduleId={schedule.id}
-                      scheduleTitle={schedule.title}
-                      userTeam={userTeamBySchedule[schedule.id]?.team || userTeam}
-                      hasTeamForThisSchedule={!!userTeamBySchedule[schedule.id]}
-                      requestStatusForSchedule={userTeamBySchedule[schedule.id]?.status}
-                      user={user}
-                      registrationStatus={schedule.registration_status}
-                      logoRequired={schedule.logo_required}
-                      isUserVip={!!userVipStatus}
-                      mapsCount={(schedule as any).maps_count || 4}
-                    />
+                      <ScheduleClient
+                        scheduleId={schedule.id}
+                        scheduleTitle={schedule.title}
+                        allUserTeams={allUserTeams || []}
+                        scheduleRequests={userTeamBySchedule[schedule.id] || []}
+                        user={user}
+                        registrationStatus={schedule.registration_status}
+                        logoRequired={schedule.logo_required}
+                        isUserVip={!!userVipStatus}
+                        mapsCount={(schedule as any).maps_count || 4}
+                      />
                   </div>
                 </div>
               </div>
