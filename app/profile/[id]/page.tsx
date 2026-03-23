@@ -125,40 +125,45 @@ export default function PublicProfilePage() {
 
                      <div className="flex-1 pb-4">
                         <div className="flex flex-wrap items-center gap-4 mb-4">
-                           <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-                              {profile.username}
-                           </h1>
-                           <div className="flex gap-2">
-                              {profile.is_admin && <Badge variant="secondary" className="px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">Admin_Lv3</Badge>}
-                              {profile.role === 'manager' && <Badge variant="premium" className="px-3 py-1 font-black text-[9px] tracking-widest uppercase italic bg-blue-500/20 text-blue-400 border-blue-500/20">Manager</Badge>}
-                              {vipStatus && <Badge variant="gold" className="px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">Elite</Badge>}
-                              {profile.badge && <Badge className="bg-primary/20 text-primary border border-primary/20 px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">{profile.badge}</Badge>}
-                           </div>
+                            <h1 className={`text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none ${profile.is_owner ? 'text-red-600 drop-shadow-[0_0_20px_rgba(220,38,38,0.4)] animate-pulse-soft' : 'text-white'}`}>
+                               {profile.username}
+                            </h1>
+                            <div className="flex flex-wrap gap-2">
+                               {profile.is_owner && (
+                                  <Badge className="bg-red-600 text-white border-red-500 px-4 py-2 font-black italic tracking-widest text-[11px] animate-glow">
+                                     FOUNDER_ELITE
+                                  </Badge>
+                               )}
+                               {profile.is_admin && !profile.is_owner && <Badge variant="secondary" className="px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">Admin_Lv3</Badge>}
+                               {profile.role === 'manager' && !profile.is_owner && <Badge variant="premium" className="px-3 py-1 font-black text-[9px] tracking-widest uppercase italic bg-blue-500/20 text-blue-400 border-blue-500/20">Manager</Badge>}
+                               {vipStatus && !profile.is_owner && <Badge variant="gold" className="px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">Elite</Badge>}
+                               {profile.badge && <Badge className="bg-primary/20 text-primary border border-primary/20 px-3 py-1 font-black text-[9px] tracking-widest uppercase italic">{profile.badge}</Badge>}
+                            </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-6 text-muted-foreground italic text-xs tracking-widest font-bold uppercase">
-                           <div className="flex items-center gap-2">
-                              <User className="w-3.5 h-3.5 text-primary" />
-                              ID: {profile.id.slice(0, 8)}
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5 text-primary" />
-                              შემოუერთდა: {format(new Date(profile.created_at), "MMMM yyyy", { locale: ka })}
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${
-                                 profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
-                                    ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]'
-                                    : 'bg-zinc-600'
-                              }`} />
-                              <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
-                                 {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
-                                    ? 'ხაზზეა'
-                                    : (profile?.last_seen_at && new Date(profile.last_seen_at).getFullYear() > 2024)
-                                       ? `ბოლოს ნანახია: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true, locale: ka })}`
-                                       : 'ხაზგარეშე'}
-                              </span>
-                           </div>
-                        </div>
+                         <div className="flex flex-wrap items-center gap-6 text-muted-foreground italic text-xs tracking-widest font-bold uppercase">
+                            <div className={`flex items-center gap-2 ${profile.is_owner ? 'text-red-500' : 'text-primary'}`}>
+                               <Shield className="w-3.5 h-3.5" />
+                               {profile.is_owner ? (profile.owner_title || 'საიტის მფლობელი და დამფუძნებელი') : `ID: ${profile.id.slice(0, 8)}`}
+                            </div>
+                            <div className="flex items-center gap-2">
+                               <Calendar className="w-3.5 h-3.5 text-primary" />
+                               შემოუერთდა: {format(new Date(profile.created_at), "MMMM yyyy", { locale: ka })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                               <span className={`w-2 h-2 rounded-full ${
+                                  profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
+                                     ? 'bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]'
+                                     : 'bg-zinc-600'
+                               }`} />
+                               <span className="text-[10px] font-black uppercase tracking-widest italic text-white/50">
+                                  {profile?.last_seen_at && new Date().getTime() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 3
+                                     ? 'ხაზზეა'
+                                     : (profile?.last_seen_at && new Date(profile.last_seen_at).getFullYear() > 2024)
+                                        ? `ბოლოს ნანახია: ${formatDistanceToNow(new Date(profile.last_seen_at), { addSuffix: true, locale: ka })}`
+                                        : 'ხაზგარეშე'}
+                               </span>
+                            </div>
+                         </div>
                      </div>
                   </div>
 

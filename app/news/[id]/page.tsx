@@ -109,7 +109,7 @@ export default function SingleNewsPage() {
                   <div className="space-y-4">
                      <div className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] italic leading-none">News_Transmission_Author</div>
                      <Link 
-                       href={`/user/${news.profiles?.id}`} 
+                       href={`/profile/${news.profiles?.id}`} 
                        className="flex items-center gap-4 group/author"
                      >
                        <div className={`w-14 h-14 rounded-2xl glass border overflow-hidden flex items-center justify-center transition-all ${news.profiles?.is_owner ? 'border-red-500/30' : 'border-white/10 group-hover/author:border-primary/50'}`}>

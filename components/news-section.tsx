@@ -130,7 +130,7 @@ export function NewsSection() {
                 {/* Author Card (Highlight for Owner) */}
                 <div className="pt-6 border-t border-white/5 flex items-center justify-between">
                    <Link 
-                     href={item.profiles?.id ? `/user/${item.profiles.id}` : '#'} 
+                     href={item.profiles?.id ? `/profile/${item.profiles.id}` : '#'} 
                      className="flex items-center gap-3 group/author"
                    >
                      <div className={`w-10 h-10 rounded-xl glass border overflow-hidden flex items-center justify-center transition-all ${item.profiles?.is_owner ? 'border-red-500/30 ring-2 ring-red-500/10' : 'border-white/10 group-hover/author:border-primary/50'}`}>
