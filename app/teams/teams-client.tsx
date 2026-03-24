@@ -65,9 +65,9 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
                 </>
               )}
 
-              <div className="p-8">
-                <div className="flex items-start justify-between mb-8">
-                  <div className="flex items-center gap-5">
+              <div className="p-5 md:p-8">
+                <div className="flex items-start justify-between mb-8 gap-4">
+                  <div className="flex items-center gap-3 md:gap-5 min-w-0">
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 transition-all group-hover:scale-110 ${
                       team.is_vip 
                         ? 'border-secondary bg-secondary/10 shadow-[0_0_25px_-5px_rgba(234,179,8,0.4)]' 
@@ -80,7 +80,7 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
                       )}
                     </div>
                     <div>
-                      <h3 className={`text-2xl font-black italic tracking-tighter uppercase leading-none mb-2 ${
+                      <h3 className={`text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none mb-2 truncate ${
                         team.is_vip ? 'text-secondary text-glow' : 'text-white'
                       }`}>{team.team_name}</h3>
                       <div className="flex items-center gap-2">
@@ -98,9 +98,9 @@ export function TeamsClient({ teams }: { teams: Team[] }) {
                     </div>
                   </div>
                   {team.slot_number && (
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <div className="text-[8px] font-black text-white/20 uppercase tracking-widest leading-none mb-1">Sector</div>
-                      <div className={`text-3xl font-black italic leading-none ${team.is_vip ? 'text-secondary' : 'text-primary'}`}>
+                      <div className={`text-2xl md:text-3xl font-black italic leading-none ${team.is_vip ? 'text-secondary' : 'text-primary'}`}>
                         #{team.slot_number}
                       </div>
                     </div>
